@@ -1,0 +1,2 @@
+doc/dbus/org.infradead.ocserv.conf etc/dbus-1/system.d/
+debian/ocserv.conf etc/ocserv/

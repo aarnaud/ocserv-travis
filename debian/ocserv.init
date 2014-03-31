@@ -1,0 +1,18 @@
+#!/lib/init/init-d-script
+### BEGIN INIT INFO
+# Provides:          ocserv
+# Required-Start:    $remote_fs $syslog dbus
+# Required-Stop:     $remote_fs $syslog dbus
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: OpenConnect SSL VPN server
+# Description:       Debian init script to start the ocserv daemon.
+### END INIT INFO
+DAEMON=/usr/sbin/ocserv
+DESC="OpenConnect SSL VPN server"
+PIDFILE=/var/run/ocserv.pid
+DAEMON_ARGS="--pid-file $PIDFILE --config /etc/ocserv/ocserv.conf"
+
+# Lintian does not yet handle init-d-script scripts, so name the common
+# init script options to bypass the error check.
+NOT_USED="start stop restart force-reload status"

@@ -1,0 +1,14 @@
+Description: Update occtl to work with readline 6.3
+Author: Mike Miller <mtmiller@debian.org>
+
+--- a/src/occtl.c
++++ b/src/occtl.c
+@@ -1414,7 +1414,7 @@ void handle_sigint(int signo)
+ void initialize_readline(void)
+ {
+ 	rl_readline_name = "occtl";
+-	rl_attempted_completion_function = (CPPFunction *) occtl_completion;
++	rl_attempted_completion_function = (rl_completion_func_t *) occtl_completion;
+ 	rl_completion_entry_function = command_generator;
+ 	rl_completion_query_items = 20;
+ #ifdef HAVE_ORIG_READLINE
