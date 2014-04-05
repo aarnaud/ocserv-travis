@@ -1,7 +1,8 @@
 Source: ocserv
 Section: net
 Priority: optional
-Maintainer: Mike Miller <mtmiller@debian.org>
+Maintainer: Mike Miller <mtmiller@debian.org>,
+            Liang Guo <guoliang@debian.org>
 Build-Depends: autogen,
                debhelper (>= 9),
                dh-autoreconf,
