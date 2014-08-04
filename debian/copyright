@@ -9,11 +9,11 @@ Copyright: 2013 Nikos Mavrogiannopoulos
            2009-2013 Free Software Foundation, Inc.
 License: GPL-2+
 
-Files: gl/*
- src/gettime.h
- src/str.c
- str/str.h
-Copyright: 1991-2013 Free Software Foundation, Inc.
+Files: build-aux/snippet/*
+       libopts/gettext.h
+       libopts/parse-duration.c
+       libopts/parse-duration.h
+Copyright: 1995-2014 Free Software Foundation, Inc.
 License: LGPL-2.1+
 
 Files: src/ccan/build_assert/build_assert.h
@@ -26,6 +26,10 @@ Files: src/ccan/build_assert/build_assert.h
  src/ccan/htable/htable_type.h
  src/ccan/list/list.c
  src/ccan/list/list.h
+ libopts/compat/pathfind.c
+ libopts/compat/snprintf.c
+ libopts/compat/strchr.c
+ libopts/compat/strdup.c
 Copyright: *No copyright*
 License: UNKNOWN
  FIXME
