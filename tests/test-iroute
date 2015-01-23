@@ -28,7 +28,7 @@ echo "Testing ocserv and user route application... "
 
 rm -f ${srcdir}/test-iroute.tmp
 
-launch_server -d -f -c ${srcdir}/test-iroute.config & PID=$!
+launch_server -d 1 -f -c ${srcdir}/test-iroute.config & PID=$!
 wait_server $PID
 
 echo -n "Connecting to obtain cookie (with certificate)... "
@@ -36,6 +36,14 @@ echo -n "Connecting to obtain cookie (with certificate)... "
 	fail $PID "Could not connect with certificate!"
 
 echo ok
+
+echo -n "Re-connecting to force script run... "
+openconnect -q localhost:$PORT --sslkey ${srcdir}/user-key.pem -c ${srcdir}/user-cert.pem --servercert=d66b507ae074d03b02eafca40d35f87dd81049d3 -s ./bin/true </dev/null >/dev/null 2>&1 &
+kpid=$!
+echo ok
+
+sleep 2
+kill $kpid
 
 sleep 1
 echo -n "Checking if routes have been applied... "

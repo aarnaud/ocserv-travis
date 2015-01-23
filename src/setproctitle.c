@@ -8,7 +8,7 @@
  * the Free Software Foundation, either version 2 of the License, or
  * (at your option) any later version.
  *
- * GnuTLS is distributed in the hope that it will be useful, but
+ * ocserv is distributed in the hope that it will be useful, but
  * WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * General Public License for more details.
@@ -27,7 +27,7 @@
 
 /* This sets the proccess title as shown in top, but not in ps (*@#%@).
  * To change the ps name in Linux, one needs to do master black magic
- * trickery (set util-linux setproctitle).
+ * trickery (see util-linux setproctitle).
  */
 void setproctitle (const char *fmt, ...)
 {
@@ -46,7 +46,7 @@ void setproctitle (const char *fmt, ...)
 
 void setproctitle (const char *fmt, ...)
 {
-
+	return;
 }
 
 # endif /* __linux__ */

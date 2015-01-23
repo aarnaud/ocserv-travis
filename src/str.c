@@ -4,9 +4,9 @@
  *
  * Author: Nikos Mavrogiannopoulos
  *
- * This file is part of GnuTLS.
+ * This file is part of ocserv.
  *
- * The GnuTLS is free software; you can redistribute it and/or
+ * ocserv is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public License
  * as published by the Free Software Foundation; either version 2.1 of
  * the License, or (at your option) any later version.
@@ -28,6 +28,7 @@
 #include <minmax.h>
 #include <str.h>
 #include <main.h>
+#include "vasprintf.h"
 
 #define MEMSUB(x,y) ((ssize_t)((ptrdiff_t)x-(ptrdiff_t)y))
 
@@ -35,23 +36,11 @@ void str_clear(str_st * str)
 {
 	if (str == NULL || str->allocd == NULL)
 		return;
-	free(str->allocd);
+	talloc_free(str->allocd);
 
 	str->data = str->allocd = NULL;
 	str->max_length = 0;
 	str->length = 0;
-}
-
-void *safe_realloc(void *ptr, size_t size)
-{
-	void* tmp, *ret;
-	
-	tmp = ptr;
-	ret = realloc(ptr, size);
-	if (ret == NULL) {
-		free(tmp);
-	}
-	return ret;
 }
 
 #define MIN_CHUNK 64
@@ -82,7 +71,7 @@ int str_append_size(str_st * dest, size_t data_size)
 		    MAX(data_size, MIN_CHUNK) + MAX(dest->max_length,
 						    MIN_CHUNK);
 
-		dest->allocd = safe_realloc(dest->allocd, new_len+1);
+		dest->allocd = talloc_realloc_size(dest->pool, dest->allocd, new_len+1);
 		if (dest->allocd == NULL)
 			return ERR_MEM;
 		dest->max_length = new_len;
@@ -139,55 +128,62 @@ int str_append_str(str_st * dest, const char *src)
 	return ret;
 }
 
-/* Makes sure that the data read are null terminated (but not counted in *data_size) 
- * If the size of the data is zero then *data will be null;
- */
-int str_read_str_prefix1(str_st * src, char **data, size_t *data_size)
+int
+str_append_printf(str_st *dest, const char *fmt, ...)
 {
-	uint8_t prefix;
-	
-	if (src->length < 1)
-		return ERR_MEM;
+	va_list args;
+	int len;
+	char *str = NULL;
 
-	prefix = src->data[0];
+	va_start(args, fmt);
+	len = vasprintf(&str, fmt, args);
+	va_end(args);
 
-	if (src->length < prefix)
-		return ERR_MEM;
-	
-	src->data++;
-	src->length--;
+	if (len < 0 || !str)
+		return -1;
 
-	if (prefix == 0) {
-		if (data_size)
-			*data_size = 0;
-		*data = NULL;
+	len = str_append_str(dest, str);
 
-	} else {
+	free(str);
 
-		if (data_size)
-			*data_size = prefix + 1;
+	return len;
+}
 
-		*data = malloc(((int)prefix)+1);
-		if (*data == NULL)
-			return ERR_MEM;
-	
-		memcpy(*data, src->data, prefix);
-		(*data)[prefix] = 0;
-		
-		src->data += prefix;
+int str_replace_str(str_st *str, const char *what, const char *with)
+{
+	uint8_t *p, *final;
+	unsigned what_len, final_len;
+	int ret;
+
+	what_len = strlen(what);
+
+	p = memmem(str->data, str->length, what, what_len);
+	if (p == NULL)
+		return 0;
+
+	p += what_len;
+	final_len = str->length - (ptrdiff_t)(p-str->data);
+
+	final = talloc_memdup(str->allocd, p, final_len);
+	if (final == NULL)
+		return -1;
+
+	str->length -= final_len + what_len;
+
+	ret = str_append_str(str, with);
+	if (ret < 0) {
+		talloc_free(final);
+		return ret;
 	}
 
-	return 0;
+	ret = str_append_data(str, final, final_len);
+	talloc_free(final);
+
+	if (ret < 0) {
+		return ret;
+	}
+
+	/* allow multiple replacements */
+	return str_replace_str(str, what, with);
 }
 
-int str_read_data(str_st * src, void *data, size_t data_size)
-{
-	if (src->length < data_size)
-		return ERR_MEM;
-
-	memcpy(data, src->data, data_size);
-	src->data += data_size;
-	src->length -= data_size;
-	
-	return 0;
-}

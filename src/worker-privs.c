@@ -8,7 +8,7 @@
  * the Free Software Foundation, either version 2 of the License, or
  * (at your option) any later version.
  *
- * GnuTLS is distributed in the hope that it will be useful, but
+ * ocserv is distributed in the hope that it will be useful, but
  * WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * General Public License for more details.
@@ -53,6 +53,9 @@ int disable_system_calls(struct worker_st *ws)
 	 */
 	ADD_SYSCALL(time, 0);
 	ADD_SYSCALL(gettimeofday, 0);
+#if defined(HAVE_CLOCK_GETTIME)
+	ADD_SYSCALL(clock_gettime, 0);
+#endif
 	ADD_SYSCALL(nanosleep, 0);
 	ADD_SYSCALL(getrusage, 0);
 	ADD_SYSCALL(alarm, 0);
@@ -74,6 +77,14 @@ int disable_system_calls(struct worker_st *ws)
 	 */
 	ADD_SYSCALL(sendto, 0);
 	ADD_SYSCALL(recvfrom, 0);
+
+	/* allow returning from the signal handler */
+	ADD_SYSCALL(sigreturn, 0);
+	ADD_SYSCALL(rt_sigreturn, 0);
+
+	/* we use it in select */
+	ADD_SYSCALL(sigprocmask, 0);
+	ADD_SYSCALL(rt_sigprocmask, 0);
 
 	ADD_SYSCALL(select, 0);
 	ADD_SYSCALL(pselect6, 0);

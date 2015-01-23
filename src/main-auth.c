@@ -35,6 +35,7 @@
 #include <tlslib.h>
 #include <script-list.h>
 #include <ip-lease.h>
+#include <proc-search.h>
 #include "str.h"
 
 #include <vpn.h>
@@ -42,49 +43,23 @@
 #include <tun.h>
 #include <main.h>
 #include <ccan/list/list.h>
-#include <main-auth.h>
-#include <plain.h>
 #include <common.h>
-#include <pam.h>
 
-static const struct auth_mod_st *module = NULL;
-
-void main_auth_init(main_server_st *s)
-{
-#ifdef HAVE_PAM
-	if ((s->config->auth_types & pam_auth_funcs.type) == pam_auth_funcs.type)
-		module = &pam_auth_funcs;
-	else
-#endif
-	if ((s->config->auth_types & plain_auth_funcs.type) == plain_auth_funcs.type) {
-		module = &plain_auth_funcs;
-		s->auth_extra = s->config->plain_passwd;
-	}
-}
-
-int send_auth_reply(main_server_st* s, struct proc_st* proc,
-			AuthReplyMsg__AUTHREP r, unsigned need_sid)
+int send_cookie_auth_reply(main_server_st* s, struct proc_st* proc,
+			AUTHREP r)
 {
 	AuthReplyMsg msg = AUTH_REPLY_MSG__INIT;
 	unsigned i;
 	int ret;
 
-	if (proc->config.routes_size > MAX_ROUTES) {
-		mslog(s, proc, LOG_INFO, "note that the routes sent to the client (%d) exceed the maximum allowed (%d). Truncating.", (int)proc->config.routes_size, (int)MAX_ROUTES);
-		proc->config.routes_size = MAX_ROUTES;
-	}
-
-	if (r == AUTH_REPLY_MSG__AUTH__REP__OK && proc->tun_lease.name[0] != 0) {
+	if (r == AUTH__REP__OK && proc->tun_lease.name[0] != 0) {
 		char ipv6[MAX_IP_STR];
 		char ipv4[MAX_IP_STR];
 		char ipv6_local[MAX_IP_STR];
 		char ipv4_local[MAX_IP_STR];
 
 		/* fill message */
-		msg.reply = AUTH_REPLY_MSG__AUTH__REP__OK;
-		msg.has_cookie = 1;
-		msg.cookie.data = proc->cookie;
-		msg.cookie.len = COOKIE_SIZE;
+		msg.reply = AUTH__REP__OK;
 
 		msg.has_session_id = 1;
 		msg.session_id.data = proc->dtls_session_id;
@@ -92,6 +67,7 @@ int send_auth_reply(main_server_st* s, struct proc_st* proc,
 
 		msg.vname = proc->tun_lease.name;
 		msg.user_name = proc->username;
+		msg.group_name = proc->groupname;
 
 		if (proc->ipv4 && proc->ipv4->rip_len > 0) {
 			msg.ipv4 = human_addr2((struct sockaddr*)&proc->ipv4->rip, proc->ipv4->rip_len,
@@ -108,7 +84,10 @@ int send_auth_reply(main_server_st* s, struct proc_st* proc,
 		}
 
 		msg.ipv4_netmask = proc->config.ipv4_netmask;
-		msg.ipv6_netmask = proc->config.ipv6_netmask;
+
+		msg.ipv4_network = proc->config.ipv4_network;
+		msg.ipv6_network = proc->config.ipv6_network;
+
 		msg.ipv6_prefix = proc->config.ipv6_prefix;
 		if (proc->config.rx_per_sec != 0) {
 			msg.has_rx_per_sec = 1;
@@ -123,6 +102,15 @@ int send_auth_reply(main_server_st* s, struct proc_st* proc,
 		if (proc->config.net_priority != 0) {
 			msg.has_net_priority = 1;
 			msg.net_priority = proc->config.net_priority;
+		}
+
+		if (proc->config.no_udp != 0) {
+			msg.has_no_udp = 1;
+			msg.no_udp = proc->config.no_udp;
+		}
+
+		if (proc->config.xml_config_file != NULL) {
+			msg.xml_config_file = proc->config.xml_config_file;
 		}
 
 		msg.n_dns = proc->config.dns_size;
@@ -143,20 +131,14 @@ int send_auth_reply(main_server_st* s, struct proc_st* proc,
 			msg.routes = proc->config.routes;
 		}
 
-		if (need_sid) {
-			msg.has_sid = 1;
-			msg.sid.data = proc->sid;
-			msg.sid.len = sizeof(proc->sid);
-		}
-
-		ret = send_socket_msg_to_worker(s, proc, AUTH_REP, proc->tun_lease.fd,
+		ret = send_socket_msg_to_worker(s, proc, AUTH_COOKIE_REP, proc->tun_lease.fd,
 			 &msg,
 			 (pack_size_func)auth_reply_msg__get_packed_size,
 			 (pack_func)auth_reply_msg__pack);
 	} else {
-		msg.reply = AUTH_REPLY_MSG__AUTH__REP__FAILED;
+		msg.reply = AUTH__REP__FAILED;
 
-		ret = send_msg_to_worker(s, proc, AUTH_REP,
+		ret = send_msg_to_worker(s, proc, AUTH_COOKIE_REP,
 			 &msg,
 			 (pack_size_func)auth_reply_msg__get_packed_size,
 			 (pack_func)auth_reply_msg__pack);
@@ -171,227 +153,138 @@ int send_auth_reply(main_server_st* s, struct proc_st* proc,
 	return 0;
 }
 
-int send_auth_reply_msg(main_server_st* s, struct proc_st* proc, unsigned need_sid)
+static void apply_default_sup_config(struct cfg_st *config, struct proc_st *proc)
 {
-	AuthReplyMsg msg = AUTH_REPLY_MSG__INIT;
-	char tmp[MAX_MSG_SIZE] = "";
-
-	int ret;
-
-	if (proc->auth_ctx == NULL)
-		return -1;
-
-	ret = module->auth_msg(proc->auth_ctx, tmp, sizeof(tmp));
-	if (ret < 0)
-		return ret;
-
-	msg.msg = tmp;
-	msg.reply = AUTH_REPLY_MSG__AUTH__REP__MSG;
-
-	if (need_sid) {
-		msg.has_sid = 1;
-		msg.sid.data = proc->sid;
-		msg.sid.len = sizeof(proc->sid);
-	}
-
-	ret = send_msg_to_worker(s, proc, AUTH_REP, &msg, 
-		(pack_size_func)auth_reply_msg__get_packed_size,
-		(pack_func)auth_reply_msg__pack);
-	if (ret < 0) {
-		mslog(s, proc, LOG_ERR, "send_msg error");
-	}
-
-	return ret;
-}
-
-static int check_user_group_status(main_server_st *s, struct proc_st* proc,
-		     int tls_auth_ok, const char* cert_user, const char* cert_group)
-{
-	if (s->config->auth_types & AUTH_TYPE_CERTIFICATE) {
-		if (tls_auth_ok == 0 && s->config->cisco_client_compat == 0) {
-			mslog(s, proc, LOG_INFO, "user '%s' presented no certificate", proc->username);
-			return -1;
-		}
-
-		if (tls_auth_ok != 0) {
-			if (proc->username[0] == 0) {
-				memcpy(proc->username, cert_user, sizeof(proc->username));
-				memcpy(proc->groupname, cert_group, sizeof(proc->groupname));
-				proc->username[sizeof(proc->username)-1] = 0;
-				proc->groupname[sizeof(proc->groupname)-1] = 0;
-			} else {
-				if (strcmp(proc->username, cert_user) != 0) {
-					mslog(s, proc, LOG_INFO, "user '%s' presented a certificate from user '%s'", proc->username, cert_user);
-					return -1;
-				}
-
-				if (s->config->cert_group_oid != NULL && strcmp(proc->groupname, cert_group) != 0) {
-					mslog(s, proc, LOG_INFO, "user '%s' presented a certificate from group '%s' but he is member of '%s'", proc->username, cert_group, proc->groupname);
-					return -1;
-				}
-			}
-		}
-	}
-
-	return 0;
+	proc->config.deny_roaming = config->deny_roaming;
+	proc->config.no_udp = (config->udp_port!=0)?0:1;
 }
 
 int handle_auth_cookie_req(main_server_st* s, struct proc_st* proc,
  			   const AuthCookieRequestMsg * req)
 {
 int ret;
-struct stored_cookie_st sc;
+Cookie *cmsg;
 time_t now = time(0);
+gnutls_datum_t key = {s->cookie_key, sizeof(s->cookie_key)};
+char str_ip[MAX_IP_STR+1];
+PROTOBUF_ALLOCATOR(pa, proc);
+struct cookie_entry_st *old;
 
-	if (req->cookie.len == 0 || req->cookie.len > sizeof(proc->cookie))
+	if (req->cookie.len == 0) {
+		mslog(s, proc, LOG_INFO, "error in cookie size");
+		return -1;
+	}
+
+	ret = decrypt_cookie(&pa, &key, req->cookie.data, req->cookie.len, &cmsg);
+	if (ret < 0) {
+		mslog(s, proc, LOG_INFO, "error decrypting cookie");
+		return -1;
+	}
+
+	if (cmsg->username == NULL)
+		return -1;
+	strlcpy(proc->username, cmsg->username, sizeof(proc->username));
+
+	if (cmsg->sid.len != sizeof(proc->sid))
 		return -1;
 
-	ret = decrypt_cookie(s, req->cookie.data, req->cookie.len, &sc);
+	/* generate a new DTLS session ID for each connection, to allow
+	 * openconnect of distinguishing when the DTLS key has switched. */
+	ret = gnutls_rnd(GNUTLS_RND_NONCE, proc->dtls_session_id, sizeof(proc->dtls_session_id));
 	if (ret < 0)
 		return -1;
-
-	if (sc.expiration < now)
-		return -1;
-
-	memcpy(proc->cookie, req->cookie.data, req->cookie.len);
-	memcpy(proc->username, sc.username, sizeof(proc->username));
-	memcpy(proc->groupname, sc.groupname, sizeof(proc->groupname));
-	memcpy(proc->hostname, sc.hostname, sizeof(proc->hostname));
-	memcpy(proc->dtls_session_id, sc.session_id, sizeof(proc->dtls_session_id));
 	proc->dtls_session_id_size = sizeof(proc->dtls_session_id);
 
-	proc->username[sizeof(proc->username)-1] = 0;
-	proc->groupname[sizeof(proc->groupname)-1] = 0;
-	proc->hostname[sizeof(proc->hostname)-1] = 0;
+	memcpy(proc->sid, cmsg->sid.data, cmsg->sid.len);
+	proc->active_sid = 1;
 
-	memcpy(proc->ipv4_seed, sc.ipv4_seed, sizeof(proc->ipv4_seed));
-	proc->seeds_are_set = 1;
+	/* override the group name in order to load the correct configuration in
+	 * case his group is specified in the certificate */
+	if (cmsg->groupname)
+		strlcpy(proc->groupname, cmsg->groupname, sizeof(proc->groupname));
 
-	ret = check_user_group_status(s, proc, req->tls_auth_ok, req->cert_user_name, req->cert_group_name);
-	if (ret < 0)
-		return ret;
+	/* cookie is good so far, now read config (in order to know
+	 * whether roaming is allowed or not */
+	memset(&proc->config, 0, sizeof(proc->config));
+	apply_default_sup_config(s->config, proc);
 
-	return 0;
-}
-
-int handle_auth_init(main_server_st *s, struct proc_st* proc,
-		     const AuthInitMsg * req)
-{
-int ret = -1;
-char ipbuf[128];
-const char* ip;
-
-	ip = human_addr((void*)&proc->remote_addr, proc->remote_addr_len,
-			ipbuf, sizeof(ipbuf));
-
-	if (req->user_name == NULL && s->config->auth_types & AUTH_TYPE_USERNAME_PASS) {
-		mslog(s, proc, LOG_DEBUG, "auth init from '%s' with no username present", ip);
+	/* loads sup config */
+	ret = session_open(s, proc);
+	if (ret < 0) {
+		mslog(s, proc, LOG_INFO, "could not open session");
 		return -1;
-        }
-
-	if (req->hostname != NULL) {
-		snprintf(proc->hostname, sizeof(proc->hostname), "%s", req->hostname);
 	}
 
-	if (req->user_name != NULL && s->config->auth_types & AUTH_TYPE_USERNAME_PASS) {
-		ret = module->auth_init(&proc->auth_ctx, req->user_name, ip, s->auth_extra);
-		if (ret < 0)
-			return ret;
+	/* Put into right cgroup */
+        if (proc->config.cgroup != NULL) {
+        	put_into_cgroup(s, proc->config.cgroup, proc->pid);
+	}
 
-		ret = module->auth_group(proc->auth_ctx, proc->groupname, sizeof(proc->groupname));
-		if (ret != 0)
+	/* check whether the cookie IP matches */
+	if (proc->config.deny_roaming != 0) {
+		if (cmsg->ip == NULL) {
 			return -1;
-		proc->groupname[sizeof(proc->groupname)-1] = 0;
+		}
 
-		/* a module is allowed to change the name of the user */
-		ret = module->auth_user(proc->auth_ctx, proc->username, sizeof(proc->username));
-		if (ret != 0 && req->user_name != NULL) {
-			snprintf(proc->username, MAX_USERNAME_SIZE, "%s", req->user_name);
+		if (human_addr2((struct sockaddr *)&proc->remote_addr, proc->remote_addr_len,
+					    str_ip, sizeof(str_ip), 0) == NULL)
+			return -1;
+
+		if (strcmp(str_ip, cmsg->ip) != 0) {
+			mslog(s, proc, LOG_INFO, "user '%s' is re-using cookie from different IP (prev: %s, current: %s); rejecting",
+				cmsg->username, cmsg->ip, str_ip);
+			return -1;
 		}
 	}
 
-	ret = check_user_group_status(s, proc, req->tls_auth_ok, req->cert_user_name, req->cert_group_name);
-	if (ret < 0)
-		return ret;
+	/* check for a valid stored cookie */
+	if ((old=find_cookie_entry(&s->cookies, req->cookie.data, req->cookie.len)) != NULL) {
+		mslog(s, proc, LOG_DEBUG, "reusing cookie for '%s' (%u)", proc->username, (unsigned)proc->pid);
+		if (old->proc != NULL) {
+			mslog(s, old->proc, LOG_DEBUG, "disconnecting (%u) due to new cookie connection",
+				(unsigned)old->proc->pid);
 
-	mslog(s, proc, LOG_DEBUG, "auth init for user '%s' from '%s'", proc->username, ip);
+			/* steal its leases */
+			steal_ip_leases(old->proc, proc);
 
-	if (s->config->auth_types & AUTH_TYPE_USERNAME_PASS) {
-                return ERR_AUTH_CONTINUE;
+			/* steal its cookie */
+			old->proc->cookie_ptr = NULL;
+
+			if (old->proc->pid > 0)
+				kill(old->proc->pid, SIGTERM);
+		} else {
+			revive_cookie(old);
+		}
+		proc->cookie_ptr = old;
+		old->proc = proc;
+	} else {
+		if (cmsg->expiration < now) {
+			mslog(s, proc, LOG_INFO, "ignoring expired cookie");
+			return -1;
+		}
+
+		mslog(s, proc, LOG_DEBUG, "new cookie for (%u)", (unsigned)proc->pid);
+
+		proc->cookie_ptr = new_cookie_entry(&s->cookies, proc, req->cookie.data, req->cookie.len);
+		if (proc->cookie_ptr == NULL)
+			return -1;
 	}
+
+	if (proc->config.require_cert != 0 && cmsg->tls_auth_ok == 0) {
+		mslog(s, proc, LOG_ERR,
+		      "certificate is required for user '%s'", proc->username);
+		return -1;
+	}
+
+	if (cmsg->hostname)
+		strlcpy(proc->hostname, cmsg->hostname, sizeof(proc->hostname));
+
+	memcpy(proc->ipv4_seed, &cmsg->ipv4_seed, sizeof(proc->ipv4_seed));
+
+	/* add the links to proc hash */
+	proc_table_add(s, proc);
 
 	return 0;
-}
-
-int handle_auth_reinit(main_server_st *s, struct proc_st** _proc,
-		     const AuthReinitMsg * req)
-{
-char ipbuf[128];
-const char* ip;
-struct proc_st *ctmp = NULL;
-struct proc_st *proc = *_proc;
-unsigned found = 0;
-
-	ip = human_addr((void*)&proc->remote_addr, proc->remote_addr_len,
-			ipbuf, sizeof(ipbuf));
-
-	if (req->sid.len != SID_SIZE) {
-		mslog(s, proc, LOG_DEBUG, "auth reinit from '%s' with no SID present", ip);
-	        return -1;
-        }
-
-	if (req->password == NULL) {
-		mslog(s, proc, LOG_DEBUG, "auth reinit from '%s' with no password present", ip);
-	        return -1;
-        }
-
-	/* search all procs for a matching SID */
-	list_for_each(&s->proc_list.head, ctmp, list) {
-		if (ctmp->status == PS_AUTH_ZOMBIE) {
-			if (memcmp(req->sid.data, ctmp->sid, SID_SIZE) == 0) {
-				/* replace sessions */
-				ctmp->pid = proc->pid;
-				ctmp->fd = proc->fd;
-				memcpy(&ctmp->remote_addr, &proc->remote_addr, proc->remote_addr_len);
-
-				proc->pid = -1;
-				proc->fd = -1;
-				proc->status = PS_AUTH_DEAD;
-				*_proc = proc = ctmp;
-				found = 1;
-				break;
-			}
-		}
-	}
-
-	if (found == 0) {
-		mslog_hex(s, proc, LOG_DEBUG, "auth reinit received but does not match any session with SID", req->sid.data, req->sid.len, 1);
-		return -1;
-	}
-
-	if (proc->auth_ctx == NULL) {
-		mslog(s, proc, LOG_ERR, "auth req but with no context!");
-		return -1;
-        }
-
-	mslog(s, proc, LOG_DEBUG, "auth reinit for user '%s' from '%s'", proc->username, ip);
-
-	return module->auth_pass(proc->auth_ctx, req->password, strlen(req->password));
-}
-
-int handle_auth_req(main_server_st *s, struct proc_st* proc,
-		    const AuthRequestMsg * req)
-{
-	if (proc->auth_ctx == NULL) {
-		mslog(s, proc, LOG_ERR, "auth req but with no context!");
-		return -1;
-        }
-	mslog(s, proc, LOG_DEBUG, "auth req for user '%s'", proc->username);
-
-	if (req->password == NULL)
-	        return -1;
-	        
-	return module->auth_pass(proc->auth_ctx, req->password, strlen(req->password));
 }
 
 /* Checks for multiple users. 
@@ -408,18 +301,12 @@ int check_multiple_users(main_server_st *s, struct proc_st* proc)
 struct proc_st *ctmp = NULL, *cpos;
 unsigned int entries = 1; /* that one */
 
+	if (s->config->max_same_clients == 0)
+		return 0;
+
 	list_for_each_safe(&s->proc_list.head, ctmp, cpos, list) {
 		if (ctmp != proc && ctmp->pid != -1) {
-			if (memcmp(proc->cookie, ctmp->cookie, sizeof(proc->cookie)) == 0) {
-				mslog(s, ctmp, LOG_DEBUG, "disconnecting '%s' due to new cookie connection", ctmp->username);
-
-				/* steal its leases */
-				proc->ipv4 = ctmp->ipv4;
-				proc->ipv6 = ctmp->ipv6;
-				ctmp->ipv4 = ctmp->ipv6 = NULL;
-
-				kill(ctmp->pid, SIGTERM);
-			} else if (strcmp(proc->username, ctmp->username) == 0) {
+			if (strcmp(proc->username, ctmp->username) == 0) {
 				entries++;
 			}
 		}
@@ -431,11 +318,3 @@ unsigned int entries = 1; /* that one */
 	return 0;
 }
 
-void proc_auth_deinit(main_server_st* s, struct proc_st* proc)
-{
-	mslog(s, proc, LOG_DEBUG, "auth deinit for user '%s'", proc->username);
-	if (proc->auth_ctx != NULL) {
-		module->auth_deinit(proc->auth_ctx);
-		proc->auth_ctx = NULL;
-	}
-}

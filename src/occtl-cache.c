@@ -10,7 +10,7 @@
  * the Free Software Foundation, either version 2 of the License, or
  * (at your option) any later version.
  *
- * GnuTLS is distributed in the hope that it will be useful, but
+ * ocserv is distributed in the hope that it will be useful, but
  * WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * General Public License for more details.
@@ -43,20 +43,20 @@ void entries_clear(void)
 unsigned i;
 
 	for (i=0;i<entries_size;i++) {
-		free(entries[i].user);
+		talloc_free(entries[i].user);
 		entries[i].user = 0;
 	}
 	entries_size = 0;
 }
 
-void entries_add(const char* user, unsigned user_size, unsigned id)
+void entries_add(void *pool, const char* user, unsigned user_size, unsigned id)
 {
 	if (entries_size+1 > max_entries_size) {
 		max_entries_size += 128;
-		entries = realloc(entries, sizeof(uid_entries_st)*max_entries_size);
+		entries = talloc_realloc_size(pool, entries, sizeof(uid_entries_st)*max_entries_size);
 	}
 	
-	entries[entries_size].user = strdup(user);
+	entries[entries_size].user = talloc_strdup(pool, user);
 	entries[entries_size].user_size = user_size;
 	entries[entries_size].id_size = 
 		snprintf(entries[entries_size].id, sizeof(entries[entries_size].id), "%u", id);

@@ -49,6 +49,14 @@ char *human_addr2(const struct sockaddr *sa, socklen_t salen,
 	if (getnameinfo(sa, salen, buf, buflen, NULL, 0, NI_NUMERICHOST) != 0)
 		return NULL;
 
+	if (salen == sizeof(struct sockaddr_in6)) {
+		char *p = strchr(buf, '%');
+		/* remove any zone info */
+		if (p != NULL) {
+			*p = 0;
+		}
+	}
+
 	if (full == 0)
 		goto finish;
 
@@ -110,7 +118,10 @@ void __attribute__ ((format(printf, 3, 4)))
 	va_end(args);
 
 	if (ip) {
-		syslog(priority, "worker: %s %s", ip, buf);
+		if (ws->username[0] == 0)
+			syslog(priority, "worker: %s %s", ip, buf);
+		else
+			syslog(priority, "worker[%s]: %s %s", ws->username, ip, buf);
 	} else {
 		syslog(priority, "worker: [unknown] %s", buf);
 	}
@@ -153,7 +164,10 @@ void __attribute__ ((format(printf, 4, 5)))
 	va_end(args);
 
 	if (ip) {
-		syslog(priority, "main: %s %s", ip, buf);
+		if (proc->username[0] == 0)
+			syslog(priority, "main: %s %s", ip, buf);
+		else
+			syslog(priority, "main[%s]: %s %s", proc->username, ip, buf);
 	} else {
 		syslog(priority, "main: %s", buf);
 	}
@@ -182,6 +196,31 @@ void  mslog_hex(const main_server_st * s, const struct proc_st* proc,
 	}
 
 	_mslog(s, proc, priority, "%s %s", prefix, buf);
+
+	return;
+}
+
+void  oclog_hex(const worker_st* ws, int priority,
+		const char *prefix, uint8_t* bin, unsigned bin_size, unsigned b64)
+{
+	char buf[512];
+	int ret;
+	size_t buf_size;
+	gnutls_datum_t data = {bin, bin_size};
+
+	if (priority == LOG_DEBUG && ws->config->debug == 0)
+		return;
+
+	if (b64) {
+		base64_encode((char*)bin, bin_size, (char*)buf, sizeof(buf));
+	} else {
+		buf_size = sizeof(buf);
+		ret = gnutls_hex_encode(&data, buf, &buf_size);
+		if (ret < 0)
+			return;
+	}
+
+	_oclog(ws, priority, "%s %s", prefix, buf);
 
 	return;
 }

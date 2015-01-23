@@ -22,6 +22,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <sys/types.h>
+#include <sys/uio.h>
 #include <sys/select.h>
 #include <sys/wait.h>
 #include <fcntl.h>
@@ -29,6 +30,7 @@
 #include <netdb.h>
 #include <system.h>
 #include <errno.h>
+#include <limits.h>
 #include <sys/ioctl.h>
 #include <gnutls/gnutls.h>
 #include <gnutls/crypto.h>
@@ -41,15 +43,19 @@
 #include <sec-mod.h>
 #include <route-add.h>
 #include <ip-lease.h>
+#include <proc-search.h>
 #include <ipc.pb-c.h>
 #include <script-list.h>
+
+#ifdef HAVE_MALLOC_TRIM
+# include <malloc.h>
+#endif
 
 #include <vpn.h>
 #include <cookies.h>
 #include <tun.h>
 #include <main.h>
 #include <ccan/list/list.h>
-#include "pam.h"
 
 int set_tun_mtu(main_server_st * s, struct proc_st *proc, unsigned mtu)
 {
@@ -68,7 +74,7 @@ int set_tun_mtu(main_server_st * s, struct proc_st *proc, unsigned mtu)
 		return -1;
 
 	memset(&ifr, 0, sizeof(ifr));
-	snprintf(ifr.ifr_name, IFNAMSIZ, "%s", name);
+	strlcpy(ifr.ifr_name, name, IFNAMSIZ);
 	ifr.ifr_mtu = mtu;
 
 	ret = ioctl(fd, SIOCSIFMTU, &ifr);
@@ -79,6 +85,7 @@ int set_tun_mtu(main_server_st * s, struct proc_st *proc, unsigned mtu)
 		ret = -1;
 		goto fail;
 	}
+	proc->mtu = mtu;
 
 	ret = 0;
  fail:
@@ -86,14 +93,14 @@ int set_tun_mtu(main_server_st * s, struct proc_st *proc, unsigned mtu)
 	return ret;
 }
 
-int handle_script_exit(main_server_st * s, struct proc_st *proc, int code, unsigned need_sid)
+int handle_script_exit(main_server_st *s, struct proc_st *proc, int code)
 {
 	int ret;
 
 	if (code == 0) {
 		proc->status = PS_AUTH_COMPLETED;
 
-		ret = send_auth_reply(s, proc, AUTH_REPLY_MSG__AUTH__REP__OK, need_sid);
+		ret = send_cookie_auth_reply(s, proc, AUTH__REP__OK);
 		if (ret < 0) {
 			mslog(s, proc, LOG_ERR,
 			      "could not send auth reply cmd.");
@@ -107,7 +114,7 @@ int handle_script_exit(main_server_st * s, struct proc_st *proc, int code, unsig
 		      "failed authentication attempt for user '%s'",
 		      proc->username);
 		ret =
-		    send_auth_reply(s, proc, AUTH_REPLY_MSG__AUTH__REP__FAILED, need_sid);
+		    send_cookie_auth_reply(s, proc, AUTH__REP__FAILED);
 		if (ret < 0) {
 			mslog(s, proc, LOG_ERR,
 			      "could not send reply auth cmd.");
@@ -119,164 +126,206 @@ int handle_script_exit(main_server_st * s, struct proc_st *proc, int code, unsig
 
  fail:
 	/* we close the lease tun fd both on success and failure.
-	 * The parent doesn't need to keep the tunfd.
+	 * The parent doesn't need to keep the tunfd, and if it does,
+	 * it causes issues to client.
 	 */
-	if (proc->tun_lease.name[0] != 0) {
-		if (proc->tun_lease.fd >= 0)
-			close(proc->tun_lease.fd);
-		proc->tun_lease.fd = -1;
-	}
+	if (proc->tun_lease.fd >= 0)
+		close(proc->tun_lease.fd);
+	proc->tun_lease.fd = -1;
 
 	return ret;
 }
 
-static int read_additional_config_file(main_server_st * s, struct proc_st *proc,
-				       const char *file, const char *type)
+struct proc_st *new_proc(main_server_st * s, pid_t pid, int cmd_fd,
+			struct sockaddr_storage *remote_addr, socklen_t remote_addr_len,
+			uint8_t *sid, size_t sid_size)
 {
-	struct group_cfg_st cfg;
-	int ret;
-	unsigned i;
+struct proc_st *ctmp;
 
-	if (access(file, R_OK) == 0) {
-		mslog(s, proc, LOG_DEBUG, "Loading %s configuration '%s'", type,
-		      file);
+	ctmp = talloc_zero(s, struct proc_st);
+	if (ctmp == NULL)
+		return NULL;
 
-		ret = parse_group_cfg_file(s, file, &cfg);
-		if (ret < 0)
-			return ERR_READ_CONFIG;
+	ctmp->pid = pid;
+	ctmp->tun_lease.fd = -1;
+	ctmp->fd = cmd_fd;
+	set_cloexec_flag (cmd_fd, 1);
+	ctmp->conn_time = time(0);
 
-		if (cfg.routes_size > 0) {
-			if (proc->config.routes == NULL) {
-				proc->config.routes = cfg.routes;
-				proc->config.routes_size = cfg.routes_size;
+	memcpy(&ctmp->remote_addr, remote_addr, remote_addr_len);
+	ctmp->remote_addr_len = remote_addr_len;
 
-				cfg.routes = NULL;
-				cfg.routes_size = 0;
-			} else {
-				proc->config.routes =
-				    safe_realloc(proc->config.routes,
-						 (proc->config.routes_size +
-						  cfg.routes_size) *
-						 sizeof(proc->config.
-							routes[0]));
-				if (proc->config.routes == NULL)
-					return ERR_MEM;
+	list_add(&s->proc_list.head, &(ctmp->list));
+	put_into_cgroup(s, s->config->cgroup, pid);
+	s->active_clients++;
 
-				for (i = 0; i < cfg.routes_size; i++) {
-					proc->config.routes[proc->config.
-							    routes_size] =
-					    cfg.routes[i];
-					cfg.routes[i] = NULL;
-					proc->config.routes_size++;
-				}
+	return ctmp;
+}
+
+static
+int session_cmd(main_server_st * s, struct proc_st *proc, unsigned open)
+{
+	int sd, ret, e;
+	SecAuthSessionMsg ireq = SEC_AUTH_SESSION_MSG__INIT;
+	SecAuthSessionReplyMsg *msg = NULL;
+	unsigned type, i;
+	PROTOBUF_ALLOCATOR(pa, proc);
+
+	if (open)
+		type = SM_CMD_AUTH_SESSION_OPEN;
+	else
+		type = SM_CMD_AUTH_SESSION_CLOSE;
+
+	sd = socket(AF_UNIX, SOCK_STREAM, 0);
+	if (sd == -1) {
+		e = errno;
+		mslog(s, proc, LOG_ERR, "error opening unix socket (for sec-mod) %s",
+		      strerror(e));
+		return -1;
+	}
+
+	ret =
+	    connect(sd, (struct sockaddr *)&s->secmod_addr,
+		    s->secmod_addr_len);
+	if (ret < 0) {
+		e = errno;
+		close(sd);
+		mslog(s, proc, LOG_ERR,
+		      "error connecting to sec-mod socket '%s': %s",
+		      s->secmod_addr.sun_path, strerror(e));
+		return -1;
+	}
+
+	ireq.uptime = time(0)-proc->conn_time;
+	ireq.has_uptime = 1;
+	ireq.bytes_in = proc->bytes_in;
+	ireq.has_bytes_in = 1;
+	ireq.bytes_out = proc->bytes_out;
+	ireq.has_bytes_out = 1;
+	ireq.sid.data = proc->sid;
+	ireq.sid.len = sizeof(proc->sid);
+
+	mslog(s, proc, LOG_DEBUG, "sending msg %s to sec-mod", cmd_request_to_str(type));
+
+	ret = send_msg(proc, sd, type,
+		&ireq, (pack_size_func)sec_auth_session_msg__get_packed_size,
+		(pack_func)sec_auth_session_msg__pack);
+	if (ret < 0) {
+		close(sd);
+		mslog(s, proc, LOG_ERR,
+		      "error sending message to sec-mod socket '%s'",
+		      s->secmod_addr.sun_path);
+		return -1;
+	}
+
+	if (open) {
+		ret = recv_msg(proc, sd, SM_CMD_AUTH_SESSION_REPLY,
+		       (void *)&msg, (unpack_func) sec_auth_session_reply_msg__unpack);
+		close(sd);
+		if (ret < 0) {
+			mslog(s, proc, LOG_ERR, "error receiving auth reply message");
+			return ret;
+		}
+
+		if (msg->reply != AUTH__REP__OK) {
+			mslog(s, proc, LOG_INFO, "could not initiate session for '%s'", proc->username);
+			return -1;
+		}
+
+		/* fill in group_cfg_st */
+		if (msg->has_no_udp)
+			proc->config.no_udp = msg->no_udp;
+
+		if (msg->has_deny_roaming)
+			proc->config.deny_roaming = msg->deny_roaming;
+
+		if (msg->has_require_cert)
+			proc->config.require_cert = msg->require_cert;
+
+		if (msg->has_ipv6_prefix)
+			proc->config.ipv6_prefix = msg->ipv6_prefix;
+
+		if (msg->rx_per_sec)
+			proc->config.rx_per_sec = msg->rx_per_sec;
+		if (msg->tx_per_sec)
+			proc->config.tx_per_sec = msg->tx_per_sec;
+
+		if (msg->net_priority)
+			proc->config.net_priority = msg->net_priority;
+
+		if (msg->ipv4_net) {
+			proc->config.ipv4_network = talloc_strdup(proc, msg->ipv4_net);
+		}
+		if (msg->ipv4_netmask) {
+			proc->config.ipv4_netmask = talloc_strdup(proc, msg->ipv4_netmask);
+		}
+		if (msg->ipv6_net) {
+			proc->config.ipv6_network = talloc_strdup(proc, msg->ipv6_net);
+		}
+
+		if (msg->cgroup) {
+			proc->config.cgroup = talloc_strdup(proc, msg->cgroup);
+		}
+
+		if (msg->xml_config_file) {
+			proc->config.xml_config_file = talloc_strdup(proc, msg->xml_config_file);
+		}
+
+		if (msg->explicit_ipv4) {
+			proc->config.explicit_ipv4 = talloc_strdup(proc, msg->explicit_ipv4);
+		}
+
+		if (msg->explicit_ipv6) {
+			proc->config.explicit_ipv6 = talloc_strdup(proc, msg->explicit_ipv6);
+		}
+
+		if (msg->n_routes > 0) {
+			proc->config.routes = talloc_size(proc, sizeof(char*)*msg->n_routes);
+			for (i=0;i<msg->n_routes;i++) {
+				proc->config.routes[i] = talloc_strdup(proc, msg->routes[i]);
 			}
+			proc->config.routes_size = msg->n_routes;
 		}
 
-		if (proc->config.iroutes == NULL) {
-			proc->config.iroutes = cfg.iroutes;
-			proc->config.iroutes_size = cfg.iroutes_size;
-
-			cfg.iroutes = NULL;
-			cfg.iroutes_size = 0;
+		if (msg->n_iroutes > 0) {
+			proc->config.iroutes = talloc_size(proc, sizeof(char*)*msg->n_iroutes);
+			for (i=0;i<msg->n_iroutes;i++) {
+				proc->config.iroutes[i] = talloc_strdup(proc, msg->iroutes[i]);
+			}
+			proc->config.iroutes_size = msg->n_iroutes;
 		}
 
-		if (proc->config.dns == NULL) {
-			proc->config.dns = cfg.dns;
-			proc->config.dns_size = cfg.dns_size;
-
-			cfg.dns = NULL;
-			cfg.dns_size = 0;
+		if (msg->n_dns > 0) {
+			proc->config.dns = talloc_size(proc, sizeof(char*)*msg->n_dns);
+			for (i=0;i<msg->n_dns;i++) {
+				proc->config.dns[i] = talloc_strdup(proc, msg->dns[i]);
+			}
+			proc->config.dns_size = msg->n_dns;
 		}
 
-		if (proc->config.nbns == NULL) {
-			proc->config.nbns = cfg.nbns;
-			proc->config.nbns_size = cfg.nbns_size;
-
-			cfg.nbns = NULL;
-			cfg.nbns_size = 0;
+		if (msg->n_nbns > 0) {
+			proc->config.nbns = talloc_size(proc, sizeof(char*)*msg->n_nbns);
+			for (i=0;i<msg->n_nbns;i++) {
+				proc->config.nbns[i] = talloc_strdup(proc, msg->nbns[i]);
+			}
+			proc->config.nbns_size = msg->n_nbns;
 		}
-
-		if (proc->config.ipv4_network == NULL) {
-			proc->config.ipv4_network = cfg.ipv4_network;
-			cfg.ipv4_network = NULL;
-		}
-
-		if (proc->config.ipv6_network == NULL) {
-			proc->config.ipv6_network = cfg.ipv6_network;
-			cfg.ipv6_network = NULL;
-		}
-
-		if (proc->config.ipv4_netmask == NULL) {
-			proc->config.ipv4_netmask = cfg.ipv4_netmask;
-			cfg.ipv4_netmask = NULL;
-		}
-
-		if (proc->config.ipv6_netmask == NULL) {
-			proc->config.ipv6_netmask = cfg.ipv6_netmask;
-			cfg.ipv6_netmask = NULL;
-		}
-
-		if (proc->config.ipv6_prefix != 0) {
-			proc->config.ipv6_prefix = cfg.ipv6_prefix;
-		}
-
-		if (proc->config.cgroup == NULL) {
-			proc->config.cgroup = cfg.cgroup;
-			cfg.cgroup = NULL;
-		}
-
-		if (proc->config.rx_per_sec == 0) {
-			proc->config.rx_per_sec = cfg.rx_per_sec;
-		}
-
-		if (proc->config.tx_per_sec == 0) {
-			proc->config.tx_per_sec = cfg.tx_per_sec;
-		}
-
-		if (proc->config.net_priority == 0) {
-			proc->config.net_priority = cfg.net_priority;
-		}
-
-		del_additional_config(&cfg);
-
-	} else
-		mslog(s, proc, LOG_DEBUG, "No %s configuration for '%s'", type,
-		      proc->username);
+		sec_auth_session_reply_msg__free_unpacked(msg, &pa);
+	} else {
+		close(sd);
+	}
 
 	return 0;
 }
 
-static int read_additional_config(struct main_server_st *s,
-				  struct proc_st *proc)
+int session_open(main_server_st * s, struct proc_st *proc)
 {
-	char file[_POSIX_PATH_MAX];
-	int ret;
+	return session_cmd(s, proc, 1);
+}
 
-	memset(&proc->config, 0, sizeof(proc->config));
-
-	if (s->config->per_user_dir != NULL) {
-		snprintf(file, sizeof(file), "%s/%s", s->config->per_user_dir,
-			 proc->username);
-
-		ret = read_additional_config_file(s, proc, file, "user");
-		if (ret < 0)
-			return ret;
-	}
-
-	if (s->config->per_group_dir != NULL && proc->groupname[0] != 0) {
-		snprintf(file, sizeof(file), "%s/%s", s->config->per_group_dir,
-			 proc->groupname);
-
-		ret = read_additional_config_file(s, proc, file, "group");
-		if (ret < 0)
-			return ret;
-	}
-
-	if (proc->config.cgroup != NULL) {
-		put_into_cgroup(s, proc->config.cgroup, proc->pid);
-	}
-
-	return 0;
+int session_close(main_server_st * s, struct proc_st *proc)
+{
+	return session_cmd(s, proc, 0);
 }
 
 /* k: whether to kill the process
@@ -292,7 +341,14 @@ void remove_proc(main_server_st * s, struct proc_st *proc, unsigned k)
 		kill(proc->pid, SIGTERM);
 
 	remove_from_script_list(s, proc);
-	user_disconnected(s, proc);
+	if (proc->status == PS_AUTH_COMPLETED) {
+		user_disconnected(s, proc);
+	}
+
+	/* close any pending sessions */
+	if (proc->active_sid) {
+		session_close(s, proc);
+	}
 
 	/* close the intercomm fd */
 	if (proc->fd >= 0)
@@ -301,28 +357,23 @@ void remove_proc(main_server_st * s, struct proc_st *proc, unsigned k)
 	proc->pid = -1;
 
 	remove_iroutes(s, proc);
-	del_additional_config(&proc->config);
-
-	if (proc->auth_ctx != NULL)
-		proc_auth_deinit(s, proc);
 
 	if (proc->ipv4 || proc->ipv6)
 		remove_ip_leases(s, proc);
 
-	free(proc);
-}
+	/* expire any available cookies */
+	if (proc->cookie_ptr) {
+		proc->cookie_ptr->proc = NULL;
+		/* if we use session control and we closed the session we 
+		 * need to invalidate the cookie, so that a new session is 
+		 * used on the next connection */
+		proc->cookie_ptr->expiration = 1;
+	}
 
-void proc_to_zombie(main_server_st * s, struct proc_st *proc)
-{
-	proc->status = PS_AUTH_ZOMBIE;
+	close_tun(s, proc);
+	proc_table_del(s, proc);
 
-	mslog_hex(s, proc, LOG_INFO, "client disconnected, became zombie", proc->sid, sizeof(proc->sid), 1);
-
-	/* close the intercomm fd */
-	if (proc->fd >= 0)
-		close(proc->fd);
-	proc->fd = -1;
-	proc->pid = -1;
+	talloc_free(proc);
 }
 
 /* This is the function after which proc is populated */
@@ -331,8 +382,7 @@ static int accept_user(main_server_st * s, struct proc_st *proc, unsigned cmd)
 	int ret;
 	const char *group;
 
-	mslog(s, proc, LOG_DEBUG, "accepting user '%s'", proc->username);
-	proc_auth_deinit(s, proc);
+	mslog(s, proc, LOG_DEBUG, "accepting user");
 
 	/* check for multiple connections */
 	ret = check_multiple_users(s, proc);
@@ -341,13 +391,6 @@ static int accept_user(main_server_st * s, struct proc_st *proc, unsigned cmd)
 		      "user '%s' tried to connect more than %u times",
 		      proc->username, s->config->max_same_clients);
 		return ret;
-	}
-
-	ret = read_additional_config(s, proc);
-	if (ret < 0) {
-		mslog(s, proc, LOG_ERR,
-		      "error reading additional configuration");
-		return ERR_READ_CONFIG;
 	}
 
 	ret = open_tun(s, proc);
@@ -360,18 +403,9 @@ static int accept_user(main_server_st * s, struct proc_st *proc, unsigned cmd)
 	else
 		group = proc->groupname;
 
-	if (cmd == AUTH_REQ || cmd == AUTH_INIT || cmd == AUTH_REINIT) {
-		/* generate cookie */
-		ret = generate_cookie(s, proc);
-		if (ret < 0) {
-			return ret;
-		}
+	if (cmd == AUTH_COOKIE_REQ) {
 		mslog(s, proc, LOG_INFO,
-		      "user '%s' of group '%s' authenticated", proc->username,
-		      group);
-	} else if (cmd == AUTH_COOKIE_REQ) {
-		mslog(s, proc, LOG_INFO,
-		      "user '%s' of group '%s' re-authenticated (using cookie)",
+		      "user '%s' of group '%s' authenticated (using cookie)",
 		      proc->username, group);
 	} else {
 		mslog(s, proc, LOG_INFO,
@@ -396,31 +430,12 @@ static int accept_user(main_server_st * s, struct proc_st *proc, unsigned cmd)
  * @cmd: the command received
  * @result: the auth result
  */
-static int handle_auth_res(main_server_st * s, struct proc_st *proc,
+static int handle_cookie_auth_res(main_server_st *s, struct proc_st *proc,
 			   unsigned cmd, int result)
 {
 	int ret;
-	unsigned need_sid = 0;
-	unsigned can_cont = 1;
 
-	/* we use seeds only in AUTH_REINIT */
-	if (cmd == AUTH_REINIT)
-		need_sid = 1;
-
-	/* no point to allow ERR_AUTH_CONTINUE in cookie auth */
-	if (cmd == AUTH_COOKIE_REQ)
-		can_cont = 0;
-
-	if (can_cont != 0 && result == ERR_AUTH_CONTINUE) {
-		ret = send_auth_reply_msg(s, proc, need_sid);
-		if (ret < 0) {
-			proc->status = PS_AUTH_FAILED;
-			mslog(s, proc, LOG_ERR,
-			      "could not send reply auth cmd.");
-			return ret;
-		}
-		return 0;	/* wait for another command */
-	} else if (result == 0) {
+	if (result == 0) {
 		ret = accept_user(s, proc, cmd);
 		if (ret < 0) {
 			proc->status = PS_AUTH_FAILED;
@@ -429,8 +444,6 @@ static int handle_auth_res(main_server_st * s, struct proc_st *proc,
 		proc->status = PS_AUTH_COMPLETED;
 	} else if (result < 0) {
 		proc->status = PS_AUTH_FAILED;
-		add_to_ip_ban_list(s, &proc->remote_addr,
-				   proc->remote_addr_len);
 		ret = result;
 	} else {
 		proc->status = PS_AUTH_FAILED;
@@ -439,11 +452,14 @@ static int handle_auth_res(main_server_st * s, struct proc_st *proc,
 	}
 
  finished:
-	if (ret == ERR_WAIT_FOR_SCRIPT)
+	if (ret == ERR_WAIT_FOR_SCRIPT) {
+		/* we will wait for script termination to send our reply.
+		 * The notification of peer will be done in handle_script_exit().
+		 */
 		ret = 0;
-	else {
+	} else {
 		/* no script was called. Handle it as a successful script call. */
-		ret = handle_script_exit(s, proc, ret, need_sid);
+		ret = handle_script_exit(s, proc, ret);
 		if (ret < 0)
 			proc->status = PS_AUTH_FAILED;
 	}
@@ -456,13 +472,11 @@ int handle_commands(main_server_st * s, struct proc_st *proc)
 	struct iovec iov[3];
 	uint8_t cmd;
 	struct msghdr hdr;
-	AuthInitMsg *auth_init;
-	AuthReinitMsg *auth_reinit;
 	AuthCookieRequestMsg *auth_cookie_req;
-	AuthRequestMsg *auth_req;
 	uint16_t length;
 	uint8_t *raw;
 	int ret, raw_len, e;
+	PROTOBUF_ALLOCATOR(pa, proc);
 
 	iov[0].iov_base = &cmd;
 	iov[0].iov_len = 1;
@@ -496,7 +510,7 @@ int handle_commands(main_server_st * s, struct proc_st *proc)
 	mslog(s, proc, LOG_DEBUG, "main received message '%s' of %u bytes\n",
 	      cmd_request_to_str(cmd), (unsigned)length);
 
-	raw = malloc(length);
+	raw = talloc_size(proc, length);
 	if (raw == NULL) {
 		mslog(s, proc, LOG_ERR, "memory error");
 		return ERR_MEM;
@@ -523,7 +537,7 @@ int handle_commands(main_server_st * s, struct proc_st *proc)
 				goto cleanup;
 			}
 
-			tmsg = tun_mtu_msg__unpack(NULL, raw_len, raw);
+			tmsg = tun_mtu_msg__unpack(&pa, raw_len, raw);
 			if (tmsg == NULL) {
 				mslog(s, proc, LOG_ERR, "error unpacking data");
 				ret = ERR_BAD_COMMAND;
@@ -532,14 +546,38 @@ int handle_commands(main_server_st * s, struct proc_st *proc)
 
 			set_tun_mtu(s, proc, tmsg->mtu);
 
-			tun_mtu_msg__free_unpacked(tmsg, NULL);
+			tun_mtu_msg__free_unpacked(tmsg, &pa);
+		}
+
+		break;
+	case CMD_CLI_STATS:{
+			CliStatsMsg *tmsg;
+
+			if (proc->status != PS_AUTH_COMPLETED) {
+				mslog(s, proc, LOG_ERR,
+				      "received CLI STATS in unauthenticated state.");
+				ret = ERR_BAD_COMMAND;
+				goto cleanup;
+			}
+
+			tmsg = cli_stats_msg__unpack(&pa, raw_len, raw);
+			if (tmsg == NULL) {
+				mslog(s, proc, LOG_ERR, "error unpacking data");
+				ret = ERR_BAD_COMMAND;
+				goto cleanup;
+			}
+
+			proc->bytes_in = tmsg->bytes_in;
+			proc->bytes_out = tmsg->bytes_out;
+
+			cli_stats_msg__free_unpacked(tmsg, &pa);
 		}
 
 		break;
 	case CMD_SESSION_INFO:{
 			SessionInfoMsg *tmsg;
 
-			tmsg = session_info_msg__unpack(NULL, raw_len, raw);
+			tmsg = session_info_msg__unpack(&pa, raw_len, raw);
 			if (tmsg == NULL) {
 				mslog(s, proc, LOG_ERR, "error unpacking data");
 				ret = ERR_BAD_COMMAND;
@@ -547,20 +585,22 @@ int handle_commands(main_server_st * s, struct proc_st *proc)
 			}
 
 			if (tmsg->tls_ciphersuite)
-				snprintf(proc->tls_ciphersuite,
-					 sizeof(proc->tls_ciphersuite), "%s",
-					 tmsg->tls_ciphersuite);
+				strlcpy(proc->tls_ciphersuite, tmsg->tls_ciphersuite,
+					 sizeof(proc->tls_ciphersuite));
 			if (tmsg->dtls_ciphersuite)
-				snprintf(proc->dtls_ciphersuite,
-					 sizeof(proc->dtls_ciphersuite), "%s",
-					 tmsg->dtls_ciphersuite);
+				strlcpy(proc->dtls_ciphersuite, tmsg->dtls_ciphersuite,
+					 sizeof(proc->dtls_ciphersuite));
+			if (tmsg->cstp_compr)
+				strlcpy(proc->cstp_compr, tmsg->cstp_compr,
+					 sizeof(proc->cstp_compr));
+			if (tmsg->dtls_compr)
+				strlcpy(proc->dtls_compr, tmsg->dtls_compr,
+					 sizeof(proc->dtls_compr));
 			if (tmsg->user_agent)
-				snprintf(proc->user_agent,
-					 sizeof(proc->user_agent), "%s",
-					 tmsg->user_agent);
+				strlcpy(proc->user_agent, tmsg->user_agent,
+					 sizeof(proc->user_agent));
 
-			session_info_msg__free_unpacked(tmsg, NULL);
-
+			session_info_msg__free_unpacked(tmsg, &pa);
 		}
 
 		break;
@@ -568,7 +608,7 @@ int handle_commands(main_server_st * s, struct proc_st *proc)
 			SessionResumeStoreReqMsg *smsg;
 
 			smsg =
-			    session_resume_store_req_msg__unpack(NULL, raw_len,
+			    session_resume_store_req_msg__unpack(&pa, raw_len,
 								 raw);
 			if (smsg == NULL) {
 				mslog(s, proc, LOG_ERR, "error unpacking data");
@@ -578,7 +618,11 @@ int handle_commands(main_server_st * s, struct proc_st *proc)
 
 			ret = handle_resume_store_req(s, proc, smsg);
 
-			session_resume_store_req_msg__free_unpacked(smsg, NULL);
+			/* zeroize the data */
+			safe_memset(raw, 0, raw_len);
+			safe_memset(smsg->session_data.data, 0, smsg->session_data.len);
+
+			session_resume_store_req_msg__free_unpacked(smsg, &pa);
 
 			if (ret < 0) {
 				mslog(s, proc, LOG_DEBUG,
@@ -592,7 +636,7 @@ int handle_commands(main_server_st * s, struct proc_st *proc)
 			SessionResumeFetchMsg *fmsg;
 
 			fmsg =
-			    session_resume_fetch_msg__unpack(NULL, raw_len,
+			    session_resume_fetch_msg__unpack(&pa, raw_len,
 							     raw);
 			if (fmsg == NULL) {
 				mslog(s, proc, LOG_ERR, "error unpacking data");
@@ -602,7 +646,7 @@ int handle_commands(main_server_st * s, struct proc_st *proc)
 
 			ret = handle_resume_delete_req(s, proc, fmsg);
 
-			session_resume_fetch_msg__free_unpacked(fmsg, NULL);
+			session_resume_fetch_msg__free_unpacked(fmsg, &pa);
 
 			if (ret < 0) {
 				mslog(s, proc, LOG_DEBUG,
@@ -617,8 +661,15 @@ int handle_commands(main_server_st * s, struct proc_st *proc)
 			    SESSION_RESUME_REPLY_MSG__INIT;
 			SessionResumeFetchMsg *fmsg;
 
+			if (proc->resume_reqs > 0) {
+				mslog(s, proc, LOG_ERR, "too many resumption requests");
+				ret = ERR_BAD_COMMAND;
+				goto cleanup;
+			}
+			proc->resume_reqs++;
+
 			fmsg =
-			    session_resume_fetch_msg__unpack(NULL, raw_len,
+			    session_resume_fetch_msg__unpack(&pa, raw_len,
 							     raw);
 			if (fmsg == NULL) {
 				mslog(s, proc, LOG_ERR, "error unpacking data");
@@ -628,7 +679,7 @@ int handle_commands(main_server_st * s, struct proc_st *proc)
 
 			ret = handle_resume_fetch_req(s, proc, fmsg, &msg);
 
-			session_resume_fetch_msg__free_unpacked(fmsg, NULL);
+			session_resume_fetch_msg__free_unpacked(fmsg, &pa);
 
 			if (ret < 0) {
 				msg.reply =
@@ -659,104 +710,6 @@ int handle_commands(main_server_st * s, struct proc_st *proc)
 
 		break;
 
-	case AUTH_INIT:
-		if (proc->status != PS_AUTH_INACTIVE) {
-			mslog(s, proc, LOG_ERR,
-			      "received authentication init when complete.");
-			ret = ERR_BAD_COMMAND;
-			goto cleanup;
-		}
-
-		auth_init = auth_init_msg__unpack(NULL, raw_len, raw);
-		if (auth_init == NULL) {
-			mslog(s, proc, LOG_ERR, "error unpacking data");
-			ret = ERR_BAD_COMMAND;
-			goto cleanup;
-		}
-
-		ret = handle_auth_init(s, proc, auth_init);
-
-		auth_init_msg__free_unpacked(auth_init, NULL);
-
-		proc->status = PS_AUTH_INIT;
-
-		ret = handle_auth_res(s, proc, cmd, ret);
-		if (ret < 0) {
-			goto cleanup;
-		}
-
-		break;
-
-	case AUTH_REINIT:
-		if (proc->status != PS_AUTH_INACTIVE
-		    || s->config->cisco_client_compat == 0) {
-			mslog(s, proc, LOG_ERR,
-			      "received authentication reinit when complete.");
-			ret = ERR_BAD_COMMAND;
-			goto cleanup;
-		}
-
-		auth_reinit = auth_reinit_msg__unpack(NULL, raw_len, raw);
-		if (auth_reinit == NULL) {
-			mslog(s, proc, LOG_ERR, "error unpacking data");
-			ret = ERR_BAD_COMMAND;
-			goto cleanup;
-		}
-
-		/* note that it may replace proc on success */
-		ret = handle_auth_reinit(s, &proc, auth_reinit);
-
-		auth_reinit_msg__free_unpacked(auth_reinit, NULL);
-
-		proc->status = PS_AUTH_INIT;
-
-		ret = handle_auth_res(s, proc, cmd, ret);
-		if (ret < 0) {
-			goto cleanup;
-		}
-
-		/* handle_auth_reinit() has succeeded so the current proc
-		 * is in dead state and unused. Terminate it.
-		 */
-		ret = ERR_WORKER_TERMINATED;
-		goto cleanup;
-
-	case AUTH_REQ:
-		if (proc->status != PS_AUTH_INIT) {
-			mslog(s, proc, LOG_ERR,
-			      "received authentication request when not initialized.");
-			ret = ERR_BAD_COMMAND;
-			goto cleanup;
-		}
-
-		proc->auth_reqs++;
-		if (proc->auth_reqs > MAX_AUTH_REQS) {
-			mslog(s, proc, LOG_ERR,
-			      "received too many authentication requests.");
-			ret = ERR_BAD_COMMAND;
-			goto cleanup;
-		}
-
-		auth_req = auth_request_msg__unpack(NULL, raw_len, raw);
-		if (auth_req == NULL) {
-			mslog(s, proc, LOG_ERR, "error unpacking data");
-			ret = ERR_BAD_COMMAND;
-			goto cleanup;
-		}
-
-		ret = handle_auth_req(s, proc, auth_req);
-
-		auth_request_msg__free_unpacked(auth_req, NULL);
-
-		proc->status = PS_AUTH_INIT;
-
-		ret = handle_auth_res(s, proc, cmd, ret);
-		if (ret < 0) {
-			goto cleanup;
-		}
-
-		break;
-
 	case AUTH_COOKIE_REQ:
 		if (proc->status != PS_AUTH_INACTIVE) {
 			mslog(s, proc, LOG_ERR,
@@ -766,7 +719,7 @@ int handle_commands(main_server_st * s, struct proc_st *proc)
 		}
 
 		auth_cookie_req =
-		    auth_cookie_request_msg__unpack(NULL, raw_len, raw);
+		    auth_cookie_request_msg__unpack(&pa, raw_len, raw);
 		if (auth_cookie_req == NULL) {
 			mslog(s, proc, LOG_ERR, "error unpacking data");
 			ret = ERR_BAD_COMMAND;
@@ -775,9 +728,12 @@ int handle_commands(main_server_st * s, struct proc_st *proc)
 
 		ret = handle_auth_cookie_req(s, proc, auth_cookie_req);
 
-		auth_cookie_request_msg__free_unpacked(auth_cookie_req, NULL);
+		safe_memset(raw, 0, raw_len);
+		safe_memset(auth_cookie_req->cookie.data, 0, auth_cookie_req->cookie.len);
 
-		ret = handle_auth_res(s, proc, cmd, ret);
+		auth_cookie_request_msg__free_unpacked(auth_cookie_req, &pa);
+
+		ret = handle_cookie_auth_res(s, proc, cmd, ret);
 		if (ret < 0) {
 			goto cleanup;
 		}
@@ -792,123 +748,42 @@ int handle_commands(main_server_st * s, struct proc_st *proc)
 
 	ret = 0;
  cleanup:
-	free(raw);
+	talloc_free(raw);
 
 	return ret;
-}
-
-int check_if_banned(main_server_st * s, struct sockaddr_storage *addr,
-		    socklen_t addr_len)
-{
-	time_t now = time(0);
-	struct banned_st *btmp = NULL, *bpos;
-
-	if (s->config->min_reauth_time == 0)
-		return 0;
-
-	list_for_each_safe(&s->ban_list.head, btmp, bpos, list) {
-		if (now - btmp->failed_time > s->config->min_reauth_time) {
-			/* invalid entry. Clean it up */
-			list_del(&btmp->list);
-			free(btmp);
-		} else {
-			if (SA_IN_SIZE(btmp->addr_len) == SA_IN_SIZE(addr_len)
-			    &&
-			    memcmp(SA_IN_P_GENERIC(&btmp->addr, btmp->addr_len),
-				   SA_IN_P_GENERIC(addr, addr_len),
-				   SA_IN_SIZE(btmp->addr_len)) == 0) {
-				return -1;
-			}
-		}
-	}
-
-	return 0;
-}
-
-void expire_banned(main_server_st * s)
-{
-	time_t now = time(0);
-	struct banned_st *btmp = NULL, *bpos;
-
-	if (s->config->min_reauth_time == 0)
-		return;
-
-	list_for_each_safe(&s->ban_list.head, btmp, bpos, list) {
-		if (now - btmp->failed_time > s->config->min_reauth_time) {
-			/* invalid entry. Clean it up */
-			list_del(&btmp->list);
-			free(btmp);
-		}
-	}
-
-	return;
-}
-
-void add_to_ip_ban_list(main_server_st * s, struct sockaddr_storage *addr,
-			socklen_t addr_len)
-{
-	struct banned_st *btmp;
-
-	if (s->config->min_reauth_time == 0)
-		return;
-
-	btmp = malloc(sizeof(*btmp));
-	if (btmp == NULL)
-		return;
-
-	btmp->failed_time = time(0);
-	memcpy(&btmp->addr, addr, addr_len);
-	btmp->addr_len = addr_len;
-
-	list_add(&s->ban_list.head, &(btmp->list));
-}
-
-void expire_zombies(main_server_st * s)
-{
-	time_t now = time(0);
-	struct proc_st *ctmp = NULL, *cpos;
-
-	if (s->config->cisco_client_compat == 0)
-		return;
-
-	/* In CISCO compatibility mode we could have proc_st in
-	 * mode INACTIVE or ZOMBIE that need to be cleaned up.
-	 */
-	list_for_each_safe(&s->proc_list.head, ctmp, cpos, list) {
-		if ((ctmp->status == PS_AUTH_ZOMBIE || ctmp->status == PS_AUTH_DEAD) &&
-		    now - ctmp->conn_time > MAX_ZOMBIE_SECS) {
-			remove_proc(s, ctmp, 0);
-		}
-	}
-
-	return;
 }
 
 void run_sec_mod(main_server_st * s)
 {
 	int e;
 	pid_t pid;
-	char file[_POSIX_PATH_MAX];
 	const char *p;
 
 	/* make socket name */
 	snprintf(s->socket_file, sizeof(s->socket_file), "%s.%u",
 		 s->config->socket_file_prefix, (unsigned)getpid());
-	p = s->socket_file;
+
 	if (s->config->chroot_dir != NULL) {
-		snprintf(file, sizeof(file), "%s/%s.%u",
-			 s->config->chroot_dir, s->config->socket_file_prefix,
-			 (unsigned)getpid());
-		p = file;
+		snprintf(s->full_socket_file, sizeof(s->full_socket_file), "%s/%s",
+			 s->config->chroot_dir, s->socket_file);
+	} else {
+		strlcpy(s->full_socket_file, s->socket_file, sizeof(s->full_socket_file));
 	}
+	p = s->full_socket_file;
 
 	pid = fork();
 	if (pid == 0) {		/* child */
 		clear_lists(s);
 		kill_on_parent_kill(SIGTERM);
+
+#ifdef HAVE_MALLOC_TRIM
+		/* try to return all the pages we've freed to
+		 * the operating system. */
+		malloc_trim(0);
+#endif
 		setproctitle(PACKAGE_NAME "-secmod");
 
-		sec_mod_server(s->config, p);
+		sec_mod_server(s->main_pool, s->config, p, s->cookie_key);
 		exit(0);
 	} else if (pid > 0) {	/* parent */
 		s->sec_mod_pid = pid;
@@ -932,7 +807,7 @@ void put_into_cgroup(main_server_st * s, const char *_cgroup, pid_t pid)
 
 #ifdef __linux__
 	/* format: cpu,memory:cgroup-name */
-	snprintf(cgroup, sizeof(cgroup), "%s", _cgroup);
+	strlcpy(cgroup, _cgroup, sizeof(cgroup));
 
 	name = strchr(cgroup, ':');
 	if (name == NULL) {
