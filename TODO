@@ -1,26 +1,15 @@
 Short term items:
 
-* Add support for libubus
-
-* Think for ways for ocserv to co-exist on the same system with
-  an HTTPS server (while sharing the same port).
-
-* More elaborate checks on "make check". Currently we test whether a
-  cookie can be obtained, but not whether a TUN devices is created or
-  data can be transfered. Need more ideas on how that can be done.
+* Use the UDP address to report the client's IP when sniproxy or haproxy
+  are being used.
 
 * When a user (IP) gets into the BAN list multiple times, disable it for
   longer time (or should we drop this functionality altogether and rely
   on PAM handling that?)
 
-* Change into hashtables the lists that are used during a client
-  connection.
+* Add support for memcached, to allow sharing server state.
 
 * Give each worker a limited number of accesses to the security module.
-
-* Switch to a fork-then-exec mode to reduce memory usage on workers.
-
-* Use talloc in main process to simplify the release of resources.
 
 Long term items:
 
@@ -29,12 +18,16 @@ Long term items:
   but that would require a new protocol to be implemented in openconnect
   client and ocserv. 
 
-* Certificate authentication to the main process. Possibly that is just
+* Certificate authentication to the security module. Possibly that is just
   wishful thinking. To verify the TLS client certificate verify signature 
-  packet one needs instead of the signature, the contents of all the handshake 
-  messages, and knowledge of the negotiated TLS version, in addition to being 
+  one needs in addition to the signature, the contents of all the handshake 
+  messages, and knowledge of the negotiated TLS version, as well as being 
   able to select the server hello random. That could be done sanely only if 
   gnutls provided facilities to set the server hello random, and override the 
   client signature verification at an early stage before data are hashed 
   (to verify that the set random value was present in the handshake).
+  However, the complexity required to implement that may in fact reduce
+  security rather than increase it.
 
+* Allow for a non-root mode where all networking is handled using something
+  like slirp (e.g., https://github.com/SPICE/slirp)

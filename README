@@ -17,20 +17,22 @@ Optional dependencies that enable specific functionality:
 * TCP wrappers: libwrap0-dev       / tcp_wrappers-devel
 * PAM:          libpam0g-dev       / pam-devel
 * seccomp:      libseccomp-dev     / libseccomp-devel
-* occtl:        libdbus-1-dev      / dbus-devel
-                libreadline-dev    / readline-devel
+* occtl:        libreadline-dev    / readline-devel
                 libnl-route-3-dev  / libnl3-devel
 
-Dependencies that can be skipped in an embedded system:
-(a replacement library is included)
+Dependencies for development, or dependencies that can be skipped
+in an embedded system (e.g., because a replacement library is included):
 
 libprotobuf-c0-dev / protobuf-c-devel
 libhttp-parser-dev / http-parser-devel
 libpcl1-dev        / pcllib-devel
 libopts25-dev      / autogen-libopts-devel
 autogen            / autogen
+protobuf-c         / protobuf-c
 
 
+See doc/README.radius for more information on Radius
+dependencies and its configuration.
 
 === Build instructions ===
 
@@ -40,10 +42,6 @@ $ ./configure && make
 
 When cross compiling it may be useful to add the --enable-local-libopts
 option to configure.
-
-To prevent ocserv's worker process from executing non authorized system 
-calls you may compile ocserv with the --enable-seccomp option. That is 
-currently experimental and not enabled by default.
 
 
 To build from the git repository use:

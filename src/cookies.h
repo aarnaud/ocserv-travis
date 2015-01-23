@@ -22,24 +22,30 @@
 #define COOKIES_H
 
 #include <vpn.h>
-
-struct __attribute__ ((__packed__)) stored_cookie_st {
-	char username[MAX_USERNAME_SIZE];
-	char groupname[MAX_GROUPNAME_SIZE];
-	char hostname[MAX_HOSTNAME_SIZE];
-	uint8_t session_id[GNUTLS_MAX_SESSION_ID];
-	uint32_t expiration;
-	
-	uint8_t ipv4_seed[4];
-};
+#include <main.h>
+#include <ipc.pb-c.h>
 
 #define COOKIE_IV_SIZE 12 /* AES-GCM */
 #define COOKIE_MAC_SIZE 12 /* 96-bits of AES-GCM */
-#define COOKIE_SIZE (COOKIE_IV_SIZE + sizeof(struct stored_cookie_st) + COOKIE_MAC_SIZE)
 
-int encrypt_cookie(struct main_server_st * s, const struct stored_cookie_st* sc,
-			uint8_t* cookie, unsigned cookie_size);
-int decrypt_cookie(struct main_server_st * s, const uint8_t* cookie, unsigned cookie_size, 
-			struct stored_cookie_st* sc);
+/* The time after a disconnection the cookie is valid */
+#define DEFAULT_COOKIE_RECON_TIMEOUT 120
+
+int encrypt_cookie(void *pool, gnutls_datum_t *key, const Cookie *msg,
+        uint8_t** ecookie, unsigned *ecookie_size);
+int decrypt_cookie(ProtobufCAllocator *pa, gnutls_datum_t *key,
+			uint8_t *cookie, unsigned cookie_size, 
+			Cookie **msg);
+
+void cookie_db_init(void *pool, struct cookie_entry_db_st* db);
+void cookie_db_deinit(struct cookie_entry_db_st* db);
+void expire_cookies(struct cookie_entry_db_st* db);
+struct cookie_entry_st *new_cookie_entry(struct cookie_entry_db_st* db, proc_st *proc, void *cookie, unsigned cookie_size);
+struct cookie_entry_st *find_cookie_entry(struct cookie_entry_db_st* db, void *cookie, unsigned cookie_len);
+
+inline static void revive_cookie(struct cookie_entry_st * e)
+{
+	e->expiration = -1;
+}
 
 #endif

@@ -1,4 +1,180 @@
+* Version 0.9.0 (released 2015-01-20)
+- Added native support for radius. That adds the new auth configuration
+  option "radius", which has as parameters the freeradius-client
+  configuration file and optionally the groupconfig option which
+  instructs to read configuration from radius; the stats-report-time
+  option enables interim-updates. That adds the dependency to
+  freeradius-client (see doc/README.radius).
+- Reply using the same address that received UDP packets are sent.
+- Simplify the input of IPv6 network addresses.
+- Use a separate IPC and PID namespace in Linux systems for worker
+  processes. That effectively puts each worker process in a separate
+  container. This can be enabled at compile time using --enable-linux-namespaces.
+- Configuration option 'use-seccomp' was replaced by 'isolate-workers',
+  which in addition to seccomp it enables the Linux namespaces restrictions.
+- Added support for stateless compression using LZ4 and LZS. This
+  is disabled by default. 
+
+
+* Version 0.8.9 (released 2014-12-10)
+- Added configuration option 'listen-host-is-dyndns'. That,
+  if set, notifies the client with "X-CSTP-DynDNS: true", in
+  CSTP headers.
+- When a client's IP is re-used by the same client connecting with
+  the cookie (e.g., when roaming), call the disconnect script.
+
+
+* Version 0.8.8 (released 2014-11-22)
+- When selecting a DTLS ciphersuite, try to match the TLS ciphersuite
+  if possible.
+- Use consistent ciphersuite names in occtl for TLS and DTLS
+- Report the user's name on log messages.
+- UDP session initialization utilizes hash tables to speed up the
+  finding the corresponding TCP/TLS session.
+- A new DTLS session ID will be generated for each connection. That
+  allows openconnect client to figure when a DTLS reconnection is
+  required (in the cases where the TCP/TLS session was disconnected).
+
+
+* Version 0.8.7 (released 2014-10-26)
+- Networking sockets were switched to non-blocking in worker process.
+- Fixed a crash when session control is enabled but not password
+  authentication. Reported by George Panda.
+
+
+* Version 0.8.6 (released 2014-10-05)
+- Fixes in socket handling
+
+
+* Version 0.8.5 (released 2014-10-03)
+- The comparison of XML fields is now case insensitive; that
+  addresses issues with some anyconnect clients (report and fix
+  by sskaje).
+- fixed an infinite loop when asking for group if the default group
+  is selected.
+- Added the listen-clear-file configuration option. That allows obtaining
+  plaintext HTTP sessions through a unix domain socket. That is useful
+  when combined with a forwarder HTTPS server like nginx, nxweb or haproxy.
+- Added the certificate[optional] auth configuration option. That option
+  allows to require certificate authentication in a subset of users.
+- Reverted license to GPLv2.
+
+
+* Version 0.8.4 (released 2014-08-27)
+- The bundled protobuf-c was updated to 1.0.1.
+- Fixed a crash in the work-around for the infinite loop.
+
+
+* Version 0.8.3 (released 2014-08-23)
+- user-profile is allowed in per-user configuration.
+- Allow partial match of /profiles.
+- Fixes in the worker process main loop.
+- Fixed uid check in *BSD systems; reported by Kalle Carlbark.
+- Added work-around for a possible infinite loop that could occur in
+  DTLS mode.
+
+
+* Version 0.8.2 (released 2014-07-26)
+- Solved issue with pid file being overwritten on server reload.
+- pam: reduced memory usage.
+
+
+* Version 0.8.1 (released 2014-06-28)
+
+- Fix endianess issue with internal messages.
+- FreeBSD system fixes, contributed by Brian Chu.
+- Added openconnect 3.20 compatibility.
+- Added support for session control (in PAM or any other potential
+  authentication methods). That feature is disabled by default as it
+  requires the security module to keep state for each connected user.
+- Corrected escaping of URL-encoded passwords. Patch by Hexchain Tong.
+- Fix issue which prevented reading the selected group from AnyConnect
+  clients.
+- Allow prompting the user for group selection when groups are available
+  in the certificate.
+- Forward the appropriate DNS and NBNS values when using a per-user/group
+  config. Reported by sskaje.
+- Seccomp is now compiled-in by default, and can be enabled at runtime.
+- ocpasswd: Added --delete parameter.
+
+
+* Version 0.8.0 (released 2014-05-31)
+- By default unix sockets are being used for the communication with
+  occtl, instead of D-BUS. That allows for occtl to connect to any
+  of the running servers in the system, by specifying '-s' and the
+  server's occtl socket file.
+- Ocserv was modified to utilize talloc, the samba allocation
+  library which can prevent memory leaks on the main server. As
+  this is not a memory intensive server the overhead should not be
+  significant.
+- Ocserv was refactored and user authentication was moved to the security
+  module. That ensures that there can be no critical memory leaks to
+  the worker process.
+- Added the default-user-config and default-group-config configuration
+  options. These allow setting a configuration file that will be loaded
+  if a user-specific or group-specific configuration file isn't found.
+- Added the predictable-ips configuration option. That option allows
+  to disable the default "stable" IP assignment, and use completely
+  random assignment.
+- The 'select-group' and 'auto-select-group' configuration directives were
+  added; select-group accepts groups that a connecting client will be
+  prompted to select from. Additionally a client with a certificate that
+  contains multiple groups will also be prompted to select one.
+- The 'route' configuration directive accepts the keyword 'default',
+  and will return a default route irrespective of any other route
+  directives. That allows overriding existing routes with a default
+  route for specific users and groups.
+- The cookies can be limited to the specific IP they were granted to.
+- Cookies are now valid during the whole connection period + a timeout
+  value after disconnection. That deprecates the cookie-validity config
+  option and introduces the cookie-timeout option.
+- Added the proxy-url configuration option to allow sending a proxy URL.
+- License was upgraded to GPLv3.
+
+
+* Version 0.3.6 (released 2014-05-24)
+
+- Use a variant of memset() that cannot be optimized out while
+  overwritting critical parameters.
+
+
+* Version 0.3.5 (released 2014-05-08)
+
+- Corrected issue in the stats reporting for resumed processes and
+  modified its sending to be periodically, in addition to the worker
+  process termination time (adds the new config file variable
+  stats-send-time).
+- Added the STATS_DURATION script environment variable which reports
+  the duration of the session in seconds.
+
+
+* Version 0.3.4 (released 2014-05-01)
+
+- Execute disconnect script for users that their IP was hijacked by a
+  cookie reconnection.
+- Several small bug fixes found by coverity.
+- When receiving unexpected UDP packets, check if they match a known IP and
+  forward them appropriately.
+- The disconnect script will now receive the STATS_BYTES_IN and
+  STATS_BYTES_OUT variables that contain the number of bytes transferred
+  from the TUN device.
+- Fix segmentation fault during worker process exit when seccomp
+  is enabled.
+
+
+* Version 0.3.3 (released 2014-04-08)
+
+- When sending IPv6 link-local addresses to peer do not include the
+  zone-info.
+- MTU calculations are now based on X-CSTP-Base-MTU which provides a
+  reasonable value that doesn't depend on the negotiated ciphersuite.
+- No longer send IPv6 information to CISCO clients that may not be able
+  to handle it.
+- Updated CRL support and documentation.
+
+
 * Version 0.3.2 (released 2014-03-13)
+
 - Allow a number of retries (3) in plain password authentication.
 - Added doc/profile.xml to the distribution.
 - ocserv's '-d' option accepts a numeric argument (0-9) that gradualy
@@ -19,6 +195,7 @@
 
 
 * Version 0.3.1 (released 2014-02-16)
+
 - Corrected decoding of cookies. That will prevent issues where
   the server is unable to parse client cookies.
 - Changed the method X-CSTP-MTU is taken into account to avoid

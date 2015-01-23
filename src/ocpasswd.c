@@ -8,7 +8,7 @@
  * the Free Software Foundation, either version 2 of the License, or
  * (at your option) any later version.
  *
- * GnuTLS is distributed in the hope that it will be useful, but
+ * ocserv is distributed in the hope that it will be useful, but
  * WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * General Public License for more details.
@@ -23,6 +23,9 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdint.h>
+#ifndef _XOPEN_SOURCE
+# define _XOPEN_SOURCE
+#endif
 #include <unistd.h>
 #include <gnutls/gnutls.h>
 #include <gnutls/crypto.h>	/* for random */
@@ -66,9 +69,12 @@ crypt_int(const char *fpasswd, const char *username, const char *groupname,
 		exit(1);
 	}
 
-	memset(salt, 0, sizeof(salt));
-	p = salt;
-	p += snprintf(salt, sizeof(salt), "$5$");
+#ifdef TRY_SHA2_CRYPT
+	strcpy(salt, "$5$");
+#else
+	strcpy(salt, "$1$");
+#endif
+	p = salt + 3;
 
 	for (i = 0; i < sizeof(_salt); i++) {
 		*p = alphabet[_salt[i] % (sizeof(alphabet) - 1)];
@@ -81,7 +87,7 @@ crypt_int(const char *fpasswd, const char *username, const char *groupname,
 
 	cr_passwd = crypt(passwd, salt);
 	if (cr_passwd == NULL) { /* try MD5 */
-		salt[1] = 1;
+		salt[1] = '1';
 		cr_passwd = crypt(passwd, salt);
 	}
 	if (cr_passwd == NULL) {
@@ -144,6 +150,67 @@ crypt_int(const char *fpasswd, const char *username, const char *groupname,
 }
 
 static void
+delete_user(const char *fpasswd, const char *username)
+{
+	FILE * fd, *fd2;
+	char *tmp_passwd;
+	char *line, *p;
+	unsigned fpasswd_len = strlen(fpasswd);
+	unsigned tmp_passwd_len;
+	unsigned username_len = strlen(username);
+	int ret;
+	ssize_t len, l;
+	size_t line_size;
+	struct stat st;
+
+	tmp_passwd_len = fpasswd_len + 5;
+	tmp_passwd = malloc(tmp_passwd_len);
+
+	snprintf(tmp_passwd, tmp_passwd_len, "%s.tmp", fpasswd);
+	if (stat(tmp_passwd, &st) != -1) {
+		fprintf(stderr, "file '%s' is locked.\n", fpasswd);
+		exit(1);
+	}
+
+	fd = fopen(fpasswd, "r");
+	if (fd == NULL) {
+		fprintf(stderr, "Cannot open '%s' for reading.\n", fpasswd);
+		exit(1);
+	}
+
+	fd2 = fopen(tmp_passwd, "w");
+	if (fd2 == NULL) {
+		fprintf(stderr, "Cannot open '%s' for writing.\n", tmp_passwd);
+		exit(1);
+	}
+
+	line = NULL;
+	while ((len = getline(&line, &line_size, fd)) > 0) {
+		p = strchr(line, ':');
+		if (p == NULL)
+			continue;
+
+		l = p-line;
+		if (l == username_len && strncmp(line, username, l) == 0) {
+			continue;
+		} else {
+			fwrite(line, 1, len, fd2);
+		}
+	}
+
+	free(line);
+	fclose(fd);
+	fclose(fd2);
+
+	ret = rename(tmp_passwd, fpasswd);
+	if (ret == -1) {
+		fprintf(stderr, "Cannot write to '%s'.\n", fpasswd);
+		exit(1);
+	}
+	free(tmp_passwd);
+}
+
+static void
 lock_user(const char *fpasswd, const char *username)
 {
 	FILE * fd, *fd2;
@@ -152,6 +219,7 @@ lock_user(const char *fpasswd, const char *username)
 	unsigned fpasswd_len = strlen(fpasswd);
 	unsigned tmp_passwd_len;
 	unsigned username_len = strlen(username);
+	int ret;
 	ssize_t len, l;
 	size_t line_size;
 	struct stat st;
@@ -203,7 +271,11 @@ lock_user(const char *fpasswd, const char *username)
 	fclose(fd);
 	fclose(fd2);
 
-	rename(tmp_passwd, fpasswd);
+	ret = rename(tmp_passwd, fpasswd);
+	if (ret == -1) {
+		fprintf(stderr, "Cannot write to '%s'.\n", fpasswd);
+		exit(1);
+	}
 	free(tmp_passwd);
 }
 
@@ -216,6 +288,7 @@ unlock_user(const char *fpasswd, const char *username)
 	unsigned fpasswd_len = strlen(fpasswd);
 	unsigned tmp_passwd_len;
 	unsigned username_len = strlen(username);
+	int ret;
 	ssize_t len, l;
 	size_t line_size;
 	struct stat st;
@@ -269,7 +342,11 @@ unlock_user(const char *fpasswd, const char *username)
 	fclose(fd);
 	fclose(fd2);
 
-	rename(tmp_passwd, fpasswd);
+	ret = rename(tmp_passwd, fpasswd);
+	if (ret == -1) {
+		fprintf(stderr, "Cannot write to '%s'.\n", fpasswd);
+		exit(1);
+	}
 	free(tmp_passwd);
 }
 
@@ -314,6 +391,8 @@ int main(int argc, char **argv)
 		lock_user(fpasswd, username);
 	else if (HAVE_OPT(UNLOCK))
 		unlock_user(fpasswd, username);
+	else if (HAVE_OPT(DELETE))
+		delete_user(fpasswd, username);
 	else { /* set password */
 
 		if (isatty(STDIN_FILENO)) {

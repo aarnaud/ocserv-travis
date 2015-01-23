@@ -44,6 +44,21 @@
 # define _ATTR_PACKED
 #endif
 
+typedef enum {
+	SOCK_TYPE_TCP,
+	SOCK_TYPE_UDP,
+	SOCK_TYPE_UNIX
+} sock_type_t;
+
+typedef enum {
+	OC_COMP_NULL = 0,
+	OC_COMP_LZ4,
+	OC_COMP_LZS,
+} comp_type_t;
+
+#define MIN_NO_COMPRESS_LIMIT 64
+#define DEFAULT_NO_COMPRESS_LIMIT 256
+
 #define DEBUG_BASIC 1
 #define DEBUG_HTTP  2
 #define DEBUG_TRANSFERRED 5
@@ -67,8 +82,10 @@ extern int syslog_open;
 /* the first is generic, for the methods that require a username password */
 #define AUTH_TYPE_USERNAME_PASS (1<<0)
 #define AUTH_TYPE_PAM (1<<1 | AUTH_TYPE_USERNAME_PASS)
-#define AUTH_TYPE_CERTIFICATE (1<<2)
-#define AUTH_TYPE_PLAIN (1<<3 | AUTH_TYPE_USERNAME_PASS)
+#define AUTH_TYPE_PLAIN (1<<2 | AUTH_TYPE_USERNAME_PASS)
+#define AUTH_TYPE_CERTIFICATE (1<<3)
+#define AUTH_TYPE_CERTIFICATE_OPT (1<<4|AUTH_TYPE_CERTIFICATE)
+#define AUTH_TYPE_RADIUS (1<<5 | AUTH_TYPE_USERNAME_PASS)
 
 #define ERR_SUCCESS 0
 #define ERR_BAD_COMMAND -2
@@ -80,25 +97,23 @@ extern int syslog_open;
 #define ERR_NO_IP -8
 #define ERR_PARSING -9
 #define ERR_EXEC -10
-#define ERR_WORKER_TERMINATED -11
+#define ERR_PEER_TERMINATED -11
 #define ERR_CTL -12
+#define ERR_NO_CMD_FD -13
+
+#define ERR_WORKER_TERMINATED ERR_PEER_TERMINATED
 
 #define LOG_HTTP_DEBUG 2048
 #define LOG_TRANSFER_DEBUG 2049
 
+#define MAX_AUTH_SECS 40
 #define MAX_CIPHERSUITE_NAME 64
-#define MAX_DTLS_CIPHERSUITE_NAME 24
 #define MAX_MSG_SIZE 256
-#define SID_SIZE 12
-
-#define MAX_ZOMBIE_SECS 240
+#define SID_SIZE 16
 
 typedef enum {
-	AUTH_INIT = 1,
-	AUTH_REP = 2,
-	AUTH_REQ = 3,
+	AUTH_COOKIE_REP = 2,
 	AUTH_COOKIE_REQ = 4,
-	AUTH_MSG = 5,
 	RESUME_STORE_REQ = 6,
 	RESUME_DELETE_REQ = 7,
 	RESUME_FETCH_REQ = 8,
@@ -107,14 +122,18 @@ typedef enum {
 	CMD_TUN_MTU = 11,
 	CMD_TERMINATE = 12,
 	CMD_SESSION_INFO = 13,
-	AUTH_REINIT = 14,
-} cmd_request_t;
+	CMD_CLI_STATS = 15,
 
-typedef struct 
-{
-	struct htable ht;
-	unsigned int entries;
-} hash_db_st;
+	SM_CMD_AUTH_INIT = 120,
+	SM_CMD_AUTH_CONT,
+	SM_CMD_AUTH_REP,
+	SM_CMD_DECRYPT,
+	SM_CMD_SIGN,
+	SM_CMD_AUTH_SESSION_OPEN,
+	SM_CMD_AUTH_SESSION_CLOSE,
+	SM_CMD_AUTH_SESSION_REPLY,
+	SM_CMD_CLI_STATS,
+} cmd_request_t;
 
 #define MAX_IP_STR 46
 
@@ -137,22 +156,30 @@ struct group_cfg_st {
 	char *ipv6_network;
 	unsigned ipv6_prefix;
 	char *ipv4_netmask;
-	char *ipv6_netmask;
-	
+
+	char *explicit_ipv4;
+	char *explicit_ipv6;
+
 	char *cgroup;
+
+	char *xml_config_file;
 
 	size_t rx_per_sec;
 	size_t tx_per_sec;
-	
+
+	unsigned deny_roaming; /* whether the user is allowed to re-use cookies from another IP */
 	unsigned net_priority;
+	unsigned no_udp; /* whether to disable UDP for this user */
+	unsigned require_cert; /* when optional certificate auth is selected require a certificate */
 };
 
 struct vpn_st {
 	char name[IFNAMSIZ];
 	char *ipv4_netmask;
+	char *ipv4_network;
 	char *ipv4;
 	char *ipv4_local; /* local IPv4 address */
-	char *ipv6_netmask;
+	char *ipv6_network;
 	unsigned ipv6_prefix;
 
 	char *ipv6;
@@ -173,6 +200,11 @@ struct cfg_st {
 	char *name; /* server name */
 	unsigned int port;
 	unsigned int udp_port;
+	unsigned int is_dyndns;
+	char* unix_conn_file;
+	unsigned int sup_config_type; /* one of SUP_CONFIG_ */
+	unsigned int stats_report_time;
+
 	char *pin_file;
 	char *srk_pin_file;
 	char **cert;
@@ -186,13 +218,22 @@ struct cfg_st {
 	char *cert_user_oid;	/* The OID that will be used to extract the username */
 	char *cert_group_oid;	/* The OID that will be used to extract the groupname */
 	unsigned int auth_types;	/* or'ed sequence of AUTH_TYPE */
-	char *plain_passwd;	/* the password file in plain auth mode */
+	char *auth_additional;	/* the additional string specified in the auth methode */
 	gnutls_certificate_request_t cert_req;
 	char *priorities;
+	unsigned enable_compression;
+	unsigned no_compress_limit;	/* under this size (in bytes) of data there will be no compression */
 	char *chroot_dir;	/* where the xml files are served from */
 	char *banner;
 	char *ocsp_response; /* file with the OCSP response */
 	char *default_domain; /* domain to be advertised */
+
+	char **group_list; /* select_group */
+	unsigned int group_list_size;
+
+	char **friendly_group_list; /* the same size as group_list_size */
+
+	char *default_select_group;
 
 	char **custom_header;
 	unsigned custom_header_size;;
@@ -201,12 +242,17 @@ struct cfg_st {
 	unsigned split_dns_size;;
 
 	char* socket_file_prefix;
-	time_t cookie_validity;	/* in seconds */
+
+	unsigned deny_roaming; /* whether a cookie is restricted to a single IP */
+	time_t cookie_timeout;	/* in seconds */
 
 	time_t rekey_time;	/* in seconds */
 	unsigned rekey_method; /* REKEY_METHOD_ */
 
 	time_t min_reauth_time;	/* after a failed auth, how soon one can reauthenticate -> in seconds */
+
+	unsigned isolate; /* whether seccomp should be enabled or not */
+
 	unsigned auth_timeout; /* timeout of HTTP auth */
 	unsigned idle_timeout; /* timeout when idle */
 	unsigned mobile_idle_timeout; /* timeout when a mobile is idle */
@@ -219,6 +265,9 @@ struct cfg_st {
 	unsigned max_same_clients;
 	unsigned use_utmp;
 	unsigned use_dbus; /* whether the D-BUS service is registered */
+	unsigned use_occtl; /* whether support for the occtl tool will be enabled */
+	char* occtl_socket_file;
+
 	unsigned try_mtu; /* MTU discovery enabled */
 	unsigned cisco_client_compat; /* do not require client certificate, 
 	                               * and allow auth to complete in different
@@ -232,6 +281,7 @@ struct cfg_st {
 
 	unsigned output_buffer;
 	unsigned default_mtu;
+	unsigned predictable_ips; /* boolean */
 
 	char *route_add_cmd;
 	char *route_del_cmd;
@@ -240,6 +290,7 @@ struct cfg_st {
 	char *disconnect_script;
 	
 	char *cgroup;
+	char *proxy_url;
 
 #ifdef ANYCONNECT_CLIENT_COMPAT
 	char *xml_config_file;
@@ -253,6 +304,8 @@ struct cfg_st {
 	/* additional configuration files */
 	char *per_group_dir;
 	char *per_user_dir;
+	char *default_group_conf;
+	char *default_user_conf;
 	
 	/* the tun network */
 	struct vpn_st network;
@@ -264,7 +317,7 @@ struct main_server_st;
 
 #define MAX_BANNER_SIZE 256
 #define MAX_USERNAME_SIZE 64
-#define MAX_AGENT_NAME 32
+#define MAX_AGENT_NAME 48
 #define MAX_PASSWORD_SIZE 64
 #define TLS_MASTER_SIZE 48
 #define MAX_HOSTNAME_SIZE MAX_USERNAME_SIZE
@@ -273,10 +326,9 @@ struct main_server_st;
 
 #define MAX_CONFIG_ENTRIES 64
 
-#define MAX_ROUTES 32
-
 #include <tun.h>
 
+unsigned extract_prefix(char *network);
 char *human_addr2(const struct sockaddr *sa, socklen_t salen,
 		       void *buf, size_t buflen, unsigned full);
 

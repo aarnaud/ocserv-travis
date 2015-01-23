@@ -26,7 +26,7 @@ PORT=4444
 
 echo "Testing local backend with username-password... "
 
-launch_server -d -f -c test1.config & PID=$!
+launch_server -d 1 -f -c test1.config & PID=$!
 wait_server $PID
 
 echo "Connecting to obtain cookie... "
@@ -44,7 +44,7 @@ echo "Connecting to obtain cookie with wrong username... "
 #test special characters
 
 echo "Connecting to obtain cookie... "
-( echo "!@#$%^&*()<>" | openconnect -q localhost:$PORT -u special --servercert=d66b507ae074d03b02eafca40d35f87dd81049d3 --cookieonly >/dev/null 2>&1 ) ||
+( echo "!@#$%^&*()<>" | openconnect -q localhost:$PORT -u "sp@c/al" --servercert=d66b507ae074d03b02eafca40d35f87dd81049d3 --cookieonly >/dev/null 2>&1 ) ||
 	fail $PID "Could not receive cookie from server"
 
 #echo "Normal connection... "

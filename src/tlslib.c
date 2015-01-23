@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2013 Nikos Mavrogiannopoulos
+ * Copyright (C) 2013, 2014 Nikos Mavrogiannopoulos
  *
  * This file is part of ocserv.
  *
@@ -8,7 +8,7 @@
  * the Free Software Foundation, either version 2 of the License, or
  * (at your option) any later version.
  *
- * GnuTLS is distributed in the hope that it will be useful, but
+ * ocserv is distributed in the hope that it will be useful, but
  * WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * General Public License for more details.
@@ -38,58 +38,76 @@
 #include <vpn.h>
 #include <main.h>
 #include <worker.h>
+#include <common.h>
 #include <sys/un.h>
 #include <sys/uio.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <netinet/tcp.h>
 #include <c-ctype.h>
 
-ssize_t tls_send(gnutls_session_t session, const void *data,
+void cstp_cork(worker_st *ws)
+{
+	if (ws->session) {
+		gnutls_record_cork(ws->session);
+	} else {
+		int state = 1;
+#ifdef __linux__
+		setsockopt(ws->conn_fd, IPPROTO_TCP, TCP_CORK, &state, sizeof(state));
+#elif defined(TCP_NOPUSH)
+		setsockopt(ws->conn_fd, IPPROTO_TCP, TCP_NOPUSH, &state, sizeof(state));
+#endif
+	}
+}
+
+int cstp_uncork(worker_st *ws)
+{
+	if (ws->session) {
+		return gnutls_record_uncork(ws->session, GNUTLS_RECORD_WAIT);
+	} else {
+		int state = 0;
+#if defined(__linux__)
+		setsockopt(ws->conn_fd, IPPROTO_TCP, TCP_CORK, &state, sizeof(state));
+#elif defined(TCP_NOPUSH)
+		setsockopt(ws->conn_fd, IPPROTO_TCP, TCP_NOPUSH, &state, sizeof(state));
+#endif
+		return 0;
+	}
+}
+
+
+ssize_t cstp_send(worker_st *ws, const void *data,
 			size_t data_size)
 {
 	int ret;
 	int left = data_size;
 	const uint8_t* p = data;
 
-	while(left > 0) {
-		ret = gnutls_record_send(session, p, data_size);
-		if (ret < 0 && (ret != GNUTLS_E_AGAIN && ret != GNUTLS_E_INTERRUPTED)) {
-			return ret;
-		}
+	if (ws->session != NULL) {
+		while(left > 0) {
+			ret = gnutls_record_send(ws->session, p, data_size);
+			if (ret < 0) {
+				if (ret != GNUTLS_E_AGAIN && ret != GNUTLS_E_INTERRUPTED) {
+					return ret;
+				} else {
+					/* do not cause mayhem */
+					ms_sleep(20);
+				}
+			}
 
-		if (ret > 0) {
-			left -= ret;
-			p += ret;
+			if (ret > 0) {
+				left -= ret;
+				p += ret;
+			}
 		}
+		return data_size;
+	} else {
+		return force_write(ws->conn_fd, data, data_size);
 	}
-
-	return data_size;
 }
 
-/* Same as tls_send() but will not retry on EAGAIN errors */
-ssize_t tls_send_nowait(gnutls_session_t session, const void *data,
-			size_t data_size)
-{
-	int ret;
-	int left = data_size;
-	const uint8_t* p = data;
-
-	while(left > 0) {
-		ret = gnutls_record_send(session, p, data_size);
-		if (ret < 0 && ret != GNUTLS_E_INTERRUPTED) {
-			if (ret == GNUTLS_E_AGAIN)
-			  return data_size;
-			return ret;
-		}
-
-		if (ret > 0) {
-			left -= ret;
-			p += ret;
-		}
-	}
-
-	return data_size;
-}
-
-ssize_t tls_send_file(gnutls_session_t session, const char *file)
+ssize_t cstp_send_file(worker_st *ws, const char *file)
 {
 FILE* fp;
 char buf[512];
@@ -97,10 +115,12 @@ ssize_t len, total = 0;
 int ret;
 
 	fp = fopen(file, "r");
+	if (fp == NULL)
+		return GNUTLS_E_FILE_ERROR;
 
 	while (	(len = fread( buf, 1, sizeof(buf), fp)) > 0) {
-		ret = tls_send(session, buf, len);
-		GNUTLS_FATAL_ERR(ret);
+		ret = cstp_send(ws, buf, len);
+		FATAL_ERR(ws, ret);
 
 		total += ret;
 	}
@@ -110,13 +130,42 @@ int ret;
 	return total;
 }
 
-ssize_t tls_recv(gnutls_session_t session, void *data, size_t data_size)
+/* Restores gnutls_record_recv() on EAGAIN */
+ssize_t cstp_recv(worker_st *ws, void *data, size_t data_size)
+{
+	int ret;
+	int counter = 5;
+
+	if (ws->session != NULL) {
+		do {
+			ret = gnutls_record_recv(ws->session, data, data_size);
+			if (ret == GNUTLS_E_AGAIN) {
+				counter--;
+				ms_sleep(20);
+			}
+		} while (ret == GNUTLS_E_AGAIN && counter > 0);
+	} else {
+		do {
+			ret = recv(ws->conn_fd, data, data_size, 0);
+			if (ret == -1 && errno == EAGAIN) {
+				counter--;
+				ms_sleep(20);
+			}
+		} while(ret == -1 && errno == EAGAIN && counter > 0);
+	}
+
+	return ret;
+}
+
+ssize_t cstp_recv_nb(worker_st *ws, void *data, size_t data_size)
 {
 	int ret;
 
-	do {
-		ret = gnutls_record_recv(session, data, data_size);
-	} while (ret < 0 && (ret == GNUTLS_E_INTERRUPTED || ret == GNUTLS_E_AGAIN));
+	if (ws->session != NULL) {
+		ret = gnutls_record_recv(ws->session, data, data_size);
+	} else {
+		ret = recv(ws->conn_fd, data, data_size, 0);
+	}
 
 	return ret;
 }
@@ -128,6 +177,9 @@ unsigned tls_has_session_cert(struct worker_st * ws)
 {
 	unsigned int list_size = 0;
 	const gnutls_datum_t * certs;
+
+	if (ws->session == NULL)
+		return 0;
 
 	if (ws->cert_auth_ok)
 		return 1;
@@ -144,7 +196,7 @@ unsigned tls_has_session_cert(struct worker_st * ws)
 }
 
 int __attribute__ ((format(printf, 2, 3)))
-    tls_printf(gnutls_session_t session, const char *fmt, ...)
+    cstp_printf(worker_st *ws, const char *fmt, ...)
 {
 	char buf[1024];
 	va_list args;
@@ -155,21 +207,62 @@ int __attribute__ ((format(printf, 2, 3)))
 	va_start(args, fmt);
 	s = vsnprintf(buf, 1023, fmt, args);
 	va_end(args);
-	return tls_send(session, buf, s);
+	return cstp_send(ws, buf, s);
 
 }
 
-void tls_close(gnutls_session_t session)
+void cstp_close(worker_st *ws)
 {
-	gnutls_bye(session, GNUTLS_SHUT_WR);
-	gnutls_deinit(session);
+	if (ws->session) {
+		gnutls_bye(ws->session, GNUTLS_SHUT_WR);
+		gnutls_deinit(ws->session);
+	} else {
+		close(ws->conn_fd);
+	}
 }
 
-void tls_fatal_close(gnutls_session_t session,
+void cstp_fatal_close(worker_st *ws,
 			    gnutls_alert_description_t a)
 {
-	gnutls_alert_send(session, GNUTLS_AL_FATAL, a);
-	gnutls_deinit(session);
+	if (ws->session) {
+		gnutls_alert_send(ws->session, GNUTLS_AL_FATAL, a);
+		gnutls_deinit(ws->session);
+	} else {
+		close(ws->conn_fd);
+	}
+}
+
+ssize_t dtls_send(worker_st *ws, const void *data,
+			size_t data_size)
+{
+	int ret;
+	int left = data_size;
+	const uint8_t* p = data;
+
+	while(left > 0) {
+		ret = gnutls_record_send(ws->dtls_session, p, data_size);
+		if (ret < 0) {
+			if (ret != GNUTLS_E_AGAIN && ret != GNUTLS_E_INTERRUPTED) {
+				return ret;
+			} else {
+				/* do not cause mayhem */
+				ms_sleep(20);
+			}
+		}
+
+		if (ret > 0) {
+			left -= ret;
+			p += ret;
+		}
+	}
+
+	return data_size;
+}
+
+void dtls_close(worker_st *ws)
+{
+	gnutls_bye(ws->dtls_session, GNUTLS_SHUT_WR);
+	gnutls_deinit(ws->dtls_session);
 }
 
 static size_t rehash(const void *_e, void *unused)
@@ -179,39 +272,35 @@ const tls_cache_st *e = _e;
 	return hash_any(e->session_id, e->session_id_size, 0);
 }
 
-void tls_cache_init(hash_db_st** _db)
+void tls_cache_init(void *pool, tls_sess_db_st* db)
 {
-hash_db_st * db;
-
-	db = malloc(sizeof(*db));
-	if (db == NULL)
+	db->ht = talloc(pool, struct htable);
+	if (db->ht == NULL)
 		exit(1);
 
-	htable_init(&db->ht, rehash, NULL);
+	htable_init(db->ht, rehash, NULL);
 	db->entries = 0;
-
-	*_db = db;
 }
 
-void tls_cache_deinit(hash_db_st* db)
+void tls_cache_deinit(tls_sess_db_st* db)
 {
 tls_cache_st* cache;
 struct htable_iter iter;
 
-	cache = htable_first(&db->ht, &iter);
+	cache = htable_first(db->ht, &iter);
 	while(cache != NULL) {
 		if (cache->session_data_size > 0) {
-	          	memset(cache->session_data, 0, cache->session_data_size);
+	          	safe_memset(cache->session_data, 0, cache->session_data_size);
 	          	cache->session_data_size = 0;
 	          	cache->session_id_size = 0;
 		}
-          	free(cache);
+          	talloc_free(cache);
 
-          	cache = htable_next(&db->ht, &iter);
+          	cache = htable_next(db->ht, &iter);
         }
-        htable_clear(&db->ht);
+        htable_clear(db->ht);
 	db->entries = 0;
-	free(db);
+	talloc_free(db->ht);
 
         return;
 }
@@ -246,10 +335,34 @@ static int verify_certificate_cb(gnutls_session_t session)
 		return -1;
 	}
 
-	if (session == ws->dtls_session) /* no certificate is verified in DTLS */
-		return 0;
+	if (session == ws->dtls_session) {
+		oclog(ws, LOG_ERR, "unexpected issue; client shouldn't have offered a certificate in DTLS");
+		return GNUTLS_E_CERTIFICATE_ERROR;
+	}
 
 	ws->cert_auth_ok = 0;
+
+	/* now verify whether the username in the certificate matches the username of the session */
+	if (ws->cert_username[0] != 0) {
+		char prev_username[MAX_USERNAME_SIZE];
+		const gnutls_datum_t *cert;
+		unsigned cert_size;
+
+		cert = gnutls_certificate_get_peers(session, &cert_size);
+		if (cert != NULL) { /* it's ok for the user not to send any certificate on renegotiation */
+			memcpy(prev_username, ws->cert_username, MAX_USERNAME_SIZE);
+			ret = get_cert_names(ws, &cert[0]);
+			if (ret < 0) {
+				oclog(ws, LOG_ERR, "cannot parse certificate");
+				return GNUTLS_E_CERTIFICATE_ERROR;
+			}
+
+			if (strcmp(prev_username, ws->cert_username) != 0) {
+				oclog(ws, LOG_ERR, "user switched during renegotiation!");
+				return GNUTLS_E_CERTIFICATE_ERROR;
+			}
+		}
+	}
 
 	/* This verification function uses the trusted CAs in the credentials
 	 * structure. So you must have installed one or more CA certificates.
@@ -283,6 +396,8 @@ static int verify_certificate_cb(gnutls_session_t session)
 	/* notify gnutls to continue handshake normally */
 	return 0;
 fail:
+	/* In cisco client compatibility we don't hangup immediately, we
+	 * simply use the flag (ws->cert_auth_ok). */
 	if (ws->config->cisco_client_compat == 0)
 		return GNUTLS_E_CERTIFICATE_ERROR;
 	else
@@ -290,7 +405,7 @@ fail:
 
 }
 
-void tls_global_init(main_server_st* s)
+void tls_global_init(tls_st *creds)
 {
 int ret;
 
@@ -302,12 +417,12 @@ int ret;
 	return;
 }
 
-void tls_global_deinit(main_server_st* s)
+void tls_global_deinit(tls_st *creds)
 {
-	if (s->creds.xcred != NULL)
-		gnutls_certificate_free_credentials(s->creds.xcred);
-	if (s->creds.cprio != NULL)
-		gnutls_priority_deinit(s->creds.cprio);
+	if (creds->xcred != NULL)
+		gnutls_certificate_free_credentials(creds->xcred);
+	if (creds->cprio != NULL)
+		gnutls_priority_deinit(creds->cprio);
 
 	gnutls_global_deinit();
 
@@ -345,7 +460,8 @@ unsigned usage;
 		ret = gnutls_x509_crt_get_key_usage(crt, &usage, NULL);
 		if (ret >= 0) {
 			if (!(usage & GNUTLS_KEY_KEY_ENCIPHERMENT)) {
-				mslog(s, NULL, LOG_WARNING, "server certificate key usage prevents key encipherment; unable to support the RSA ciphersuites\n");
+				mslog(s, NULL, LOG_WARNING, "server certificate key usage prevents key encipherment; unable to support the RSA ciphersuites; "
+					"if that is not intentional, regenerate the server certificate with the key usage flag 'key encipherment' set.");
 				if (s->config->dh_params_file != NULL)
 					mslog(s, NULL, LOG_WARNING, "no DH-params file specified; server will be limited to ECDHE ciphersuites\n");
 			}
@@ -359,24 +475,24 @@ cleanup:
 	return;
 }
 
-static void set_dh_params(main_server_st* s, gnutls_certificate_credentials_t cred)
+static void set_dh_params(main_server_st* s, tls_st *creds)
 {
 gnutls_datum_t data;
 int ret;
 
 	if (s->config->dh_params_file != NULL) {
-		ret = gnutls_dh_params_init (&s->creds.dh_params);
+		ret = gnutls_dh_params_init (&creds->dh_params);
 		GNUTLS_FATAL_ERR(ret);
 
 		ret = gnutls_load_file(s->config->dh_params_file, &data);
 		GNUTLS_FATAL_ERR(ret);
 
-		ret = gnutls_dh_params_import_pkcs3(s->creds.dh_params, &data, GNUTLS_X509_FMT_PEM);
+		ret = gnutls_dh_params_import_pkcs3(creds->dh_params, &data, GNUTLS_X509_FMT_PEM);
 		GNUTLS_FATAL_ERR(ret);
 
 		gnutls_free(data.data);
 
-		gnutls_certificate_set_dh_params(cred, s->creds.dh_params);
+		gnutls_certificate_set_dh_params(creds->xcred, creds->dh_params);
 	}
 }
 
@@ -391,10 +507,10 @@ int key_cb_common_func (gnutls_privkey_t key, void* userdata, const gnutls_datum
 	gnutls_datum_t * output, unsigned type)
 {
 	struct key_cb_data* cdata = userdata;
-	int sd, ret, e;
-	uint8_t header[2];
-	struct iovec iov[2];
-	uint16_t length;
+	int sd = -1, ret, e;
+	SecOpMsg msg = SEC_OP_MSG__INIT;
+	SecOpMsg *reply = NULL;
+	PROTOBUF_ALLOCATOR(pa, userdata);
 
 	output->data = NULL;
 
@@ -410,53 +526,50 @@ int key_cb_common_func (gnutls_privkey_t key, void* userdata, const gnutls_datum
 		e = errno;
 		syslog(LOG_ERR, "error connecting to sec-mod socket '%s': %s", 
 			cdata->sa.sun_path, strerror(e));
-		return GNUTLS_E_INTERNAL_ERROR;
-	}
-
-	header[0] = cdata->idx;
-	header[1] = type;
-
-	iov[0].iov_base = header;
-	iov[0].iov_len = 2;
-	iov[1].iov_base = raw_data->data;
-	iov[1].iov_len = raw_data->size;
-
-	ret = writev(sd, iov, 2);
-	if (ret == -1) {
-		e = errno;
-		syslog(LOG_ERR, "error writing to sec-mod: %s", strerror(e));
 		goto error;
 	}
 
-	ret = recv(sd, &length, 2, 0);
-	if (ret < 2) {
-		e = errno;
-		syslog(LOG_ERR, "error reading from sec-mod: %s", strerror(e));
+	msg.has_key_idx = 1;
+	msg.key_idx = cdata->idx;
+	msg.data.data = raw_data->data;
+	msg.data.len = raw_data->size;
+
+	ret = send_msg(userdata, sd, type, &msg,
+			(pack_size_func)sec_op_msg__get_packed_size,
+			(pack_func)sec_op_msg__pack);
+	if (ret < 0) {
 		goto error;
 	}
 
-	output->size = length;
-	output->data = gnutls_malloc(output->size);
+	ret = recv_msg(userdata, sd, type, (void*)&reply, (unpack_func)sec_op_msg__unpack);
+	if (ret < 0) {
+		e = errno;
+		syslog(LOG_ERR, "error receiving sec-mod reply: %s", 
+				strerror(e));
+		goto error;
+	}
+	close(sd);
+	sd = -1;
+
+	output->size = reply->data.len;
+	output->data = gnutls_malloc(reply->data.len);
 	if (output->data == NULL) {
 		syslog(LOG_ERR, "error allocating memory");
 		goto error;
 	}
 
-	ret = recv(sd, output->data, output->size, 0);
-	if (ret <= 0) {
-		e = errno;
-		syslog(LOG_ERR, "error reading from sec-mod: %s", strerror(e));
-		goto error;
-	}
+	memcpy(output->data, reply->data.data, reply->data.len);
 
-	output->size = ret;
-
-	close(sd);
+	if (reply != NULL)
+		sec_op_msg__free_unpacked(reply, &pa);
 	return 0;
 
 error:
-	close(sd);
+	if (sd != -1)
+		close(sd);
 	gnutls_free(output->data);
+	if (reply != NULL)
+		sec_op_msg__free_unpacked(reply, &pa);
 	return GNUTLS_E_INTERNAL_ERROR;
 
 }
@@ -465,22 +578,22 @@ static
 int key_cb_sign_func (gnutls_privkey_t key, void* userdata, const gnutls_datum_t * raw_data,
 	gnutls_datum_t * signature)
 {
-	return key_cb_common_func(key, userdata, raw_data, signature, 'S');
+	return key_cb_common_func(key, userdata, raw_data, signature, SM_CMD_SIGN);
 }
 
 static int key_cb_decrypt_func(gnutls_privkey_t key, void* userdata, const gnutls_datum_t * ciphertext,
 	gnutls_datum_t * plaintext)
 {
-	return key_cb_common_func(key, userdata, ciphertext, plaintext, 'D');
+	return key_cb_common_func(key, userdata, ciphertext, plaintext, SM_CMD_DECRYPT);
 }
 
 static void key_cb_deinit_func(gnutls_privkey_t key, void* userdata)
 {
-	free(userdata);
+	talloc_free(userdata);
 }
 
 static
-int load_key_files(main_server_st *s)
+int load_cert_files(main_server_st *s, tls_st *creds)
 {
 int ret;
 gnutls_pcert_st *pcert_list;
@@ -518,7 +631,10 @@ struct key_cb_data * cdata;
 		ret = gnutls_privkey_init(&key);
 		GNUTLS_FATAL_ERR(ret);
 
-		cdata = malloc(sizeof(*cdata));
+		/* use use the main pool rather than main, to allow usage of the credentials
+		 * after freeing s.
+		 */
+		cdata = talloc(s->main_pool, struct key_cb_data);
 		if (cdata == NULL) {
 			mslog(s, NULL, LOG_ERR, "error allocating memory");
 			return -1;
@@ -528,7 +644,7 @@ struct key_cb_data * cdata;
 
 		memset(&cdata->sa, 0, sizeof(cdata->sa));
 		cdata->sa.sun_family = AF_UNIX;
-		snprintf(cdata->sa.sun_path, sizeof(cdata->sa.sun_path), "%s", s->socket_file);
+		strlcpy(cdata->sa.sun_path, s->socket_file, sizeof(cdata->sa.sun_path));
 		cdata->sa_len = SUN_LEN(&cdata->sa);
 
 		/* load the private key */
@@ -537,7 +653,7 @@ struct key_cb_data * cdata;
 			key_cb_deinit_func, GNUTLS_PRIVKEY_IMPORT_AUTO_RELEASE);
 		GNUTLS_FATAL_ERR(ret);
 
-		ret = gnutls_certificate_set_key(s->creds.xcred, NULL, 0, pcert_list,
+		ret = gnutls_certificate_set_key(creds->xcred, NULL, 0, pcert_list,
 				pcert_list_size, key);
 		GNUTLS_FATAL_ERR(ret);
 	}
@@ -545,30 +661,24 @@ struct key_cb_data * cdata;
 	return 0;
 }
 
-/* Allow clients to rehandshake even if they don't support safe
- * renegotiation */
-#define ADDITIONAL_FLAGS ":%UNSAFE_RENEGOTIATION"
-
 /* reload key files etc. */
-void tls_global_init_certs(main_server_st* s)
+void tls_load_certs(main_server_st *s, tls_st *creds)
 {
 int ret;
 const char* perr;
-char *tmp;
-unsigned len;
 
 	if (s->config->debug >= DEBUG_TLS) {
 		gnutls_global_set_log_function(tls_log_func);
 		gnutls_global_set_log_level(9);
 	}
 
-	if (s->creds.xcred != NULL)
-		gnutls_certificate_free_credentials(s->creds.xcred);
+	if (creds->xcred != NULL)
+		gnutls_certificate_free_credentials(creds->xcred);
 
-	ret = gnutls_certificate_allocate_credentials(&s->creds.xcred);
+	ret = gnutls_certificate_allocate_credentials(&creds->xcred);
 	GNUTLS_FATAL_ERR(ret);
 
-	set_dh_params(s, s->creds.xcred);
+	set_dh_params(s, creds);
 
 	if (s->config->key_size == 0 || s->config->cert_size == 0) {
 		mslog(s, NULL, LOG_ERR, "no certificate or key files were specified"); 
@@ -577,7 +687,7 @@ unsigned len;
 
 	certificate_check(s);
 
-	ret = load_key_files(s);
+	ret = load_cert_files(s, creds);
 	if (ret < 0) {
 		mslog(s, NULL, LOG_ERR, "error loading the certificate or key file");
 		exit(1);
@@ -586,7 +696,7 @@ unsigned len;
 	if (s->config->cert_req != GNUTLS_CERT_IGNORE) {
 		if (s->config->ca != NULL) {
 			ret =
-			    gnutls_certificate_set_x509_trust_file(s->creds.xcred,
+			    gnutls_certificate_set_x509_trust_file(creds->xcred,
 								   s->config->ca,
 								   GNUTLS_X509_FMT_PEM);
 			if (ret < 0) {
@@ -598,50 +708,47 @@ unsigned len;
 			mslog(s, NULL, LOG_INFO, "processed %d CA certificate(s)", ret);
 		}
 
-		if (s->config->crl != NULL) {
-			ret =
-			    gnutls_certificate_set_x509_crl_file(s->creds.xcred,
-								 s->config->crl,
-								 GNUTLS_X509_FMT_PEM);
-			if (ret < 0) {
-				mslog(s, NULL, LOG_ERR, "error setting the CRL (%s) file",
-					s->config->crl);
-				exit(1);
-			}
-		}
+		tls_reload_crl(s, creds);
 
-		gnutls_certificate_set_verify_function(s->creds.xcred,
+		gnutls_certificate_set_verify_function(creds->xcred,
 						       verify_certificate_cb);
 	}
 
-	if (s->config->cisco_client_compat) {
-		len = strlen(s->config->priorities);
-		tmp = malloc(len+sizeof(ADDITIONAL_FLAGS));
-		if (tmp == NULL) {
-			mslog(s, NULL, LOG_ERR, "memory error");
-			exit(1);
-		}
-
-		memcpy(tmp, s->config->priorities, len);
-		memcpy(&tmp[len], ADDITIONAL_FLAGS, sizeof(ADDITIONAL_FLAGS)); /* includes terminating zero */
-	} else {
-		tmp = strdup(s->config->priorities);
-	}
-
-	ret = gnutls_priority_init(&s->creds.cprio, tmp, &perr);
+	ret = gnutls_priority_init(&creds->cprio, s->config->priorities, &perr);
 	if (ret == GNUTLS_E_PARSING_ERROR)
 		mslog(s, NULL, LOG_ERR, "error in TLS priority string: %s", perr);
 	GNUTLS_FATAL_ERR(ret);
 
-	free(tmp);
-
 	if (s->config->ocsp_response != NULL) {
-		ret = gnutls_certificate_set_ocsp_status_request_file(s->creds.xcred,
+		ret = gnutls_certificate_set_ocsp_status_request_file(creds->xcred,
 			s->config->ocsp_response, 0);
 		GNUTLS_FATAL_ERR(ret);
 	}
 
 	return;
+}
+
+void tls_reload_crl(main_server_st* s, tls_st *creds)
+{
+int ret;
+
+	if (s->config->cert_req != GNUTLS_CERT_IGNORE && s->config->crl != NULL) {
+		ret =
+		    gnutls_certificate_set_x509_crl_file(creds->xcred,
+							 s->config->crl,
+							 GNUTLS_X509_FMT_PEM);
+		if (ret < 0) {
+			/* ignore the CRL file when empty */
+			if (ret == GNUTLS_E_BASE64_DECODING_ERROR) {
+				mslog(s, NULL, LOG_ERR, "empty or unreadable CRL file (%s); check documentation to generate an empty CRL",
+					s->config->crl);
+			} else {
+				mslog(s, NULL, LOG_ERR, "error reading the CRL (%s) file: %s",
+					s->config->crl, gnutls_strerror(ret));
+			}
+			exit(1);
+		}
+	}
 }
 
 void tls_cork(gnutls_session_t session)
@@ -654,7 +761,7 @@ int tls_uncork(gnutls_session_t session)
 	return gnutls_record_uncork(session, GNUTLS_RECORD_WAIT);
 }
 
-void *calc_sha1_hash(char* file, unsigned cert)
+void *calc_sha1_hash(void *pool, char* file, unsigned cert)
 {
 int ret;
 gnutls_datum_t data;
@@ -693,7 +800,7 @@ unsigned i;
 	}
 
 	size_t ret_size = sizeof(digest)*2+1;
-	retval = malloc(ret_size);
+	retval = talloc_size(pool, ret_size);
 	if (retval == NULL) {
 		fprintf(stderr, "memory error");
 		exit(1);

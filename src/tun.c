@@ -8,7 +8,7 @@
  * the Free Software Foundation, either version 2 of the License, or
  * (at your option) any later version.
  *
- * GnuTLS is distributed in the hope that it will be useful, but
+ * ocserv is distributed in the hope that it will be useful, but
  * WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * General Public License for more details.
@@ -45,6 +45,11 @@
 #include <main.h>
 #include <ccan/list/list.h>
 
+#ifdef __FreeBSD__
+# include <net/if_var.h>
+# include <netinet/in_var.h>
+#endif
+
 #ifdef __linux__
 
 #include <linux/types.h>
@@ -72,7 +77,7 @@ int set_ipv6_addr(main_server_st * s, struct proc_st *proc)
 	}
 
 	memset(&ifr, 0, sizeof(ifr));
-	snprintf(ifr.ifr_name, IFNAMSIZ, "%s", proc->tun_lease.name);
+	strlcpy(ifr.ifr_name, proc->tun_lease.name, IFNAMSIZ);
 
 	ret = ioctl(fd, SIOGIFINDEX, &ifr);
 	if (ret != 0) {
@@ -103,7 +108,7 @@ int set_ipv6_addr(main_server_st * s, struct proc_st *proc)
 	memset(&ifr, 0, sizeof(ifr));
 	ifr.ifr_addr.sa_family = AF_INET6;
 	ifr.ifr_flags |= IFF_UP | IFF_RUNNING;
-	snprintf(ifr.ifr_name, IFNAMSIZ, "%s", proc->tun_lease.name);
+	strlcpy(ifr.ifr_name, proc->tun_lease.name, IFNAMSIZ);
 
 	ret = ioctl(fd, SIOCSIFFLAGS, &ifr);
 	if (ret != 0) {
@@ -121,11 +126,10 @@ int set_ipv6_addr(main_server_st * s, struct proc_st *proc)
 
 	return ret;
 }
-#elif defined(SIOCSIFPHYADDR_IN6)
+#elif defined(SIOCAIFADDR_IN6)
 
-#warn "IPv6 support on this platform is untested"
+#include <netinet6/nd6.h>
 
-/* untested code for FreeBSD */
 static
 int set_ipv6_addr(main_server_st * s, struct proc_st *proc)
 {
@@ -142,14 +146,26 @@ int set_ipv6_addr(main_server_st * s, struct proc_st *proc)
 	}
 
 	memset(&ifr6, 0, sizeof(ifr6));
-	snprintf(ifr6.ifra_name, IFNAMSIZ, "%s", proc->tun_lease.name);
+	strlcpy(ifr6.ifra_name, proc->tun_lease.name, IFNAMSIZ);
 
-	memcpy(&ifr6.ifra_addr, SA_IN6_P(&proc->ipv6->lip),
+	memcpy(&ifr6.ifra_addr.sin6_addr, SA_IN6_P(&proc->ipv6->lip),
 	       SA_IN_SIZE(proc->ipv6->lip_len));
-	memcpy(&ifr6.ifra_dstaddr, SA_IN6_P(&proc->ipv6->rip),
-	       SA_IN_SIZE(proc->ipv6->rip_len));
+	ifr6.ifra_addr.sin6_len = sizeof(struct sockaddr_in6);
+	ifr6.ifra_addr.sin6_family = AF_INET6;
 
-	ret = ioctl(fd, SIOCSIFPHYADDR_IN6, &ifr6);
+	memcpy(&ifr6.ifra_dstaddr.sin6_addr, SA_IN6_P(&proc->ipv6->rip),
+	       SA_IN_SIZE(proc->ipv6->rip_len));
+	ifr6.ifra_dstaddr.sin6_len = sizeof(struct sockaddr_in6);
+	ifr6.ifra_dstaddr.sin6_family = AF_INET6;
+
+	memset(&ifr6.ifra_prefixmask.sin6_addr, 0xff, sizeof(struct in6_addr));
+	ifr6.ifra_prefixmask.sin6_len = sizeof(struct sockaddr_in6);
+	ifr6.ifra_prefixmask.sin6_family = AF_INET6;
+
+	ifr6.ifra_lifetime.ia6t_vltime = ND6_INFINITE_LIFETIME;
+	ifr6.ifra_lifetime.ia6t_pltime = ND6_INFINITE_LIFETIME;
+
+	ret = ioctl(fd, SIOCAIFADDR_IN6, &ifr6);
 	if (ret != 0) {
 		e = errno;
 		mslog(s, NULL, LOG_ERR, "%s: Error setting IPv6: %s\n",
@@ -161,7 +177,7 @@ int set_ipv6_addr(main_server_st * s, struct proc_st *proc)
 	memset(&ifr, 0, sizeof(ifr));
 	ifr.ifr_addr.sa_family = AF_INET6;
 	ifr.ifr_flags |= IFF_UP | IFF_RUNNING;
-	snprintf(ifr.ifr_name, IFNAMSIZ, "%s", proc->tun_lease.name);
+	strlcpy(ifr.ifr_name, oroc->tun_lease.name, IFNAMSIZ);
 
 	ret = ioctl(fd, SIOCSIFFLAGS, &ifr);
 	if (ret != 0) {
@@ -180,7 +196,7 @@ int set_ipv6_addr(main_server_st * s, struct proc_st *proc)
 	return ret;
 }
 #else
-#warn "No IPv6 support on this platform"
+#warning "No IPv6 support on this platform"
 static int set_ipv6_addr(main_server_st * s, struct proc_st *proc)
 {
 	return -1;
@@ -191,7 +207,11 @@ static int set_ipv6_addr(main_server_st * s, struct proc_st *proc)
 static int set_network_info(main_server_st * s, struct proc_st *proc)
 {
 	int fd = -1, ret, e;
+#ifdef SIOCAIFADDR
+	struct in_aliasreq ifr;
+#else
 	struct ifreq ifr;
+#endif
 
 	if (proc->ipv4 && proc->ipv4->lip_len > 0 && proc->ipv4->rip_len > 0) {
 		memset(&ifr, 0, sizeof(ifr));
@@ -200,7 +220,31 @@ static int set_network_info(main_server_st * s, struct proc_st *proc)
 		if (fd == -1)
 			return -1;
 
-		snprintf(ifr.ifr_name, IFNAMSIZ, "%s", proc->tun_lease.name);
+#ifdef SIOCAIFADDR
+		strlcpy(ifr.ifra_name, proc->tun_lease.name, IFNAMSIZ);
+
+		memcpy(&ifr.ifra_addr, &proc->ipv4->lip, proc->ipv4->lip_len);
+		ifr.ifra_addr.sin_len = sizeof(struct sockaddr_in);
+		ifr.ifra_addr.sin_family = AF_INET;
+
+		memcpy(&ifr.ifra_dstaddr, &proc->ipv4->rip, proc->ipv4->rip_len);
+		ifr.ifra_dstaddr.sin_len = sizeof(struct sockaddr_in);
+		ifr.ifra_dstaddr.sin_family = AF_INET;
+
+		ifr.ifra_mask.sin_len = sizeof(struct sockaddr_in);
+		ifr.ifra_mask.sin_family = AF_INET;
+		ifr.ifra_mask.sin_addr.s_addr = 0xffffffff;
+
+		ret = ioctl(fd, SIOCAIFADDR, &ifr);
+		if (ret != 0) {
+			e = errno;
+			mslog(s, NULL, LOG_ERR, "%s: Error setting IPv4: %s\n",
+			      proc->tun_lease.name, strerror(e));
+			ret = -1;
+			goto cleanup;
+		}
+#else
+		strlcpy(ifr.ifr_name, proc->tun_lease.name, IFNAMSIZ);
 		memcpy(&ifr.ifr_addr, &proc->ipv4->lip, proc->ipv4->lip_len);
 		ifr.ifr_addr.sa_family = AF_INET;
 
@@ -215,7 +259,7 @@ static int set_network_info(main_server_st * s, struct proc_st *proc)
 
 		memset(&ifr, 0, sizeof(ifr));
 
-		snprintf(ifr.ifr_name, IFNAMSIZ, "%s", proc->tun_lease.name);
+		strlcpy(ifr.ifr_name, proc->tun_lease.name, IFNAMSIZ);
 		memcpy(&ifr.ifr_dstaddr, &proc->ipv4->rip, proc->ipv4->rip_len);
 		ifr.ifr_dstaddr.sa_family = AF_INET;
 
@@ -233,7 +277,7 @@ static int set_network_info(main_server_st * s, struct proc_st *proc)
 		memset(&ifr, 0, sizeof(ifr));
 		ifr.ifr_addr.sa_family = AF_INET;
 		ifr.ifr_flags |= IFF_UP | IFF_RUNNING;
-		snprintf(ifr.ifr_name, IFNAMSIZ, "%s", proc->tun_lease.name);
+		strlcpy(ifr.ifr_name, proc->tun_lease.name, IFNAMSIZ);
 
 		ret = ioctl(fd, SIOCSIFFLAGS, &ifr);
 		if (ret != 0) {
@@ -243,6 +287,7 @@ static int set_network_info(main_server_st * s, struct proc_st *proc)
 			ret = -1;
 			goto cleanup;
 		}
+#endif
 
 		close(fd);
 		fd = -1;
@@ -361,16 +406,20 @@ int open_tun(main_server_st * s, struct proc_st *proc)
 		ret = fstat(tunfd, &st);
 		if (ret < 0) {
 			e = errno;
-			mslog(s, NULL, LOG_ERR, "%s: stat: %s\n", strerror(e));
+			mslog(s, NULL, LOG_ERR, "tun fd %d: stat: %s\n", tunfd, strerror(e));
 			goto fail;
 		}
 
-		snprintf(proc->tun_lease.name, sizeof(proc->tun_lease.name),
-			 "%s", devname(st.st_rdev, S_IFCHR));
+		strlcpy(proc->tun_lease.name, devname(st.st_rdev, S_IFCHR), sizeof(proc->tun_lease.name));
 	}
 
 	set_cloexec_flag(tunfd, 1);
 #endif
+
+	if (proc->tun_lease.name[0] == 0) {
+		mslog(s, NULL, LOG_ERR, "tun device with no name!");
+		goto fail;
+	}
 
 	/* set IP/mask */
 	ret = set_network_info(s, proc);
@@ -384,4 +433,40 @@ int open_tun(main_server_st * s, struct proc_st *proc)
  fail:
 	close(tunfd);
 	return -1;
+}
+
+void close_tun(main_server_st * s, struct proc_st *proc)
+{
+	int fd = -1;
+
+	if (proc->tun_lease.fd >= 0) {
+		close(proc->tun_lease.fd);
+		proc->tun_lease.fd = -1;
+	}
+
+#ifdef SIOCIFDESTROY
+	int e;
+	struct ifreq ifr;
+
+	if (proc->tun_lease.name[0] != 0) {
+		fd = socket(AF_INET, SOCK_DGRAM, 0);
+		if (fd == -1)
+			return -1;
+
+		memset(&ifr, 0, sizeof(struct ifreq));
+		strlcpy(ifr.ifr_name, proc->tun_lease.name, IFNAMSIZ);
+
+		ret = ioctl(fd, SIOCIFDESTROY, &ifr);
+		if (ret != 0) {
+			e = errno;
+			mslog(s, NULL, LOG_ERR, "%s: Error destroying interface: %s\n",
+				proc->tun_lease.name, strerror(e));
+		}
+	}
+#endif
+
+	if (fd != -1)
+		close(fd);
+
+	return;
 }

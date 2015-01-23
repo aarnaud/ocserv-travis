@@ -8,7 +8,7 @@
  * the Free Software Foundation, either version 2 of the License, or
  * (at your option) any later version.
  *
- * GnuTLS is distributed in the hope that it will be useful, but
+ * ocserv is distributed in the hope that it will be useful, but
  * WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * General Public License for more details.
@@ -21,7 +21,18 @@
 #include <unistd.h>
 #ifdef __linux__
 # include <sys/prctl.h>
+# include <sched.h>
+# include <linux/sched.h>
+# include <sys/syscall.h>
 #endif
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <sys/un.h>
+#include <sys/uio.h>
+#include <sys/errno.h>
+#include <sys/syslog.h>
+
+#include <signal.h>
 
 void kill_on_parent_kill(int sig)
 {
@@ -29,6 +40,34 @@ void kill_on_parent_kill(int sig)
 	prctl(PR_SET_PDEATHSIG, sig);
 #endif
 }
+
+void pr_set_undumpable(const char *mod)
+{
+#ifdef __linux__
+	if (prctl(PR_SET_DUMPABLE, 0) == -1) {
+		int e = errno;
+		syslog(LOG_ERR, "%s: prctl(PR_SET_DUMPABLE) failed %s",
+			mod, strerror(e));
+	}
+#endif
+}
+
+#if defined(__linux__) && defined(ENABLE_LINUX_NS)
+pid_t safe_fork(void)
+{
+	long ret;
+	/* fork: 100%
+	 * CLONE_NEWPID|CLONE_NEWNET|CLONE_NEWIPC: 3%
+	 * CLONE_NEWPID|CLONE_NEWIPC: 27%
+	 * CLONE_NEWPID: 36%
+	 */
+	int flags = SIGCHLD|CLONE_NEWPID|CLONE_NEWIPC;
+	ret = syscall(SYS_clone, flags, 0, 0, 0);
+	if (ret == 0 && syscall(SYS_getpid)!= 1)
+		return -1;
+	return ret;
+}
+#endif
 
 SIGHANDLER_T ocsignal(int signum, SIGHANDLER_T handler)
 {
@@ -40,4 +79,73 @@ SIGHANDLER_T ocsignal(int signum, SIGHANDLER_T handler)
 	
 	sigaction (signum, &new_action, &old_action);
 	return old_action.sa_handler;
+}
+
+/* Checks whether the peer in a socket has the expected @uid and @gid.
+ * Returns zero on success.
+ */
+int check_upeer_id(const char *mod, int debug, int cfd, uid_t uid, uid_t gid, uid_t *ruid)
+{
+	int e, ret;
+#if defined(SO_PEERCRED) && defined(HAVE_STRUCT_UCRED)
+	struct ucred cr;
+	socklen_t cr_len;
+
+	/* This check is superfluous in Linux and mostly for debugging
+	 * purposes. The socket permissions set with umask should
+	 * be sufficient already for access control, but not all
+	 * UNIXes support that. */
+	cr_len = sizeof(cr);
+	ret = getsockopt(cfd, SOL_SOCKET, SO_PEERCRED, &cr, &cr_len);
+	if (ret == -1) {
+		e = errno;
+		syslog(LOG_ERR, "%s: getsockopt SO_PEERCRED error: %s",
+			mod, strerror(e));
+		return -1;
+	}
+
+	if (debug != 0)
+		syslog(LOG_DEBUG,
+		       "%s: received request from pid %u and uid %u",
+		       mod, (unsigned)cr.pid, (unsigned)cr.uid);
+
+	if (ruid)
+		*ruid = cr.uid;
+
+	if (cr.uid != 0 && (cr.uid != uid || cr.gid != gid)) {
+		syslog(LOG_DEBUG,
+		       "%s: received unauthorized request from pid %u and uid %u",
+		       mod, (unsigned)cr.pid, (unsigned)cr.uid);
+		       return -1;
+	}
+#elif defined(HAVE_GETPEEREID)
+	uid_t euid;
+	gid_t egid;
+
+	ret = getpeereid(cfd, &euid, &egid);
+
+	if (ret == -1) {
+		e = errno;
+		syslog(LOG_DEBUG, "%s: getpeereid error: %s",
+			mod, strerror(e));
+		return -1;
+	}
+
+	if (ruid)
+		*ruid = euid;
+
+	if (debug = 0)
+		syslog(LOG_DEBUG,
+		       "%s: received request from a processes with uid %u",
+		       mod, (unsigned)euid);
+	if (euid != 0 && (euid != uid || egid != gid)) {
+		syslog(LOG_DEBUG,
+		       "%s: received unauthorized request from a process with uid %u",
+			mod, (unsigned)euid);
+			return -1;
+	}
+#else
+#error "Unsupported UNIX variant"
+#endif
+	return 0;
 }

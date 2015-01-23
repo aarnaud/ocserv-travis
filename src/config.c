@@ -30,15 +30,24 @@
 #include <limits.h>
 #include <common.h>
 #include <c-strcase.h>
+#include <c-ctype.h>
+#include <auth/pam.h>
+#include <auth/radius.h>
+#include <auth/plain.h>
+#include <sec-mod-sup-config.h>
 
 #include <vpn.h>
+#include <cookies.h>
+#include <main.h>
+#include <ctl.h>
 #include <tlslib.h>
 
 #define OLD_DEFAULT_CFG_FILE "/etc/ocserv.conf"
 #define DEFAULT_CFG_FILE "/etc/ocserv/ocserv.conf"
 
-static const char* pid_file = NULL;
+static char pid_file[_POSIX_PATH_MAX] = "";
 static const char* cfg_file = DEFAULT_CFG_FILE;
+static const struct auth_mod_st *amod = NULL;
 
 struct cfg_options {
 	const char* name;
@@ -50,9 +59,13 @@ struct cfg_options {
 static struct cfg_options available_options[] = {
 	{ .name = "auth", .type = OPTION_MULTI_LINE, .mandatory = 1 },
 	{ .name = "route", .type = OPTION_MULTI_LINE, .mandatory = 0 },
+	{ .name = "select-group", .type = OPTION_MULTI_LINE, .mandatory = 0 },
 	{ .name = "custom-header", .type = OPTION_MULTI_LINE, .mandatory = 0 },
 	{ .name = "split-dns", .type = OPTION_MULTI_LINE, .mandatory = 0 },
 	{ .name = "listen-host", .type = OPTION_STRING, .mandatory = 0 },
+	{ .name = "listen-host-is-dyndns", .type = OPTION_BOOLEAN, .mandatory = 0 },
+	{ .name = "compression", .type = OPTION_BOOLEAN, .mandatory = 0 },
+	{ .name = "no-compress-limit", .type = OPTION_NUMERIC, .mandatory = 0 },
 	{ .name = "tcp-port", .type = OPTION_NUMERIC, .mandatory = 0 },
 	{ .name = "udp-port", .type = OPTION_NUMERIC, .mandatory = 0 },
 	{ .name = "keepalive", .type = OPTION_NUMERIC, .mandatory = 0 },
@@ -75,12 +88,22 @@ static struct cfg_options available_options[] = {
 	{ .name = "disconnect-script", .type = OPTION_STRING, .mandatory = 0 },
 	{ .name = "pid-file", .type = OPTION_STRING, .mandatory = 0 },
 	{ .name = "socket-file", .type = OPTION_STRING, .mandatory = 1 },
+	{ .name = "listen-clear-file", .type = OPTION_STRING, .mandatory = 0 },
+	{ .name = "occtl-socket-file", .type = OPTION_STRING, .mandatory = 0 },
 	{ .name = "banner", .type = OPTION_STRING, .mandatory = 0 },
+	{ .name = "use-seccomp", .type = OPTION_BOOLEAN, .mandatory = 0 },
+	{ .name = "isolate-workers", .type = OPTION_BOOLEAN, .mandatory = 0 },
+	{ .name = "predictable-ips", .type = OPTION_BOOLEAN, .mandatory = 0 },
+	{ .name = "session-control", .type = OPTION_BOOLEAN, .mandatory = 0 },
+	{ .name = "auto-select-group", .type = OPTION_BOOLEAN, .mandatory = 0 },
+	{ .name = "default-select-group", .type = OPTION_STRING, .mandatory = 0 },
 	/* this is alias for cisco-client-compat */
 	{ .name = "always-require-cert", .type = OPTION_BOOLEAN, .mandatory = 0 },
 	{ .name = "cisco-client-compat", .type = OPTION_BOOLEAN, .mandatory = 0 },
+	{ .name = "deny-roaming", .type = OPTION_BOOLEAN, .mandatory = 0 },
 	{ .name = "use-utmp", .type = OPTION_BOOLEAN, .mandatory = 0 },
-	{ .name = "use-dbus", .type = OPTION_BOOLEAN, .mandatory = 1 },
+	{ .name = "use-dbus", .type = OPTION_BOOLEAN, .mandatory = 0 },
+	{ .name = "use-occtl", .type = OPTION_BOOLEAN, .mandatory = 0 },
 	{ .name = "try-mtu-discovery", .type = OPTION_BOOLEAN, .mandatory = 0 },
 	{ .name = "ping-leases", .type = OPTION_BOOLEAN, .mandatory = 0 },
 	{ .name = "tls-priorities", .type = OPTION_STRING, .mandatory = 0 },
@@ -88,7 +111,8 @@ static struct cfg_options available_options[] = {
 	{ .name = "mtu", .type = OPTION_NUMERIC, .mandatory = 0 },
 	{ .name = "net-priority", .type = OPTION_STRING, .mandatory = 0 },
 	{ .name = "output-buffer", .type = OPTION_NUMERIC, .mandatory = 0 },
-	{ .name = "cookie-validity", .type = OPTION_NUMERIC, .mandatory = 1 },
+	{ .name = "cookie-timeout", .type = OPTION_NUMERIC, .mandatory = 0 },
+	{ .name = "stats-report-time", .type = OPTION_NUMERIC, .mandatory = 0 },
 	{ .name = "rekey-time", .type = OPTION_NUMERIC, .mandatory = 0 },
 	{ .name = "rekey-method", .type = OPTION_STRING, .mandatory = 0 },
 	{ .name = "auth-timeout", .type = OPTION_NUMERIC, .mandatory = 0 },
@@ -105,6 +129,7 @@ static struct cfg_options available_options[] = {
 	{ .name = "run-as-group", .type = OPTION_STRING, .mandatory = 0 },
 	{ .name = "device", .type = OPTION_STRING, .mandatory = 1 },
 	{ .name = "cgroup", .type = OPTION_STRING, .mandatory = 0 },
+	{ .name = "proxy-url", .type = OPTION_STRING, .mandatory = 0 },
 
 	{ .name = "ipv4-network", .type = OPTION_STRING, .mandatory = 0 },
 	{ .name = "ipv4-netmask", .type = OPTION_STRING, .mandatory = 0 },
@@ -121,7 +146,48 @@ static struct cfg_options available_options[] = {
 	{ .name = "route-del-cmd", .type = OPTION_STRING, .mandatory = 0 },
 	{ .name = "config-per-user", .type = OPTION_STRING, .mandatory = 0 },
 	{ .name = "config-per-group", .type = OPTION_STRING, .mandatory = 0 },
+	{ .name = "default-user-config", .type = OPTION_STRING, .mandatory = 0 },
+	{ .name = "default-group-config", .type = OPTION_STRING, .mandatory = 0 },
 };
+
+#define get_brackets_string get_brackets_string1
+static char *get_brackets_string1(void *pool, const char *str);
+
+#ifdef HAVE_RADIUS
+static char *get_brackets_string2(void *pool, const char *str)
+{
+	char *p, *p2;
+	unsigned len;
+
+	p = strchr(str, '[');
+	if (p == NULL) {
+		return NULL;
+	}
+	p++;
+
+	p = strchr(p, ',');
+	if (p == NULL) {
+		return NULL;
+	}
+	p++;
+
+	while (c_isspace(*p))
+		p++;
+
+	p2 = strchr(p, ',');
+	if (p2 == NULL) {
+		p2 = strchr(p, ']');
+		if (p2 == NULL) {
+			fprintf(stderr, "error parsing %s\n", str);
+			exit(1);
+		}
+	}
+
+	len = p2 - p;
+
+	return talloc_strndup(pool, p, len);
+}
+#endif
 
 static const tOptionValue* get_option(const char* name, unsigned * mand)
 {
@@ -138,17 +204,21 @@ unsigned j;
 	return NULL;
 }
 
-#define READ_MULTI_LINE(name, s_name, num) \
+#define READ_MULTI_LINE(name, s_name, num) { \
 	val = get_option(name, &mand); \
 	if (val != NULL && val->valType == OPARG_TYPE_STRING) { \
 		if (s_name == NULL) { \
 			num = 0; \
-			s_name = malloc(sizeof(char*)*MAX_CONFIG_ENTRIES); \
+			s_name = talloc_size(config, sizeof(char*)*MAX_CONFIG_ENTRIES); \
+			if (s_name == NULL) { \
+				fprintf(stderr, "memory error\n"); \
+				exit(1); \
+			} \
 		} \
 		do { \
 		        if (val && !strcmp(val->pzName, name)==0) \
 				continue; \
-		        s_name[num] = strdup(val->v.strVal); \
+		        s_name[num] = talloc_strdup(config, val->v.strVal); \
 		        num++; \
 		        if (num>=MAX_CONFIG_ENTRIES) \
 		        break; \
@@ -157,25 +227,55 @@ unsigned j;
 	} else if (mand != 0) { \
 		fprintf(stderr, "Configuration option %s is mandatory.\n", name); \
 		exit(1); \
-	}
+	}}
 
-#define READ_STRING(name, s_name) \
+#define READ_MULTI_BRACKET_LINE(name, s_name, s_name2, num) { \
+	val = get_option(name, &mand); \
+	if (val != NULL && val->valType == OPARG_TYPE_STRING) { \
+		if (s_name == NULL || s_name2 == NULL) { \
+			num = 0; \
+			s_name = talloc_size(config, sizeof(char*)*MAX_CONFIG_ENTRIES); \
+			s_name2 = talloc_size(config, sizeof(char*)*MAX_CONFIG_ENTRIES); \
+			if (s_name == NULL || s_name2 == NULL) { \
+				fprintf(stderr, "memory error\n"); \
+				exit(1); \
+			} \
+		} \
+		do { \
+		        char *xp; \
+		        if (val && !strcmp(val->pzName, name)==0) \
+				continue; \
+		        s_name[num] = talloc_strdup(config, val->v.strVal); \
+		        xp = strchr(s_name[num], '['); if (xp != NULL) *xp = 0; \
+		        s_name2[num] = get_brackets_string(config, val->v.strVal); \
+		        num++; \
+		        if (num>=MAX_CONFIG_ENTRIES) \
+		        break; \
+	      } while((val = optionNextValue(pov, val)) != NULL); \
+	      s_name[num] = NULL; \
+	      s_name2[num] = NULL; \
+	} else if (mand != 0) { \
+		fprintf(stderr, "Configuration option %s is mandatory.\n", name); \
+		exit(1); \
+	}}
+
+#define READ_STRING(name, s_name) { \
 	val = get_option(name, &mand); \
 	if (val != NULL && val->valType == OPARG_TYPE_STRING) \
-		s_name = strdup(val->v.strVal); \
+		s_name = talloc_strdup(config, val->v.strVal); \
 	else if (mand != 0) { \
 		fprintf(stderr, "Configuration option %s is mandatory.\n", name); \
 		exit(1); \
-	}
+	}}
 
-#define READ_STATIC_STRING(name, s_name) \
+#define READ_STATIC_STRING(name, s_name) { \
 	val = get_option(name, &mand); \
 	if (val != NULL && val->valType == OPARG_TYPE_STRING) \
-		snprintf(s_name, sizeof(s_name), "%s", val->v.strVal); \
+		strlcpy(s_name, val->v.strVal, sizeof(s_name)); \
 	else if (mand != 0) { \
 		fprintf(stderr, "Configuration option %s is mandatory.\n", name); \
 		exit(1); \
-	}
+	}}
 
 #define READ_TF(name, s_name, def) \
 	{ char* tmp_tf = NULL; \
@@ -187,10 +287,10 @@ unsigned j;
 			else \
 				s_name = 0; \
 		} \
-		free(tmp_tf); \
+		talloc_free(tmp_tf); \
 	}
 
-#define READ_NUMERIC(name, s_name) \
+#define READ_NUMERIC(name, s_name) { \
 	val = get_option(name, &mand); \
 	if (val != NULL) { \
 		if (val->valType == OPARG_TYPE_NUMERIC) \
@@ -200,9 +300,9 @@ unsigned j;
 	} else if (mand != 0) { \
 		fprintf(stderr, "Configuration option %s is mandatory.\n", name); \
 		exit(1); \
-	}
+	}}
 
-#define READ_PRIO_TOS(name, s_name) \
+#define READ_PRIO_TOS(name, s_name) { \
 	val = get_option(name, &mand); \
 	if (val != NULL) { \
 		if (val->valType == OPARG_TYPE_STRING) { \
@@ -217,7 +317,7 @@ unsigned j;
 	} else if (mand != 0) { \
 		fprintf(stderr, "Configuration option %s is mandatory.\n", name); \
 		exit(1); \
-	}
+	}}
 
 
 static int handle_option(const tOptionValue* val)
@@ -244,14 +344,70 @@ unsigned j;
 	}
 }
 
-static void parse_cfg_file(const char* file, struct cfg_st *config)
+static char *get_brackets_string1(void *pool, const char *str)
+{
+	char *p, *p2;
+	unsigned len;
+
+	p = strchr(str, '[');
+	if (p == NULL) {
+		return NULL;
+	}
+	p++;
+	while (c_isspace(*p))
+		p++;
+
+	p2 = strchr(p, ',');
+	if (p2 == NULL) {
+		p2 = strchr(p, ']');
+		if (p2 == NULL) {
+			fprintf(stderr, "error parsing %s\n", str);
+			exit(1);
+		}
+	}
+
+	len = p2 - p;
+
+	return talloc_strndup(pool, p, len);
+}
+
+
+/* Parses the string ::1/prefix, to return prefix
+ * and modify the string to contain the network only.
+ */
+unsigned extract_prefix(char *network)
+{
+	char *p;
+	unsigned prefix;
+
+	if (network == NULL)
+		return 0;
+
+	p = strchr(network, '/');
+
+	if (p == NULL)
+		return 0;
+
+	prefix = atoi(p+1);
+	*p = 0;
+
+	return prefix;
+}
+
+const struct auth_mod_st *get_auth_mod(void)
+{
+	return amod;
+}
+
+static void parse_cfg_file(const char* file, struct cfg_st *config, unsigned reload)
 {
 tOptionValue const * pov;
 const tOptionValue* val, *prev;
-unsigned j, mand;
+unsigned j, i, mand;
 char** auth = NULL;
 unsigned auth_size = 0;
-unsigned prefix = 0;
+unsigned prefix = 0, auto_select_group = 0;
+unsigned prefix4 = 0;
 char *tmp;
 unsigned force_cert_auth;
 
@@ -279,49 +435,83 @@ unsigned force_cert_auth;
 		prev = val;
 	} while((val = optionNextValue(pov, prev)) != NULL);
 
+	config->sup_config_type = SUP_CONFIG_FILE;
+
 	READ_MULTI_LINE("auth", auth, auth_size);
 	for (j=0;j<auth_size;j++) {
-		if (c_strcasecmp(auth[j], "pam") == 0) {
+		if (c_strncasecmp(auth[j], "pam", 3) == 0) {
+			config->auth_additional = get_brackets_string(config, auth[j]+3);
 			if ((config->auth_types & AUTH_TYPE_USERNAME_PASS) != 0) {
 				fprintf(stderr, "You cannot mix multiple username/password authentication methods\n");
 				exit(1);
 			}
 #ifdef HAVE_PAM
-			config->auth_types |= AUTH_TYPE_PAM;
+			amod = &pam_auth_funcs;
+			config->auth_types |= amod->type;
 #else
 			fprintf(stderr, "PAM support is disabled\n");
 			exit(1);
 #endif
-		} else if (strncasecmp(auth[j], "plain[", 6) == 0) {
-			char* p;
-
+		} else if (strncasecmp(auth[j], "plain", 5) == 0) {
 			if ((config->auth_types & AUTH_TYPE_USERNAME_PASS) != 0) {
 				fprintf(stderr, "You cannot mix multiple username/password authentication methods\n");
 				exit(1);
 			}
 
-			config->plain_passwd = strdup(auth[j]+6);
-			p = strchr(config->plain_passwd, ']');
-			if (p == NULL) {
+			config->auth_additional = get_brackets_string(config, auth[j]+5);
+			if (config->auth_additional == NULL) {
 				fprintf(stderr, "Format error in %s\n", auth[j]);
 				exit(1);
 			}
-			*p = 0;
-			config->auth_types |= AUTH_TYPE_PLAIN;
+			amod = &plain_auth_funcs;
+			config->auth_types |= amod->type;
+		} else if (strncasecmp(auth[j], "radius", 6) == 0) {
+			if ((config->auth_types & AUTH_TYPE_USERNAME_PASS) != 0) {
+				fprintf(stderr, "You cannot mix multiple username/password authentication methods\n");
+				exit(1);
+			} else {
+
+#ifdef HAVE_RADIUS
+				const char *p;
+
+				config->auth_additional = get_brackets_string1(config, auth[j]+6);
+				if (config->auth_additional == NULL) {
+					fprintf(stderr, "No configuration specified; error in %s\n", auth[j]);
+					exit(1);
+				}
+
+				p = get_brackets_string2(config, auth[j]+6);
+				if (p != NULL) {
+					if (strcasecmp(p, "groupconfig") != 0) {
+						fprintf(stderr, "No known configuration option: %s\n", p);
+						exit(1);
+					}
+					config->sup_config_type = SUP_CONFIG_RADIUS;
+				}
+				amod = &radius_auth_funcs;
+				config->auth_types |= amod->type;
+#else
+				fprintf(stderr, "Radius support is disabled\n");
+				exit(1);
+#endif
+			}
 		} else if (c_strcasecmp(auth[j], "certificate") == 0) {
 			config->auth_types |= AUTH_TYPE_CERTIFICATE;
+		} else if (c_strcasecmp(auth[j], "certificate[optional]") == 0) {
+			config->auth_types |= AUTH_TYPE_CERTIFICATE_OPT;
 		} else {
 			fprintf(stderr, "Unknown auth method: %s\n", auth[j]);
 			exit(1);
 		}
-		free(auth[j]);
+		talloc_free(auth[j]);
 	}
-	free(auth);
+	talloc_free(auth);
 
 	/* When adding allocated data, remember to modify
 	 * reload_cfg_file();
 	 */
 	READ_STRING("listen-host", config->name);
+	READ_TF("listen-host-is-dyndns", config->is_dyndns, 0);
 
 	READ_NUMERIC("tcp-port", config->port);
 	READ_NUMERIC("udp-port", config->udp_port);
@@ -355,10 +545,24 @@ unsigned force_cert_auth;
 	READ_STRING("connect-script", config->connect_script);
 	READ_STRING("disconnect-script", config->disconnect_script);
 
-	if (pid_file == NULL)
-		READ_STRING("pid-file", pid_file);
+	if (reload == 0 && pid_file[0] == 0)
+		READ_STATIC_STRING("pid-file", pid_file);
+
+	READ_STRING("listen-clear-file", config->unix_conn_file);
+	if (config->unix_conn_file != NULL && (config->auth_types & AUTH_TYPE_CERTIFICATE)) {
+		fprintf(stderr, "The option 'listen-clear-file' cannot be combined with 'auth=certificate'\n");
+		exit(1);
+	}
 
 	READ_STRING("socket-file", config->socket_file_prefix);
+	READ_STRING("occtl-socket-file", config->occtl_socket_file);
+	if (config->occtl_socket_file == NULL)
+		config->occtl_socket_file = talloc_strdup(config, OCCTL_UNIX_SOCKET);
+
+	val = get_option("session-control", NULL);
+	if (val != NULL) {
+		fprintf(stderr, "The option 'session-control' is deprecated\n");
+	}
 
 	READ_STRING("banner", config->banner);
 	READ_TF("cisco-client-compat", config->cisco_client_compat, 0);
@@ -368,8 +572,38 @@ unsigned force_cert_auth;
 		config->cisco_client_compat = 1;
 	}
 
+	READ_TF("compression", config->enable_compression, 0);
+	READ_NUMERIC("no-compress-limit", config->no_compress_limit);
+	if (config->no_compress_limit == 0)
+		config->no_compress_limit = DEFAULT_NO_COMPRESS_LIMIT;
+	if (config->no_compress_limit < MIN_NO_COMPRESS_LIMIT)
+		config->no_compress_limit = MIN_NO_COMPRESS_LIMIT;
+
+	READ_TF("use-seccomp", config->isolate, 0);
+	if (config->isolate) {
+		fprintf(stderr, "note that 'use-seccomp' was replaced by 'isolate-workers'\n");
+	} else {
+		READ_TF("isolate-workers", config->isolate, 0);
+	}
+#if !defined(HAVE_LIBSECCOMP) && !defined(ENABLE_LINUX_NS)
+	if (config->isolate != 0) {
+		fprintf(stderr, "error: 'isolate-workers' is set to true, but not compiled with seccomp or Linux namespaces support\n");
+		exit(1);
+	}
+#endif
+
+	READ_TF("predictable-ips", config->predictable_ips, 1);
 	READ_TF("use-utmp", config->use_utmp, 1);
 	READ_TF("use-dbus", config->use_dbus, 0);
+	if (config->use_dbus != 0) {
+		fprintf(stderr, "note that 'use-dbus' was replaced by 'use-occtl'\n");
+		config->use_occtl = config->use_dbus;
+	} else {
+		READ_TF("use-occtl", config->use_occtl, 0);
+		if (config->use_occtl == 0)
+			config->use_dbus = 0;
+	}
+
 	READ_TF("try-mtu-discovery", config->try_mtu, 0);
 	READ_TF("ping-leases", config->ping_leases, 0);
 
@@ -387,7 +621,9 @@ unsigned force_cert_auth;
 	config->rx_per_sec /= 1000; /* in kb */
 	config->tx_per_sec /= 1000;
 
-	READ_NUMERIC("cookie-validity", config->cookie_validity);
+	READ_TF("deny-roaming", config->deny_roaming, 0);
+
+	READ_NUMERIC("stats-report-time", config->stats_report_time);
 
 	config->rekey_time = -1;
 	READ_NUMERIC("rekey-time", config->rekey_time);
@@ -405,7 +641,11 @@ unsigned force_cert_auth;
 		fprintf(stderr, "Unknown rekey method '%s'\n", tmp);
 		exit(1);
 	}
-	free(tmp); tmp = NULL;
+	talloc_free(tmp); tmp = NULL;
+
+	READ_NUMERIC("cookie-timeout", config->cookie_timeout);
+	if (config->cookie_timeout == 0)
+		config->cookie_timeout = DEFAULT_COOKIE_RECON_TIMEOUT;
 
 	READ_NUMERIC("auth-timeout", config->auth_timeout);
 	READ_NUMERIC("idle-timeout", config->idle_timeout);
@@ -441,18 +681,28 @@ unsigned force_cert_auth;
 
 	READ_STATIC_STRING("device", config->network.name);
 	READ_STRING("cgroup", config->cgroup);
+	READ_STRING("proxy-url", config->proxy_url);
 
 	READ_STRING("ipv4-network", config->network.ipv4);
-	READ_STRING("ipv4-netmask", config->network.ipv4_netmask);
+
+	prefix4 = extract_prefix(config->network.ipv4);
+	if (prefix4 == 0) {
+		READ_STRING("ipv4-netmask", config->network.ipv4_netmask);
+	} else {
+		config->network.ipv4_netmask = ipv4_prefix_to_mask(config, prefix4);
+	}
 
 	READ_STRING("ipv6-network", config->network.ipv6);
 
-	READ_NUMERIC("ipv6-prefix", prefix);
+	prefix = extract_prefix(config->network.ipv6);
+	if (prefix == 0) {
+		READ_NUMERIC("ipv6-prefix", prefix);
+	}
+
 	if (prefix > 0) {
-		config->network.ipv6_netmask = ipv6_prefix_to_mask(prefix);
 		config->network.ipv6_prefix = prefix;
 
-		if (config->network.ipv6_netmask == NULL) {
+		if (valid_ipv6_prefix(prefix) == 0) {
 			fprintf(stderr, "invalid IPv6 prefix: %u\n", prefix);
 			exit(1);
 		}
@@ -463,12 +713,27 @@ unsigned force_cert_auth;
 
 	READ_MULTI_LINE("route", config->network.routes, config->network.routes_size);
 	for (j=0;j<config->network.routes_size;j++) {
-		if (strstr(config->network.routes[j], "0.0.0.0/0") != 0) {
-			fprintf(stderr, "Illegal route '%s' detected; to set a default route remove all route directives\n",
-				config->network.routes[j]);
-			exit(1);
+		if (strcmp(config->network.routes[j], "0.0.0.0/0") == 0 ||
+		    strcmp(config->network.routes[j], "default") == 0) {
+		    	/* set default route */
+			for (i=0;i<j;i++)
+				free(config->network.routes[i]);
+			config->network.routes_size = 0;
+			break;
 		}
 	}
+
+	READ_STRING("default-select-group", config->default_select_group);
+	READ_TF("auto-select-group", auto_select_group, 0);
+	if (auto_select_group != 0 && amod != NULL && amod->group_list != NULL) {
+		amod->group_list(config, config->auth_additional, &config->group_list, &config->group_list_size);
+	} else {
+		READ_MULTI_BRACKET_LINE("select-group",
+				config->group_list,
+				config->friendly_group_list,
+				config->group_list_size);
+	}
+
 	READ_MULTI_LINE("dns", config->network.dns, config->network.dns_size);
 	if (config->network.dns_size == 0) {
 		/* try the aliases */
@@ -495,12 +760,15 @@ unsigned force_cert_auth;
 	READ_STRING("config-per-user", config->per_user_dir);
 	READ_STRING("config-per-group", config->per_group_dir);
 
+	READ_STRING("default-user-config", config->default_user_conf);
+	READ_STRING("default-group-config", config->default_group_conf);
+
 	optionUnloadNested(pov);
 }
 
 
 /* sanity checks on config */
-static void check_cfg( struct cfg_st *config)
+static void check_cfg(struct cfg_st *config)
 {
 	if (config->network.ipv4 == NULL && config->network.ipv6 == NULL) {
 		fprintf(stderr, "No ipv4-network or ipv6-network options set.\n");
@@ -512,8 +780,8 @@ static void check_cfg( struct cfg_st *config)
 		exit(1);
 	}
 
-	if (config->network.ipv6 != NULL && config->network.ipv6_netmask == NULL) {
-		fprintf(stderr, "No mask found for IPv6 network.\n");
+	if (config->network.ipv6 != NULL && config->network.ipv6_prefix == 0) {
+		fprintf(stderr, "No prefix found for IPv6 network.\n");
 		exit(1);
 	}
 
@@ -528,31 +796,31 @@ static void check_cfg( struct cfg_st *config)
 	}
 
 	if (config->auth_types & AUTH_TYPE_CERTIFICATE) {
-		if (config->cisco_client_compat == 0)
+		if (config->cisco_client_compat == 0 && ((config->auth_types & AUTH_TYPE_CERTIFICATE_OPT) != AUTH_TYPE_CERTIFICATE_OPT))
 			config->cert_req = GNUTLS_CERT_REQUIRE;
 		else
 			config->cert_req = GNUTLS_CERT_REQUEST;
 	}
 
-	if (config->plain_passwd != NULL) {
-		if (access(config->plain_passwd, R_OK) != 0) {
-			fprintf(stderr, "cannot access password file '%s'\n", config->plain_passwd);
+	if (config->auth_additional != NULL && (config->auth_types & AUTH_TYPE_PLAIN) == AUTH_TYPE_PLAIN) {
+		if (access(config->auth_additional, R_OK) != 0) {
+			fprintf(stderr, "cannot access password file '%s'\n", config->auth_additional);
 			exit(1);
 		}
 	}
 
 #ifdef ANYCONNECT_CLIENT_COMPAT
 	if (config->cert) {
-		config->cert_hash = calc_sha1_hash(config->cert[0], 1);
+		config->cert_hash = calc_sha1_hash(config, config->cert[0], 1);
 	}
 
 	if (config->xml_config_file) {
-		config->xml_config_hash = calc_sha1_hash(config->xml_config_file, 0);
+		config->xml_config_hash = calc_sha1_hash(config, config->xml_config_file, 0);
 		if (config->xml_config_hash == NULL && config->chroot_dir != NULL) {
 			char path[_POSIX_PATH_MAX];
 
 			snprintf(path, sizeof(path), "%s/%s", config->chroot_dir, config->xml_config_file);
-			config->xml_config_hash = calc_sha1_hash(path, 0);
+			config->xml_config_hash = calc_sha1_hash(config, path, 0);
 
 			if (config->xml_config_hash == NULL) {
 				fprintf(stderr, "Cannot open file '%s'\n", path);
@@ -576,21 +844,22 @@ static void check_cfg( struct cfg_st *config)
 		config->priorities = "NORMAL:%SERVER_PRECEDENCE:%COMPAT";
 }
 
-int cmd_parser (int argc, char **argv, struct cfg_st* config)
+int cmd_parser (void *pool, int argc, char **argv, struct cfg_st** config)
 {
 
-	memset(config, 0, sizeof(*config));
+	*config = talloc_zero(pool, struct cfg_st);
 
 	optionProcess( &ocservOptions, argc, argv);
   
 	if (HAVE_OPT(FOREGROUND))
-		config->foreground = 1;
+		(*config)->foreground = 1;
 
-	if (HAVE_OPT(PID_FILE))
-		pid_file = OPT_ARG(PID_FILE);
+	if (HAVE_OPT(PID_FILE)) {
+		strlcpy(pid_file, OPT_ARG(PID_FILE), sizeof(pid_file));
+	}
 
 	if (HAVE_OPT(DEBUG))
-		config->debug = OPT_VALUE_DEBUG;
+		(*config)->debug = OPT_VALUE_DEBUG;
 
 	if (HAVE_OPT(CONFIG)) {
 		cfg_file = OPT_ARG(CONFIG);
@@ -599,15 +868,15 @@ int cmd_parser (int argc, char **argv, struct cfg_st* config)
 		exit(1);
 	}
 
-	parse_cfg_file(cfg_file, config);
+	parse_cfg_file(cfg_file, *config, 0);
 
-	check_cfg(config);
+	check_cfg(*config);
 
 	return 0;
 
 }
 
-#define DEL(x) {free(x);x=NULL;}
+#define DEL(x) {talloc_free(x);x=NULL;}
 void clear_cfg_file(struct cfg_st* config)
 {
 unsigned i;
@@ -624,7 +893,7 @@ unsigned i;
 	DEL(config->per_group_dir);
 	DEL(config->socket_file_prefix);
 	DEL(config->default_domain);
-	DEL(config->plain_passwd);
+	DEL(config->auth_additional);
 	DEL(config->ocsp_response);
 	DEL(config->banner);
 	DEL(config->dh_params_file);
@@ -639,11 +908,11 @@ unsigned i;
 	DEL(config->chroot_dir);
 	DEL(config->connect_script);
 	DEL(config->disconnect_script);
+	DEL(config->proxy_url);
 
 	DEL(config->network.ipv4);
 	DEL(config->network.ipv4_netmask);
 	DEL(config->network.ipv6);
-	DEL(config->network.ipv6_netmask);
 	for (i=0;i<config->network.routes_size;i++)
 		DEL(config->network.routes[i]);
 	DEL(config->network.routes);
@@ -665,17 +934,65 @@ unsigned i;
 	for (i=0;i<config->split_dns_size;i++)
 		DEL(config->split_dns[i]);
 	DEL(config->split_dns);
+	for (i=0;i<config->group_list_size;i++)
+		DEL(config->group_list[i]);
+	DEL(config->group_list);
+	DEL(config->default_select_group);
+#ifdef HAVE_LIBTALLOC
+	/* our included talloc don't include that */
+	talloc_free_children(config);
+#endif
+	memset(config, 0, sizeof(*config));
 
 	return;
 }
 
-void reload_cfg_file(struct cfg_st* config)
+void print_version(tOptions *opts, tOptDesc *desc)
+{
+	const char *p;
+
+	fputs(OCSERV_FULL_VERSION, stderr);
+	fprintf(stderr, "\n\nCompiled with ");
+#ifdef HAVE_LIBSECCOMP
+	fprintf(stderr, "seccomp, ");
+#endif
+#ifdef ENABLE_LINUX_NS
+	fprintf(stderr, "Linux-NS, ");
+#endif
+#ifdef HAVE_LIBWRAP
+	fprintf(stderr, "tcp-wrappers, ");
+#endif
+#ifdef HAVE_RADIUS
+	fprintf(stderr, "radius, ");
+#endif
+#ifdef HAVE_PAM
+	fprintf(stderr, "PAM, ");
+#endif
+#ifdef HAVE_PKCS11
+	fprintf(stderr, "PKCS#11, ");
+#endif
+#ifdef ANYCONNECT_CLIENT_COMPAT
+	fprintf(stderr, "AnyConnect, ");
+#endif
+	fprintf(stderr, "\n");
+
+	p = gnutls_check_version(NULL);
+	if (strcmp(p, GNUTLS_VERSION) != 0) {
+		fprintf(stderr, "GnuTLS version: %s (compiled with %s)\n", p, GNUTLS_VERSION);
+	} else {
+		fprintf(stderr, "GnuTLS version: %s\n", p);
+	}
+
+	exit(0);
+}
+
+void reload_cfg_file(void *pool, struct cfg_st* config)
 {
 	clear_cfg_file(config);
 
 	memset(config, 0, sizeof(*config));
 
-	parse_cfg_file(cfg_file, config);
+	parse_cfg_file(cfg_file, config, 1);
 
 	check_cfg(config);
 
@@ -686,7 +1003,7 @@ void write_pid_file(void)
 {
 FILE* fp;
 
-	if (pid_file==NULL)
+	if (pid_file[0]==0)
 		return;
 
 	fp = fopen(pid_file, "w");
@@ -701,7 +1018,7 @@ FILE* fp;
 
 void remove_pid_file(void)
 {
-	if (pid_file==NULL)
+	if (pid_file[0]==0)
 		return;
 
 	remove(pid_file);

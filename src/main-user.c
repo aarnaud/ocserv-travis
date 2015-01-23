@@ -62,44 +62,57 @@ const char* script;
 
 	pid = fork();
 	if (pid == 0) {
-		char real[64];
-		char local[64];
-		char remote[64];
+		char real[64] = "";
+		char local[64] = "";
+		char remote[64] = "";
+
+		sigprocmask(SIG_SETMASK, &sig_default_set, NULL);
 
 		snprintf(real, sizeof(real), "%u", (unsigned)proc->pid);
 		setenv("ID", real, 1);
 
-		if (proc->ipv4 == NULL && proc->ipv6 == NULL) {
-			mslog(s, proc, LOG_DEBUG, "no IP configured; script failed");
-			exit(1);
-		}
-		
-		if (getnameinfo((void*)&proc->remote_addr, proc->remote_addr_len, real, sizeof(real), NULL, 0, NI_NUMERICHOST) != 0) {
-			mslog(s, proc, LOG_DEBUG, "cannot determine peer address; script failed");
-			exit(1);
+		if (proc->remote_addr_len > 0) {
+			if (getnameinfo((void*)&proc->remote_addr, proc->remote_addr_len, real, sizeof(real), NULL, 0, NI_NUMERICHOST) != 0) {
+				mslog(s, proc, LOG_DEBUG, "cannot determine peer address; script failed");
+				exit(1);
+			}
+			setenv("IP_REAL", real, 1);
 		}
 
-		if (proc->ipv4 && proc->ipv4->lip_len > 0) {
-			if (getnameinfo((void*)&proc->ipv4->lip, proc->ipv4->lip_len, local, sizeof(local), NULL, 0, NI_NUMERICHOST) != 0) {
-				mslog(s, proc, LOG_DEBUG, "cannot determine local VPN address; script failed");
-				exit(1);
+		if (proc->ipv4 != NULL || proc->ipv6 != NULL) {
+			if (proc->ipv4 && proc->ipv4->lip_len > 0) {
+				if (getnameinfo((void*)&proc->ipv4->lip, proc->ipv4->lip_len, local, sizeof(local), NULL, 0, NI_NUMERICHOST) != 0) {
+					mslog(s, proc, LOG_DEBUG, "cannot determine local VPN address; script failed");
+					exit(1);
+				}
+				setenv("IP_LOCAL", local, 1);
 			}
-		} else {
-			if (getnameinfo((void*)&proc->ipv6->lip, proc->ipv6->lip_len, local, sizeof(local), NULL, 0, NI_NUMERICHOST) != 0) {
-				mslog(s, proc, LOG_DEBUG, "cannot determine local VPN PtP address; script failed");
-				exit(1);
-			}
-		}
 
-		if (proc->ipv4 && proc->ipv4->rip_len > 0) {
-			if (getnameinfo((void*)&proc->ipv4->rip, proc->ipv4->rip_len, remote, sizeof(remote), NULL, 0, NI_NUMERICHOST) != 0) {
-				mslog(s, proc, LOG_DEBUG, "cannot determine local VPN address; script failed");
-				exit(1);
+			if (proc->ipv6 && proc->ipv6->lip_len > 0) {
+				if (getnameinfo((void*)&proc->ipv6->lip, proc->ipv6->lip_len, local, sizeof(local), NULL, 0, NI_NUMERICHOST) != 0) {
+					mslog(s, proc, LOG_DEBUG, "cannot determine local VPN PtP address; script failed");
+					exit(1);
+				}
+				if (local[0] == 0)
+					setenv("IP_LOCAL", local, 1);
+				setenv("IPV6_LOCAL", local, 1);
 			}
-		} else {
-			if (getnameinfo((void*)&proc->ipv6->rip, proc->ipv6->rip_len, remote, sizeof(remote), NULL, 0, NI_NUMERICHOST) != 0) {
-				mslog(s, proc, LOG_DEBUG, "cannot determine local VPN PtP address; script failed");
-				exit(1);
+
+			if (proc->ipv4 && proc->ipv4->rip_len > 0) {
+				if (getnameinfo((void*)&proc->ipv4->rip, proc->ipv4->rip_len, remote, sizeof(remote), NULL, 0, NI_NUMERICHOST) != 0) {
+					mslog(s, proc, LOG_DEBUG, "cannot determine local VPN address; script failed");
+					exit(1);
+				}
+				setenv("IP_REMOTE", remote, 1);
+			}
+			if (proc->ipv6 && proc->ipv6->rip_len > 0) {
+				if (getnameinfo((void*)&proc->ipv6->rip, proc->ipv6->rip_len, remote, sizeof(remote), NULL, 0, NI_NUMERICHOST) != 0) {
+					mslog(s, proc, LOG_DEBUG, "cannot determine local VPN PtP address; script failed");
+					exit(1);
+				}
+				if (remote[0] == 0)
+					setenv("IP_REMOTE", remote, 1);
+				setenv("IP_REMOTE", remote, 1);
 			}
 		}
 
@@ -107,15 +120,22 @@ const char* script;
 		setenv("GROUPNAME", proc->groupname, 1);
 		setenv("HOSTNAME", proc->hostname, 1);
 		setenv("DEVICE", proc->tun_lease.name, 1);
-		setenv("IP_REAL", real, 1);
-		setenv("IP_LOCAL", local, 1);
-		setenv("IP_REMOTE", remote, 1);
 		if (up)
 			setenv("REASON", "connect", 1);
-		else
+		else {
+			/* use remote as temp buffer */
+			snprintf(remote, sizeof(remote), "%lu", (unsigned long)proc->bytes_in);
+			setenv("STATS_BYTES_IN", remote, 1);
+			snprintf(remote, sizeof(remote), "%lu", (unsigned long)proc->bytes_out);
+			setenv("STATS_BYTES_OUT", remote, 1);
+			if (proc->conn_time > 0) {
+				snprintf(remote, sizeof(remote), "%lu", (unsigned long)(time(0)-proc->conn_time));
+				setenv("STATS_DURATION", remote, 1);
+			}
 			setenv("REASON", "disconnect", 1);
+		}
 
-		mslog(s, proc, LOG_DEBUG, "executing script %s", script);
+		mslog(s, proc, LOG_DEBUG, "executing script %s %s", up?"up":"down", script);
 		ret = execl(script, script, NULL);
 		if (ret == -1) {
 			mslog(s, proc, LOG_ERR, "Could not execute script %s", script);
@@ -149,8 +169,8 @@ add_utmp_entry(main_server_st *s, struct proc_st* proc)
 	memset(&entry, 0, sizeof(entry));
 	entry.ut_type = USER_PROCESS;
 	entry.ut_pid = proc->pid;
-	snprintf(entry.ut_line, sizeof(entry.ut_line), "%s", proc->tun_lease.name);
-	snprintf(entry.ut_user, sizeof(entry.ut_user), "%s", proc->username);
+	strlcpy(entry.ut_line, proc->tun_lease.name, sizeof(entry.ut_line));
+	strlcpy(entry.ut_user, proc->username, sizeof(entry.ut_user));
 #ifdef __linux__
 	if (proc->remote_addr_len == sizeof(struct sockaddr_in))
 		memcpy(entry.ut_addr_v6, SA_IN_P(&proc->remote_addr), sizeof(struct in_addr));
@@ -187,7 +207,7 @@ static void remove_utmp_entry(main_server_st *s, struct proc_st* proc)
 	memset(&entry, 0, sizeof(entry));
 	entry.ut_type = DEAD_PROCESS;
 	if (proc->tun_lease.name[0] != 0)
-		snprintf(entry.ut_line, sizeof(entry.ut_line), "%s", proc->tun_lease.name);
+		strlcpy(entry.ut_line, proc->tun_lease.name, sizeof(entry.ut_line));
 	entry.ut_pid = proc->pid;
 
 	setutxent();

@@ -41,8 +41,6 @@ fail() {
 }
 
 launch_server() {
-       PARENT=$1;
-       shift;
        $SERV $* >/dev/null 2>&1 &
        LOCALPID="$!";
        trap "[ ! -z \"${LOCALPID}\" ] && kill ${LOCALPID};" 15
@@ -50,10 +48,12 @@ launch_server() {
        LOCALRET="$?"
        if [ "${LOCALRET}" != "0" ] && [ "${LOCALRET}" != "143" ] ; then
                # Houston, we'v got a problem...
-               echo "Failed to launch the server !"
-               test -z "${PARENT}" || kill -10 ${PARENT}
                exit 1
        fi
+}
+
+launch_simple_server() {
+       $SERV $* >/dev/null 2>&1 &
 }
 
 launch_debug_server() {
@@ -64,15 +64,13 @@ launch_debug_server() {
        LOCALRET="$?"
        if [ "${LOCALRET}" != "0" ] && [ "${LOCALRET}" != "143" ] ; then
                # Houston, we'v got a problem...
-               echo "Failed to launch the server !"
-               test -z "${PARENT}" || kill -10 ${PARENT}
                exit 1
        fi
 }
 
 wait_server() {
 	trap "kill $1" 1 15 2
-	sleep 2
+	sleep 5
 }
 
 trap "fail \"Failed to launch the server, aborting test... \"" 10 
