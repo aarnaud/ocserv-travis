@@ -1,2 +1,3 @@
 doc/dbus/org.infradead.ocserv.conf etc/dbus-1/system.d/
+doc/systemd/socket-activated/ocserv.* /lib/systemd/system/
 debian/ocserv.conf etc/ocserv/
