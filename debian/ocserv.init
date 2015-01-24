@@ -11,10 +11,12 @@
 set -e
 
 NAME=ocserv
-DAEMON=/usr/sbin/ocserv
 DESC="OpenConnect SSL VPN server"
-PIDFILE=/var/run/${NAME}.pid
-DAEMON_ARGS="--pid-file $PIDFILE --config /etc/${NAME}/${NAME}.conf"
+
+DAEMON=/usr/sbin/ocserv
+DAEMON_CONFIG=/etc/${NAME}/${NAME}.conf
+DAEMON_PIDFILE=/var/run/${NAME}.pid
+DAEMON_ARGS="--pid-file $DAEMON_PIDFILE --config $DAEMON_CONFIG"
 
 test -x $DAEMON || exit 0
 
@@ -22,25 +24,30 @@ umask 022
 
 . /lib/lsb/init-functions
 
-# Are we running from init?
-run_by_init() {
-    ([ "$previous" ] && [ "$runlevel" ]) || [ "$runlevel" = S ]
-}
-
 export PATH="${PATH:+$PATH:}/usr/sbin:/sbin"
+
+daemon_start()
+{
+    if [ ! -s "$DAEMON_CONFIG" ]; then
+        log_failure_msg "please create ${DAEMON_CONFIG}, not starting..."
+        log_end_msg 1
+        exit 0
+    fi
+    log_daemon_msg "Starting $DESC" "$NAME" || true
+    if start-stop-daemon --start --quiet --oknodo --pidfile $DAEMON_PIDFILE --exec $DAEMON -- $DAEMON_ARGS ; then
+        log_end_msg 0 || true
+    else
+	log_end_msg 1 || true
+    fi
+}
 
 case "$1" in
   start)
-	log_daemon_msg "Starting $DESC" "$NAME" || true
-	if start-stop-daemon --start --quiet --oknodo --pidfile $PIDFILE --exec $DAEMON -- $DAEMON_ARGS ; then
-	    log_end_msg 0 || true
-	else
-	    log_end_msg 1 || true
-	fi
-	;;
+    daemon_start
+    ;;
   stop)
-	log_daemon_msg "Stopping $DESC" "$NAME" || true
-	if start-stop-daemon --stop --quiet --oknodo --pidfile $PIDFILE; then
+    log_daemon_msg "Stopping $DESC" "$NAME" || true
+    if start-stop-daemon --stop --quiet --oknodo --pidfile $DAEMON_PIDFILE; then
 	    log_end_msg 0 || true
 	else
 	    log_end_msg 1 || true
@@ -49,7 +56,7 @@ case "$1" in
 
   reload|force-reload)
 	log_daemon_msg "Reloading $DESC" "$NAME" || true
-	if start-stop-daemon --stop --signal 1 --quiet --oknodo --pidfile $PIDFILE --exec $DAEMON; then
+	if start-stop-daemon --stop --signal 1 --quiet --oknodo --pidfile $DAEMON_PIDFILE --exec $DAEMON; then
 	    log_end_msg 0 || true
 	else
 	    log_end_msg 1 || true
@@ -58,26 +65,18 @@ case "$1" in
 
   restart)
 	log_daemon_msg "Restarting $DESC" "$NAME" || true
-	start-stop-daemon --stop --quiet --oknodo --retry 30 --pidfile $PIDFILE
-	if start-stop-daemon --start --quiet --oknodo --pidfile $PIDFILE --exec $DAEMON -- $DAEMON_ARGS; then
-	    log_end_msg 0 || true
-	else
-	    log_end_msg 1 || true
-	fi
+	start-stop-daemon --stop --quiet --oknodo --retry 30 --pidfile $DAEMON_PIDFILE
+        daemon_start
 	;;
 
   try-restart)
 	log_daemon_msg "Restarting $DESC" "$NAME" || true
 	RET=0
-	start-stop-daemon --stop --quiet --retry 30 --pidfile $PIDFILE || RET="$?"
+	start-stop-daemon --stop --quiet --retry 30 --pidfile $DAEMON_PIDFILE || RET="$?"
 	case $RET in
 	    0)
 		# old daemon stopped
-		if start-stop-daemon --start --quiet --oknodo --pidfile $PIDFILE --exec $DAEMON -- $DAEMON_ARGS; then
-		    log_end_msg 0 || true
-		else
-		    log_end_msg 1 || true
-		fi
+                daemon_start
 		;;
 	    1)
 		# daemon not running
@@ -93,7 +92,7 @@ case "$1" in
 	;;
 
   status)
-	status_of_proc -p $PIDFILE $DAEMON $NAME && exit 0 || exit $?
+	status_of_proc -p $DAEMON_PIDFILE $DAEMON $NAME && exit 0 || exit $?
 	;;
 
   *)
