@@ -24,7 +24,7 @@ Build-Depends: autogen,
                libwrap0-dev,
                pkg-config,
                protobuf-c-compiler
-Standards-Version: 3.9.5
+Standards-Version: 3.9.6
 Homepage: http://www.infradead.org/ocserv/
 
 Package: ocserv
