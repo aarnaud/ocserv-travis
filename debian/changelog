@@ -2,4 +2,4 @@ ocserv (0.9.0.1-1) unstable; urgency=low
 
   * Initial release. (Closes: #742272)
 
- -- Aron Xu <aron@debian.org>  Sat, 24 Feb 2015 13:54:32 +0800
+ -- Aron Xu <aron@debian.org>  Sat, 24 Jan 2015 13:54:32 +0800
