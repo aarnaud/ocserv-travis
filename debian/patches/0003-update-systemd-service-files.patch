@@ -1,0 +1,67 @@
+From: Aron Xu <aron@debian.org>
+Date: Sat, 24 Jan 2015 10:44:55 +0800
+Subject: update systemd service files
+
+---
+ doc/systemd/socket-activated/ocserv.service | 5 ++---
+ doc/systemd/socket-activated/ocserv.socket  | 4 ++--
+ doc/systemd/standalone/ocserv.service       | 4 +---
+ 3 files changed, 5 insertions(+), 8 deletions(-)
+
+diff --git a/doc/systemd/socket-activated/ocserv.service b/doc/systemd/socket-activated/ocserv.service
+index 3e80250..796e496 100644
+--- a/doc/systemd/socket-activated/ocserv.service
++++ b/doc/systemd/socket-activated/ocserv.service
+@@ -1,14 +1,13 @@
+ [Unit]
+ Description=OpenConnect SSL VPN server
+ Documentation=man:ocserv(8)
+-After=syslog.target network.target
++After=network.target
+ Requires=ocserv.socket
+ 
+ [Service]
+ PrivateTmp=true
+-Type=forking
+ PIDFile=/var/run/ocserv.pid
+-ExecStart=/usr/sbin/ocserv --pid-file /var/run/ocserv.pid --config /etc/ocserv/ocserv.conf
++ExecStart=/usr/sbin/ocserv --foreground --pid-file /var/run/ocserv.pid --config /etc/ocserv/ocserv.conf
+ ExecReload=/bin/kill -HUP $MAINPID
+ 
+ [Install]
+diff --git a/doc/systemd/socket-activated/ocserv.socket b/doc/systemd/socket-activated/ocserv.socket
+index 85503aa..9444f19 100644
+--- a/doc/systemd/socket-activated/ocserv.socket
++++ b/doc/systemd/socket-activated/ocserv.socket
+@@ -2,8 +2,8 @@
+ Description=OpenConnect SSL VPN server Socket
+ 
+ [Socket]
+-ListenStream=4443
+-ListenDatagram=4443
++ListenStream=443
++ListenDatagram=443
+ BindIPv6Only=default
+ Accept=false
+ ReusePort=true
+diff --git a/doc/systemd/standalone/ocserv.service b/doc/systemd/standalone/ocserv.service
+index 86fca91..841c935 100644
+--- a/doc/systemd/standalone/ocserv.service
++++ b/doc/systemd/standalone/ocserv.service
+@@ -1,15 +1,13 @@
+ [Unit]
+ Description=OpenConnect SSL VPN server
+ Documentation=man:ocserv(8)
+-After=syslog.target
+ After=network.target
+ After=dbus.service
+ 
+ [Service]
+ PrivateTmp=true
+-Type=forking
+ PIDFile=/var/run/ocserv.pid
+-ExecStart=/usr/sbin/ocserv --pid-file /var/run/ocserv.pid --config /etc/ocserv/ocserv.conf
++ExecStart=/usr/sbin/ocserv --foreground --pid-file /var/run/ocserv.pid --config /etc/ocserv/ocserv.conf
+ ExecReload=/bin/kill -HUP $MAINPID
+ 
+ [Install]
