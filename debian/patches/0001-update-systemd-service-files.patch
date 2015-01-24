@@ -5,11 +5,11 @@ Subject: update systemd service files
 ---
  doc/systemd/socket-activated/ocserv.service | 5 ++---
  doc/systemd/socket-activated/ocserv.socket  | 4 ++--
- doc/systemd/standalone/ocserv.service       | 4 +---
- 3 files changed, 5 insertions(+), 8 deletions(-)
+ doc/systemd/standalone/ocserv.service       | 6 ++----
+ 3 files changed, 6 insertions(+), 9 deletions(-)
 
 diff --git a/doc/systemd/socket-activated/ocserv.service b/doc/systemd/socket-activated/ocserv.service
-index 3e80250..796e496 100644
+index 3e80250..71f53ee 100644
 --- a/doc/systemd/socket-activated/ocserv.service
 +++ b/doc/systemd/socket-activated/ocserv.service
 @@ -1,14 +1,13 @@
@@ -17,7 +17,7 @@ index 3e80250..796e496 100644
  Description=OpenConnect SSL VPN server
  Documentation=man:ocserv(8)
 -After=syslog.target network.target
-+After=network.target
++After=network-online.target
  Requires=ocserv.socket
  
  [Service]
@@ -45,7 +45,7 @@ index 85503aa..9444f19 100644
  Accept=false
  ReusePort=true
 diff --git a/doc/systemd/standalone/ocserv.service b/doc/systemd/standalone/ocserv.service
-index 86fca91..841c935 100644
+index 86fca91..4d497b7 100644
 --- a/doc/systemd/standalone/ocserv.service
 +++ b/doc/systemd/standalone/ocserv.service
 @@ -1,15 +1,13 @@
@@ -53,7 +53,8 @@ index 86fca91..841c935 100644
  Description=OpenConnect SSL VPN server
  Documentation=man:ocserv(8)
 -After=syslog.target
- After=network.target
+-After=network.target
++After=network-online.target
  After=dbus.service
  
  [Service]
