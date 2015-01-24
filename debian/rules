@@ -36,7 +36,7 @@ override_dh_auto_clean:
 	for f in $(BUILT_SOURCES); do \
 		[ ! -f $$f.debian-backup ] || mv $$f.debian-backup $$f; \
 	done
-	rm -rf src/*-args.c src/*-args.h
+	rm -rf src/*-args.c src/*-args.h tests/passwd.out
 
 override_dh_autoreconf_clean:
 	dh_autoreconf_clean
