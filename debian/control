@@ -1,8 +1,8 @@
 Source: ocserv
 Section: net
 Priority: optional
-Maintainer: Mike Miller <mtmiller@debian.org>
-Uploaders: Liang Guo <guoliang@debian.org>, Aron Xu <aron@debian.org>
+Maintainer: Aron Xu <aron@debian.org>
+Uploaders: Liang Guo <guoliang@debian.org>, Mike Miller <mtmiller@debian.org>
 Build-Depends: autogen,
                debhelper (>= 9),
                dh-autoreconf,
