@@ -1,0 +1,24 @@
+From: Aron Xu <aron@debian.org>
+Date: Sat, 24 Jan 2015 10:37:18 +0800
+Subject: Listen to Port 443 as in sample.config
+
+Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+---
+ doc/systemd/socket-activated/ocserv.socket | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/doc/systemd/socket-activated/ocserv.socket b/doc/systemd/socket-activated/ocserv.socket
+index 85503aa..9444f19 100644
+--- a/doc/systemd/socket-activated/ocserv.socket
++++ b/doc/systemd/socket-activated/ocserv.socket
+@@ -2,8 +2,8 @@
+ Description=OpenConnect SSL VPN server Socket
+ 
+ [Socket]
+-ListenStream=4443
+-ListenDatagram=4443
++ListenStream=443
++ListenDatagram=443
+ BindIPv6Only=default
+ Accept=false
+ ReusePort=true

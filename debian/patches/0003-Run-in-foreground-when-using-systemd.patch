@@ -1,24 +1,18 @@
 From: Aron Xu <aron@debian.org>
-Date: Sat, 24 Jan 2015 10:44:55 +0800
-Subject: update systemd service files
+Date: Sat, 24 Jan 2015 16:25:39 +0800
+Subject: Run in foreground when using systemd
 
+Signed-off-by: Aron Xu <aron@debian.org>
 ---
- doc/systemd/socket-activated/ocserv.service | 5 ++---
- doc/systemd/socket-activated/ocserv.socket  | 4 ++--
- doc/systemd/standalone/ocserv.service       | 6 ++----
- 3 files changed, 6 insertions(+), 9 deletions(-)
+ doc/systemd/socket-activated/ocserv.service | 3 +--
+ doc/systemd/standalone/ocserv.service       | 5 ++---
+ 2 files changed, 3 insertions(+), 5 deletions(-)
 
 diff --git a/doc/systemd/socket-activated/ocserv.service b/doc/systemd/socket-activated/ocserv.service
-index 3e80250..71f53ee 100644
+index 3e80250..3b01bd8 100644
 --- a/doc/systemd/socket-activated/ocserv.service
 +++ b/doc/systemd/socket-activated/ocserv.service
-@@ -1,14 +1,13 @@
- [Unit]
- Description=OpenConnect SSL VPN server
- Documentation=man:ocserv(8)
--After=syslog.target network.target
-+After=network-online.target
- Requires=ocserv.socket
+@@ -6,9 +6,8 @@ Requires=ocserv.socket
  
  [Service]
  PrivateTmp=true
@@ -29,32 +23,17 @@ index 3e80250..71f53ee 100644
  ExecReload=/bin/kill -HUP $MAINPID
  
  [Install]
-diff --git a/doc/systemd/socket-activated/ocserv.socket b/doc/systemd/socket-activated/ocserv.socket
-index 85503aa..9444f19 100644
---- a/doc/systemd/socket-activated/ocserv.socket
-+++ b/doc/systemd/socket-activated/ocserv.socket
-@@ -2,8 +2,8 @@
- Description=OpenConnect SSL VPN server Socket
- 
- [Socket]
--ListenStream=4443
--ListenDatagram=4443
-+ListenStream=443
-+ListenDatagram=443
- BindIPv6Only=default
- Accept=false
- ReusePort=true
 diff --git a/doc/systemd/standalone/ocserv.service b/doc/systemd/standalone/ocserv.service
-index 86fca91..4d497b7 100644
+index 86fca91..ca8d359 100644
 --- a/doc/systemd/standalone/ocserv.service
 +++ b/doc/systemd/standalone/ocserv.service
-@@ -1,15 +1,13 @@
+@@ -1,15 +1,14 @@
  [Unit]
  Description=OpenConnect SSL VPN server
  Documentation=man:ocserv(8)
 -After=syslog.target
--After=network.target
-+After=network-online.target
+ After=network.target
++After=syslog.target
  After=dbus.service
  
  [Service]

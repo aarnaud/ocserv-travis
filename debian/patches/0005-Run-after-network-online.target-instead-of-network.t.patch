@@ -1,0 +1,36 @@
+From: Aron Xu <aron@debian.org>
+Date: Sat, 24 Jan 2015 16:25:41 +0800
+Subject: Run after network-online.target, instead of network.target
+
+Signed-off-by: Aron Xu <aron@debian.org>
+---
+ doc/systemd/socket-activated/ocserv.service | 2 +-
+ doc/systemd/standalone/ocserv.service       | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/doc/systemd/socket-activated/ocserv.service b/doc/systemd/socket-activated/ocserv.service
+index 796e496..71f53ee 100644
+--- a/doc/systemd/socket-activated/ocserv.service
++++ b/doc/systemd/socket-activated/ocserv.service
+@@ -1,7 +1,7 @@
+ [Unit]
+ Description=OpenConnect SSL VPN server
+ Documentation=man:ocserv(8)
+-After=network.target
++After=network-online.target
+ Requires=ocserv.socket
+ 
+ [Service]
+diff --git a/doc/systemd/standalone/ocserv.service b/doc/systemd/standalone/ocserv.service
+index 841c935..4d497b7 100644
+--- a/doc/systemd/standalone/ocserv.service
++++ b/doc/systemd/standalone/ocserv.service
+@@ -1,7 +1,7 @@
+ [Unit]
+ Description=OpenConnect SSL VPN server
+ Documentation=man:ocserv(8)
+-After=network.target
++After=network-online.target
+ After=dbus.service
+ 
+ [Service]

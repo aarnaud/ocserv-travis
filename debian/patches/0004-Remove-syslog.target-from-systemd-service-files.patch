@@ -1,0 +1,38 @@
+From: Aron Xu <aron@debian.org>
+Date: Sat, 24 Jan 2015 16:25:40 +0800
+Subject: Remove syslog.target from systemd service files
+
+syslog is now socket-activated on all major distributions, hence
+the target is deprecated.
+
+Signed-off-by: Aron Xu <aron@debian.org>
+---
+ doc/systemd/socket-activated/ocserv.service | 2 +-
+ doc/systemd/standalone/ocserv.service       | 1 -
+ 2 files changed, 1 insertion(+), 2 deletions(-)
+
+diff --git a/doc/systemd/socket-activated/ocserv.service b/doc/systemd/socket-activated/ocserv.service
+index 3b01bd8..796e496 100644
+--- a/doc/systemd/socket-activated/ocserv.service
++++ b/doc/systemd/socket-activated/ocserv.service
+@@ -1,7 +1,7 @@
+ [Unit]
+ Description=OpenConnect SSL VPN server
+ Documentation=man:ocserv(8)
+-After=syslog.target network.target
++After=network.target
+ Requires=ocserv.socket
+ 
+ [Service]
+diff --git a/doc/systemd/standalone/ocserv.service b/doc/systemd/standalone/ocserv.service
+index ca8d359..841c935 100644
+--- a/doc/systemd/standalone/ocserv.service
++++ b/doc/systemd/standalone/ocserv.service
+@@ -2,7 +2,6 @@
+ Description=OpenConnect SSL VPN server
+ Documentation=man:ocserv(8)
+ After=network.target
+-After=syslog.target
+ After=dbus.service
+ 
+ [Service]
