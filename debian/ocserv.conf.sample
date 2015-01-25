@@ -411,7 +411,7 @@ route = 192.168.5.0/255.255.255.0
 # for clients to present their certificate on every connection.
 # That is they may resume a cookie without presenting a certificate
 # (when certificate authentication is used).
-#cisco-client-compat = true
+cisco-client-compat = true
 
 # Client profile xml. A sample file exists in doc/profile.xml.
 # It is required by some of the CISCO clients.
