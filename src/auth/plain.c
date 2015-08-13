@@ -1,5 +1,6 @@
 /*
- * Copyright (C) 2013 Nikos Mavrogiannopoulos
+ * Copyright (C) 2013-2015 Nikos Mavrogiannopoulos
+ * Copyright (C) 2015 Red Hat, Inc.
  *
  * This file is part of ocserv.
  *
@@ -29,6 +30,7 @@
 #include <vpn.h>
 #include <c-ctype.h>
 #include "plain.h"
+#include "common-config.h"
 #include "auth/common.h"
 #include <ccan/htable/htable.h>
 #include <ccan/hash/hash.h>
@@ -42,10 +44,29 @@ struct plain_ctx_st {
 	char *groupnames[MAX_GROUPS];
 	unsigned groupnames_size;
 
-	const char *passwd;	/* password file */
 	const char *pass_msg;
 	unsigned retries;
 };
+
+static char *password_file = NULL;
+
+static void plain_global_init(void *pool, void *additional)
+{
+	struct plain_cfg_st *config = additional;
+
+	if (config == NULL) {
+		fprintf(stderr, "plain: no configuration passed!\n");
+		exit(1);
+	}
+
+	password_file = talloc_strdup(pool, config->passwd);
+	if (password_file == NULL) {
+		fprintf(stderr, "plain: memory error\n");
+		exit(1);
+	}
+
+	return;
+}
 
 /* Breaks a list of "xxx", "yyy", to a character array, of
  * MAX_COMMA_SEP_ELEMENTS size; Note that the given string is modified.
@@ -112,11 +133,11 @@ static int read_auth_pass(struct plain_ctx_st *pctx)
 	char *p, *sp;
 	int ret;
 
-	fp = fopen(pctx->passwd, "r");
+	fp = fopen(password_file, "r");
 	if (fp == NULL) {
 		syslog(LOG_AUTH,
 		       "error in plain authentication; cannot open: %s",
-		       pctx->passwd);
+		       password_file);
 		return -1;
 	}
 
@@ -135,7 +156,25 @@ static int read_auth_pass(struct plain_ctx_st *pctx)
 			ll--;
 			line[ll] = 0;
 		}
+#ifdef HAVE_STRSEP
+		sp = line;
+		p = strsep(&sp, ":");
 
+		if (p != NULL && strcmp(pctx->username, p) == 0) {
+			p = strsep(&sp, ":");
+			if (p != NULL) {
+				break_group_list(pctx, p, pctx->groupnames, &pctx->groupnames_size);
+
+				p = strsep(&sp, ":");
+				if (p != NULL) {
+					strlcpy(pctx->cpass, p, sizeof(pctx->cpass));
+					ret = 0;
+					goto exit;
+				}
+			}
+		}
+
+#else
 		p = strtok_r(line, ":", &sp);
 
 		if (p != NULL && strcmp(pctx->username, p) == 0) {
@@ -151,6 +190,7 @@ static int read_auth_pass(struct plain_ctx_st *pctx)
 				}
 			}
 		}
+#endif
 	}
 
 	/* always succeed */
@@ -161,19 +201,23 @@ static int read_auth_pass(struct plain_ctx_st *pctx)
 	return ret;
 }
 
-static int plain_auth_init(void **ctx, void *pool, const char *username, const char *ip,
-			   void *additional)
+static int plain_auth_init(void **ctx, void *pool, const char *username, const char *ip, const char *our_ip, unsigned pid)
 {
 	struct plain_ctx_st *pctx;
 	int ret;
+
+	if (username == NULL || username[0] == 0) {
+		syslog(LOG_AUTH,
+		       "plain-auth: no username present");
+		return ERR_AUTH_FAIL;
+	}
 
 	pctx = talloc_zero(pool, struct plain_ctx_st);
 	if (pctx == NULL)
 		return ERR_AUTH_FAIL;
 
 	strlcpy(pctx->username, username, sizeof(pctx->username));
-	pctx->passwd = additional;
-	pctx->pass_msg = pass_msg_first;
+	pctx->pass_msg = NULL; /* use default */
 
 	ret = read_auth_pass(pctx);
 	if (ret < 0) {
@@ -183,7 +227,7 @@ static int plain_auth_init(void **ctx, void *pool, const char *username, const c
 
 	*ctx = pctx;
 
-	return 0;
+	return ERR_AUTH_CONTINUE;
 }
 
 static int plain_auth_group(void *ctx, const char *suggested, char *groupname, int groupname_size)
@@ -232,7 +276,7 @@ static int plain_auth_pass(void *ctx, const char *pass, unsigned pass_len)
 	    && strcmp(crypt(pass, pctx->cpass), pctx->cpass) == 0)
 		return 0;
 	else {
-		if (pctx->retries++ < MAX_TRIES) {
+		if (pctx->retries++ < MAX_PASSWORD_TRIES-1) {
 			pctx->pass_msg = pass_msg_failed;
 			return ERR_AUTH_CONTINUE;
 		} else {
@@ -244,11 +288,15 @@ static int plain_auth_pass(void *ctx, const char *pass, unsigned pass_len)
 	}
 }
 
-static int plain_auth_msg(void *ctx, char *msg, size_t msg_size)
+static int plain_auth_msg(void *ctx, void *pool, passwd_msg_st *pst)
 {
 	struct plain_ctx_st *pctx = ctx;
 
-	strlcpy(msg, pctx->pass_msg, msg_size);
+	if (pctx->pass_msg)
+		pst->msg_str = talloc_strdup(pool, pctx->pass_msg);
+	pst->counter = 0; /* we support a single password */
+
+	/* use the default prompt */
 	return 0;
 }
 
@@ -284,15 +332,16 @@ static void plain_group_list(void *pool, void *additional, char ***groupname, un
 	char *tgroup[MAX_GROUPS];
 	unsigned tgroup_size;
 	struct htable hash;
+	struct plain_cfg_st *config = additional;
 
 	htable_init(&hash, rehash, NULL);
 
 	pool = talloc_init("plain");
-	fp = fopen(additional, "r");
+	fp = fopen(config->passwd, "r");
 	if (fp == NULL) {
 		syslog(LOG_AUTH,
 		       "error in plain authentication; cannot open: %s",
-		       (char*)additional);
+		       (char*)config->passwd);
 		return;
 	}
 
@@ -312,10 +361,18 @@ static void plain_group_list(void *pool, void *additional, char ***groupname, un
 			line[ll] = 0;
 		}
 
+#ifdef HAVE_STRSEP
+		sp = line;
+		p = strsep(&sp, ":");
+
+		if (p != NULL) {
+			p = strsep(&sp, ":");
+#else
 		p = strtok_r(line, ":", &sp);
 
 		if (p != NULL) {
 			p = strtok_r(NULL, ":", &sp);
+#endif
 			if (p != NULL) {
 				break_group_list(pool, p, tgroup, &tgroup_size);
 
@@ -354,6 +411,8 @@ static void plain_group_list(void *pool, void *additional, char ***groupname, un
 
 const struct auth_mod_st plain_auth_funcs = {
 	.type = AUTH_TYPE_PLAIN | AUTH_TYPE_USERNAME_PASS,
+	.allows_retries = 1,
+	.global_init = plain_global_init,
 	.auth_init = plain_auth_init,
 	.auth_deinit = plain_auth_deinit,
 	.auth_msg = plain_auth_msg,
