@@ -1,5 +1,5 @@
 AC_PREREQ(2.61)
-AC_INIT([ocserv], [0.9.0], [nmav@gnutls.org])
+AC_INIT([ocserv], [0.10.7], [nmav@gnutls.org])
 PKG_PROG_PKG_CONFIG
 AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_MACRO_DIR([gl/m4])
@@ -47,26 +47,6 @@ PKG_CHECK_MODULES([LIBGNUTLS], [gnutls >= 3.1.10])
 AC_CHECK_LIB(gnutls, gnutls_pkcs11_reinit, [
 AC_DEFINE([HAVE_PKCS11], [], [PKCS11 detected in gnutls])
 ])
-
-dbus_enabled=no
-AC_ARG_WITH(dbus,
-  AS_HELP_STRING([--with-dbus], [use dbus instead of unix sockets]),
-  test_for_dbus=$withval,
-  test_for_dbus=no)
-
-if test "$test_for_dbus" = yes;then
-PKG_CHECK_MODULES([LIBDBUS], [dbus-1 >= 1.1.1],
-dbus_enabled=yes
-AC_DEFINE([HAVE_DBUS], [], [dbus detected]),
-[dbus_enabled=no])
-fi
-
-AM_CONDITIONAL(HAVE_DBUS, test "x$dbus_enabled" != xno)
-
-if test "x$dbus_enabled" != xno;then
-dbus_conf_dir=$($PKG_CONFIG dbus-1 --variable=sysconfdir)
-AC_SUBST(DBUS_CONFIG_DIR, [$dbus_conf_dir/etc/dbus-1/system.d/])
-fi
 
 AC_ARG_WITH(protobuf,
   AS_HELP_STRING([--without-protobuf], [use the included protobuf library]),
@@ -208,25 +188,34 @@ AC_ARG_WITH(radius,
 radius_enabled=no
 
 if test "$test_for_radius" = yes;then
-LIBS="$oldlibs -lfreeradius-client"
-AC_MSG_CHECKING([for freeradius client library])
-AC_LINK_IFELSE([AC_LANG_PROGRAM([
+	PKG_CHECK_MODULES([RADCLI], [radcli >= 1.2.1], radius_enabled=radcli, radius_enabled=no)
+
+	if test "$radius_enabled" = no;then
+		LIBS="$oldlibs -lfreeradius-client"
+		AC_MSG_CHECKING([for freeradius client library])
+		AC_LINK_IFELSE([AC_LANG_PROGRAM([
 		   #include <freeradius-client.h>],[
 #ifndef PW_MAX_MSG_SIZE
 #error 1
 #endif
 		   rc_read_config(0);])],
 		  [AC_MSG_RESULT(yes)
-		   AC_SUBST([FREERADIUS_CLIENT_LIBS], [-lfreeradius-client])
-		   AC_SUBST([FREERADIUS_CLIENT_CFLAGS], [])
-		   radius_enabled=yes
-		   AC_DEFINE([HAVE_RADIUS], 1, [Enable the Radius library])],
+		   AC_SUBST([RADCLI_LIBS], [-lfreeradius-client])
+		   AC_SUBST([RADCLI_CFLAGS], [])
+		   radius_enabled=freeradius-client
+		   AC_DEFINE([LEGACY_RADIUS], 1, [Enable the legacy library support])],
 		  [AC_MSG_RESULT(no)
    	           AC_MSG_WARN([[
 *** 
-*** libfreeradius-client git-20141213 was not found. Radius support will be disabled.
+*** radcli 1.2.1 or later was not found. Radius support will be disabled.
+*** See http://radcli.github.io/radcli/
 *** ]])])
-LIBS="$oldlibs"
+		LIBS="$oldlibs"
+	fi
+
+	if test "$radius_enabled" != no;then
+		AC_DEFINE([HAVE_RADIUS], 1, [Enable the Radius library])
+	fi
 fi
 
 gl_INIT
@@ -269,7 +258,7 @@ AC_CHECK_MEMBER([struct sockaddr.sa_len],
 AC_CHECK_HEADERS([net/if_tun.h linux/if_tun.h netinet/in_systm.h], [], [], [])
 
 AC_CHECK_FUNCS([setproctitle vasprintf clock_gettime isatty pselect getpeereid sigaltstack])
-AC_CHECK_FUNCS([strlcpy posix_memalign malloc_trim])
+AC_CHECK_FUNCS([strlcpy posix_memalign malloc_trim strsep])
 
 if [ test -z "$LIBWRAP" ];then
 	libwrap_enabled="no"
@@ -282,35 +271,13 @@ AC_ARG_ENABLE(seccomp,
     seccomp_enabled=$enableval, seccomp_enabled=yes)
 
 if [ test "$seccomp_enabled" = "yes" ];then
-AC_LIB_HAVE_LINKFLAGS(seccomp,, [#include <seccomp.h>], [seccomp_init(0);])
+AC_LIB_HAVE_LINKFLAGS(seccomp,, [#include <seccomp.h>
+], [seccomp_init(0);])
  if [ test -z "$LIBSECCOMP" ];then
 	seccomp_enabled="no"
  else
 	seccomp_enabled="yes"
  fi
-fi
-
-AC_ARG_ENABLE(linux-namespaces,
-  AS_HELP_STRING([--enable-linux-namespaces], [enable support for namespaces (containers) in Linux]),
-    linux_ns_enabled=$enableval, linux_ns_enabled=no)
-
-if [ test "$linux_ns_enabled" = "yes" ];then
-AC_MSG_CHECKING([for Linux namespaces])
-dnl We use Linux namespaces only in the platforms clone() works as expected
-AC_LINK_IFELSE([AC_LANG_PROGRAM([
-		   #include <sched.h>
-		   #include <linux/sched.h>],[
-		   #if defined(__i386__) || defined(__arm__) || defined(__x86_64__) || defined(__mips__)
-		   unshare(CLONE_NEWPID|CLONE_NEWIPC);
-		   #else
-		   # error 1
-		   #endif])],
-		  [AC_MSG_RESULT(yes)
-	  	   AC_DEFINE([ENABLE_LINUX_NS], 1, [Enable Linux namespaces support])
-		   linux_ns_enabled=yes],
-		  [AC_MSG_RESULT(no)
-		   linux_ns_enabled=no
-])
 fi
 
 AC_ARG_ENABLE(systemd,
@@ -319,7 +286,7 @@ AC_ARG_ENABLE(systemd,
 
 if [ test "$systemd_enabled" = "yes" ];then
 AC_LIB_HAVE_LINKFLAGS(systemd,, [#include <systemd/sd-daemon.h>], [sd_listen_fds(0);])
- if [ test -z "$LIBSYSTEMD_DAEMON" ];then
+ if [ test -z "$LIBSYSTEMD" ];then
 	systemd_enabled="no"
  else
 	systemd_enabled="yes"
@@ -370,6 +337,18 @@ LIBS="$oldlibs"
 fi
 AM_CONDITIONAL(LOCAL_HTTP_PARSER, test "x$with_local_http_parser" != xno)
 
+dnl compression
+AC_ARG_ENABLE(compression,
+  AS_HELP_STRING([--disable-compression], [Disable compression support]),
+  enable_compression=$enableval,
+  enable_compression=yes)
+
+if test "$enable_compression" = yes;then
+AC_DEFINE([ENABLE_COMPRESSION], [], [compression enabled])
+fi
+
+AM_CONDITIONAL(ENABLE_COMPRESSION, test "$enable_compression" = yes)
+
 dnl LZ4
 AC_ARG_WITH(lz4,
   AS_HELP_STRING([--without-lz4], [disable support for LZ4 compression]),
@@ -377,7 +356,8 @@ AC_ARG_WITH(lz4,
   test_for_lz4=yes)
 
 enable_lz4=no
-if test "$test_for_lz4" = yes;then
+
+if test "$test_for_lz4" = yes && test "$enable_compression" = yes;then
 PKG_CHECK_MODULES([LIBLZ4], [liblz4], [
 enable_lz4=yes
 AC_DEFINE([HAVE_LZ4], [], [LZ4 was found])
@@ -389,6 +369,30 @@ AC_DEFINE([HAVE_LZ4], [], [LZ4 was found])
 *** ]])
 ])
 fi
+
+dnl GSSAPI
+AC_ARG_WITH(gssapi,
+  AS_HELP_STRING([--without-gssapi], [disable support for GSSAPI authentication]),
+  test_for_gssapi=$withval,
+  test_for_gssapi=yes)
+
+enable_gssapi=no
+if test "$test_for_gssapi" = yes;then
+PKG_CHECK_MODULES([LIBKRB5], [krb5-gssapi], [
+enable_gssapi=yes
+AC_DEFINE([HAVE_GSSAPI], [], [GSSAPI was found])
+PKG_CHECK_MODULES(LIBTASN1, [libtasn1 >= 3.8])
+],
+[
+	AC_MSG_WARN([[
+***
+*** gssapi not found. Will disable gssapi (and Kerberos) support.
+*** ]])
+])
+
+fi
+
+AM_CONDITIONAL(HAVE_GSSAPI, test "$enable_gssapi" = yes)
 
 dnl needed in the included PCL
 AC_C_VOLATILE
@@ -452,6 +456,7 @@ AC_CONFIG_FILES([
 	doc/Makefile
 	gl/Makefile
 	tests/docker-ocserv/Makefile
+	tests/docker-kerberos/Makefile
 	tests/Makefile
 ])
 AC_OUTPUT
@@ -466,10 +471,14 @@ Summary of build options:
   
   PAM auth backend:     ${pam_enabled}
   Radius auth backend:  ${radius_enabled}
+  GSSAPI auth backend:  ${enable_gssapi}
+  Anyconnect compat:    ${anyconnect_enabled}
   TCP wrappers:         ${libwrap_enabled}
   systemd:              ${systemd_enabled}
   (socket activation)
-  dbus:                 ${dbus_enabled}
+  seccomp:              ${seccomp_enabled}
+  Compression:          ${enable_compression}
+  LZ4 compression:      ${enable_lz4}
   readline:             ${have_readline}
   libnl3:               ${have_libnl3}
   glibc (sha2crypt):    ${have_glibc}
@@ -478,14 +487,5 @@ Summary of build options:
   local PCL library:    ${with_local_pcl}
   local libopts:        ${enable_local_libopts}
   local http-parser:    ${with_local_http_parser}
-])
-
-AC_MSG_NOTICE([
-
-Experimental options:
-  seccomp:              ${seccomp_enabled}
-  Linux namespaces:     ${linux_ns_enabled}
-  LZ4 compression:      ${enable_lz4}
-  Anyconnect compat:    ${anyconnect_enabled}
 ])
 

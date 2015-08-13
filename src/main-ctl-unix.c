@@ -24,6 +24,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/socket.h>
+#include <signal.h>
 #include <sys/un.h>
 #include <main.h>
 #include <vpn.h>
@@ -32,6 +33,7 @@
 #include <errno.h>
 #include <system.h>
 #include <main-ctl.h>
+#include <main-ban.h>
 
 #include <ctl.pb-c.h>
 #include <str.h>
@@ -49,6 +51,8 @@ static void method_disconnect_user_name(method_ctx *ctx, int cfd,
 					uint8_t * msg, unsigned msg_size);
 static void method_disconnect_user_id(method_ctx *ctx, int cfd,
 				      uint8_t * msg, unsigned msg_size);
+static void method_unban_ip(method_ctx *ctx, int cfd,
+				      uint8_t * msg, unsigned msg_size);
 static void method_stop(method_ctx *ctx, int cfd, uint8_t * msg,
 			unsigned msg_size);
 static void method_reload(method_ctx *ctx, int cfd, uint8_t * msg,
@@ -56,6 +60,8 @@ static void method_reload(method_ctx *ctx, int cfd, uint8_t * msg,
 static void method_user_info(method_ctx *ctx, int cfd, uint8_t * msg,
 			     unsigned msg_size);
 static void method_id_info(method_ctx *ctx, int cfd, uint8_t * msg,
+			   unsigned msg_size);
+static void method_list_banned(method_ctx *ctx, int cfd, uint8_t * msg,
 			   unsigned msg_size);
 
 typedef void (*method_func) (method_ctx *ctx, int cfd, uint8_t * msg,
@@ -75,8 +81,10 @@ static const ctl_method_st methods[] = {
 	ENTRY(CTL_CMD_RELOAD, method_reload),
 	ENTRY(CTL_CMD_STOP, method_stop),
 	ENTRY(CTL_CMD_LIST, method_list_users),
+	ENTRY(CTL_CMD_LIST_BANNED, method_list_banned),
 	ENTRY(CTL_CMD_USER_INFO, method_user_info),
 	ENTRY(CTL_CMD_ID_INFO, method_id_info),
+	ENTRY(CTL_CMD_UNBAN_IP, method_unban_ip),
 	ENTRY(CTL_CMD_DISCONNECT_NAME, method_disconnect_user_name),
 	ENTRY(CTL_CMD_DISCONNECT_ID, method_disconnect_user_id),
 	{NULL, 0, NULL}
@@ -102,20 +110,20 @@ int ctl_handler_init(main_server_st * s)
 	struct sockaddr_un sa;
 	int sd, e;
 
-	if (s->config->use_occtl == 0 || s->config->occtl_socket_file == NULL)
+	if (s->config->use_occtl == 0 || s->perm_config->occtl_socket_file == NULL)
 		return 0;
 
-	mslog(s, NULL, LOG_DEBUG, "initializing control unix socket: %s", s->config->occtl_socket_file);
+	mslog(s, NULL, LOG_DEBUG, "initializing control unix socket: %s", s->perm_config->occtl_socket_file);
 	memset(&sa, 0, sizeof(sa));
 	sa.sun_family = AF_UNIX;
-	strlcpy(sa.sun_path, s->config->occtl_socket_file, sizeof(sa.sun_path));
-	remove(s->config->occtl_socket_file);
+	strlcpy(sa.sun_path, s->perm_config->occtl_socket_file, sizeof(sa.sun_path));
+	remove(s->perm_config->occtl_socket_file);
 
 	sd = socket(AF_UNIX, SOCK_STREAM, 0);
 	if (sd == -1) {
 		e = errno;
 		mslog(s, NULL, LOG_ERR, "could not create socket '%s': %s",
-		      s->config->occtl_socket_file, strerror(e));
+		      s->perm_config->occtl_socket_file, strerror(e));
 		return -1;
 	}
 
@@ -124,22 +132,22 @@ int ctl_handler_init(main_server_st * s)
 	if (ret == -1) {
 		e = errno;
 		mslog(s, NULL, LOG_ERR, "could not bind socket '%s': %s",
-		      s->config->occtl_socket_file, strerror(e));
+		      s->perm_config->occtl_socket_file, strerror(e));
 		return -1;
 	}
 
-	ret = chown(s->config->occtl_socket_file, s->config->uid, s->config->gid);
+	ret = chown(s->perm_config->occtl_socket_file, s->perm_config->uid, s->perm_config->gid);
 	if (ret == -1) {
 		e = errno;
 		mslog(s, NULL, LOG_ERR, "could not chown socket '%s': %s",
-		      s->config->occtl_socket_file, strerror(e));
+		      s->perm_config->occtl_socket_file, strerror(e));
 	}
 
 	ret = listen(sd, 1024);
 	if (ret == -1) {
 		e = errno;
 		mslog(s, NULL, LOG_ERR, "could not listen to socket '%s': %s",
-		      s->config->occtl_socket_file, strerror(e));
+		      s->perm_config->occtl_socket_file, strerror(e));
 		return -1;
 	}
 
@@ -160,8 +168,9 @@ static void method_status(method_ctx *ctx, int cfd, uint8_t * msg,
 	rep.start_time = ctx->s->start_time;
 	rep.sec_mod_pid = ctx->s->sec_mod_pid;
 	rep.active_clients = ctx->s->active_clients;
-	rep.stored_cookies = ctx->s->cookies.total;
+	rep.secmod_client_entries = ctx->s->secmod_client_entries;
 	rep.stored_tls_sessions = ctx->s->tls_db.entries;
+	rep.banned_ips = main_ban_db_elems(ctx->s);
 
 	ret = send_msg(ctx->pool, cfd, CTL_CMD_STATUS_REP, &rep,
 		       (pack_size_func) status_rep__get_packed_size,
@@ -220,7 +229,7 @@ static void method_stop(method_ctx *ctx, int cfd, uint8_t * msg,
 #define IPBUF_SIZE 64
 static int append_user_info(method_ctx *ctx,
 			    UserListRep * list,
-			    struct proc_st *ctmp, unsigned single)
+			    struct proc_st *ctmp)
 {
 	uint32_t tmp;
 	char *ipbuf;
@@ -337,49 +346,55 @@ static int append_user_info(method_ctx *ctx,
 		rep->has_mtu = 1;
 	}
 
-	if (single > 0) {
-		if (ctmp->config.rx_per_sec > 0)
-			tmp = ctmp->config.rx_per_sec;
-		else
-			tmp = ctx->s->config->rx_per_sec;
-		tmp *= 1000;
-		rep->rx_per_sec = tmp;
+	if (ctmp->config.rx_per_sec > 0)
+		tmp = ctmp->config.rx_per_sec;
+	else
+		tmp = ctx->s->config->rx_per_sec;
+	tmp *= 1000;
+	rep->rx_per_sec = tmp;
 
-		if (ctmp->config.tx_per_sec > 0)
-			tmp = ctmp->config.tx_per_sec;
-		else
-			tmp = ctx->s->config->tx_per_sec;
-		tmp *= 1000;
-		rep->tx_per_sec = tmp;
+	if (ctmp->config.tx_per_sec > 0)
+		tmp = ctmp->config.tx_per_sec;
+	else
+		tmp = ctx->s->config->tx_per_sec;
+	tmp *= 1000;
+	rep->tx_per_sec = tmp;
 
-		if (ctmp->config.dns_size > 0) {
-			rep->dns = ctmp->config.dns;
-			rep->n_dns = ctmp->config.dns_size;
-		} else {
-			rep->dns = ctx->s->config->network.dns;
-			rep->n_dns = ctx->s->config->network.dns_size;
-		}
+	if (ctmp->config.dns_size > 0) {
+		rep->dns = ctmp->config.dns;
+		rep->n_dns = ctmp->config.dns_size;
+	} else {
+		rep->dns = ctx->s->config->network.dns;
+		rep->n_dns = ctx->s->config->network.dns_size;
+	}
 
-		if (ctmp->config.nbns_size > 0) {
-			rep->nbns = ctmp->config.nbns;
-			rep->n_nbns = ctmp->config.nbns_size;
-		} else {
-			rep->nbns = ctx->s->config->network.nbns;
-			rep->n_nbns = ctx->s->config->network.nbns_size;
-		}
+	if (ctmp->config.nbns_size > 0) {
+		rep->nbns = ctmp->config.nbns;
+		rep->n_nbns = ctmp->config.nbns_size;
+	} else {
+		rep->nbns = ctx->s->config->network.nbns;
+		rep->n_nbns = ctx->s->config->network.nbns_size;
+	}
 
-		if (ctmp->config.routes_size > 0) {
-			rep->routes = ctmp->config.routes;
-			rep->n_routes = ctmp->config.routes_size;
-		} else {
-			rep->routes = ctx->s->config->network.routes;
-			rep->n_routes = ctx->s->config->network.routes_size;
-		}
+	if (ctmp->config.routes_size > 0) {
+		rep->routes = ctmp->config.routes;
+		rep->n_routes = ctmp->config.routes_size;
+	} else {
+		rep->routes = ctx->s->config->network.routes;
+		rep->n_routes = ctx->s->config->network.routes_size;
+	}
 
-		if (ctmp->config.iroutes_size > 0) {
-			rep->iroutes = ctmp->config.iroutes;
-			rep->n_iroutes = ctmp->config.iroutes_size;
-		}
+	if (ctmp->config.no_routes_size > 0) {
+		rep->no_routes = ctmp->config.no_routes;
+		rep->n_no_routes = ctmp->config.no_routes_size;
+	} else {
+		rep->no_routes = ctx->s->config->network.no_routes;
+		rep->n_no_routes = ctx->s->config->network.no_routes_size;
+	}
+
+	if (ctmp->config.iroutes_size > 0) {
+		rep->iroutes = ctmp->config.iroutes;
+		rep->n_iroutes = ctmp->config.iroutes_size;
 	}
 
 	return 0;
@@ -396,7 +411,7 @@ static void method_list_users(method_ctx *ctx, int cfd, uint8_t * msg,
 
 
 	list_for_each(&ctx->s->proc_list.head, ctmp, list) {
-		ret = append_user_info(ctx, &rep, ctmp, 0);
+		ret = append_user_info(ctx, &rep, ctmp);
 		if (ret < 0) {
 			mslog(ctx->s, NULL, LOG_ERR,
 			      "error appending user info to reply");
@@ -409,6 +424,68 @@ static void method_list_users(method_ctx *ctx, int cfd, uint8_t * msg,
 		       (pack_func) user_list_rep__pack);
 	if (ret < 0) {
 		mslog(ctx->s, NULL, LOG_ERR, "error sending ctl reply");
+	}
+
+ error:
+	return;
+}
+
+static int append_ban_info(method_ctx *ctx,
+			    BanListRep *list,
+			    struct ban_entry_st *e)
+{
+	BanInfoRep *rep;
+
+	list->info =
+	    talloc_realloc(ctx->pool, list->info, BanInfoRep *, (1 + list->n_info));
+	if (list->info == NULL)
+		return -1;
+
+	rep = list->info[list->n_info] = talloc(ctx->pool, BanInfoRep);
+	if (rep == NULL)
+		return -1;
+	list->n_info++;
+
+	ban_info_rep__init(rep);
+
+	rep->ip = e->ip;
+	rep->score = e->score;
+
+	if (ctx->s->config->max_ban_score > 0 && e->score >= ctx->s->config->max_ban_score) {
+		rep->expires = e->expires;
+		rep->has_expires = 1;
+	}
+
+	return 0;
+}
+
+static void method_list_banned(method_ctx *ctx, int cfd, uint8_t * msg,
+			      unsigned msg_size)
+{
+	BanListRep rep = BAN_LIST_REP__INIT;
+	struct ban_entry_st *e = NULL;
+	struct htable *db = ctx->s->ban_db;
+	int ret;
+	struct htable_iter iter;
+
+	mslog(ctx->s, NULL, LOG_DEBUG, "ctl: list-banned-ips");
+
+	e = htable_first(db, &iter);
+	while (e != NULL) {
+		ret = append_ban_info(ctx, &rep, e);
+		if (ret < 0) {
+			mslog(ctx->s, NULL, LOG_ERR,
+			      "error appending ban info to reply");
+			goto error;
+		}
+		e = htable_next(db, &iter);
+	}
+
+	ret = send_msg(ctx->pool, cfd, CTL_CMD_LIST_BANNED_REP, &rep,
+		       (pack_size_func) ban_list_rep__get_packed_size,
+		       (pack_func) ban_list_rep__pack);
+	if (ret < 0) {
+		mslog(ctx->s, NULL, LOG_ERR, "error sending ban list reply");
 	}
 
  error:
@@ -439,7 +516,7 @@ static void single_info_common(method_ctx *ctx, int cfd, uint8_t * msg,
 			}
 		}
 
-		ret = append_user_info(ctx, &rep, ctmp, 1);
+		ret = append_user_info(ctx, &rep, ctmp);
 		if (ret < 0) {
 			mslog(ctx->s, NULL, LOG_ERR,
 			      "error appending user info to reply");
@@ -509,6 +586,42 @@ static void method_id_info(method_ctx *ctx, int cfd, uint8_t * msg,
 	return;
 }
 
+static void method_unban_ip(method_ctx *ctx,
+			    int cfd, uint8_t * msg,
+			    unsigned msg_size)
+{
+	UnbanReq *req;
+	BoolMsg rep = BOOL_MSG__INIT;
+	int ret;
+
+	mslog(ctx->s, NULL, LOG_DEBUG, "ctl: unban IP");
+
+	req = unban_req__unpack(NULL, msg_size, msg);
+	if (req == NULL) {
+		mslog(ctx->s, NULL, LOG_ERR,
+		      "error parsing unban IP request");
+		return;
+	}
+
+	if (remove_ip_from_ban_list(ctx->s, req->ip) != 0) {
+		if (req->ip)
+			mslog(ctx->s, NULL, LOG_INFO,
+				      "unbanning IP '%s' due to ctl request", req->ip);
+		rep.status = 1;
+	}
+
+	unban_req__free_unpacked(req, NULL);
+
+	ret = send_msg(ctx->pool, cfd, CTL_CMD_UNBAN_IP_REP, &rep,
+		       (pack_size_func) bool_msg__get_packed_size,
+		       (pack_func) bool_msg__pack);
+	if (ret < 0) {
+		mslog(ctx->s, NULL, LOG_ERR, "error sending unban IP ctl reply");
+	}
+
+	return;
+}
+
 static void method_disconnect_user_name(method_ctx *ctx,
 					int cfd, uint8_t * msg,
 					unsigned msg_size)
@@ -531,7 +644,7 @@ static void method_disconnect_user_name(method_ctx *ctx,
 	/* got the name. Try to disconnect */
 	list_for_each_safe(&ctx->s->proc_list.head, ctmp, cpos, list) {
 		if (strcmp(ctmp->username, req->username) == 0) {
-			remove_proc(ctx->s, ctmp, 1);
+			terminate_proc(ctx->s, ctmp);
 			rep.status = 1;
 		}
 	}
@@ -568,7 +681,7 @@ static void method_disconnect_user_id(method_ctx *ctx, int cfd,
 	/* got the ID. Try to disconnect */
 	list_for_each_safe(&ctx->s->proc_list.head, ctmp, cpos, list) {
 		if (ctmp->pid == req->id) {
-			remove_proc(ctx->s, ctmp, 1);
+			terminate_proc(ctx->s, ctmp);
 			rep.status = 1;
 			if (req->id != -1)
 				break;
@@ -617,7 +730,7 @@ static void ctl_handle_commands(main_server_st * s)
 		goto cleanup;
 	}
 
-	ret = check_upeer_id("ctl", s->config->debug, cfd, 0, 0, NULL);
+	ret = check_upeer_id("ctl", s->config->debug, cfd, 0, 0, NULL, NULL);
 	if (ret < 0) {
 		mslog(s, NULL, LOG_ERR, "ctl: unauthorized connection");
 		goto cleanup;

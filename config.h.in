@@ -21,8 +21,8 @@
 /* Define to the number of bits in type 'wint_t'. */
 #undef BITSIZEOF_WINT_T
 
-/* Enable Linux namespaces support */
-#undef ENABLE_LINUX_NS
+/* compression enabled */
+#undef ENABLE_COMPRESSION
 
 /* nls support in libopts */
 #undef ENABLE_NLS
@@ -116,9 +116,6 @@
 
 /* Define to 1 if you have the `clock_gettime' function. */
 #undef HAVE_CLOCK_GETTIME
-
-/* dbus detected */
-#undef HAVE_DBUS
 
 /* Define to 1 if you have the declaration of `fflush_unlocked', and to 0 if
    you don't. */
@@ -239,6 +236,9 @@
 
 /* Define to 1 if you have the `gettimeofday' function. */
 #undef HAVE_GETTIMEOFDAY
+
+/* GSSAPI was found */
+#undef HAVE_GSSAPI
 
 /* Define to 1 if the system has the type `int16_t'. */
 #undef HAVE_INT16_T
@@ -879,6 +879,9 @@
 /* Define to 1 if you have the `strrchr' function. */
 #undef HAVE_STRRCHR
 
+/* Define to 1 if you have the `strsep' function. */
+#undef HAVE_STRSEP
+
 /* Define to 1 if you have the `strsignal' function. */
 #undef HAVE_STRSIGNAL
 
@@ -1045,6 +1048,9 @@
 
 /* Define to 1 if the system has the type `__sighandler_t'. */
 #undef HAVE___SIGHANDLER_T
+
+/* Enable the legacy library support */
+#undef LEGACY_RADIUS
 
 /* Define to 1 if lseek does not detect pipes. */
 #undef LSEEK_PIPE_BROKEN

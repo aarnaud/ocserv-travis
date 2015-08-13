@@ -24,10 +24,12 @@
 #include <stdio.h>
 #include <string.h>
 
-#ifdef HAVE_LZ4
-# include <lz4.h>
+#ifdef ENABLE_COMPRESSION
+# ifdef HAVE_LZ4
+#  include <lz4.h>
+# endif
+# include "lzs.h"
 #endif
-#include "lzs.h"
 
 #include <base64.h>
 #include <c-strcase.h>
@@ -38,6 +40,7 @@
 
 #define CS_AES128_GCM "OC-DTLS1_2-AES128-GCM"
 #define CS_AES256_GCM "OC-DTLS1_2-AES256-GCM"
+#define CS_CHACHA20_POLY1305 "OC-DTLS1_2-CHACHA20-POLY1305"
 
 struct known_urls_st {
 	const char *url;
@@ -74,7 +77,6 @@ const static struct known_urls_st known_urls[] = {
  * HTTP headers (WTF), and the compression negotiation.
  */
 static const dtls_ciphersuite_st ciphersuites[] = {
-#if GNUTLS_VERSION_NUMBER >= 0x030207
 	{
 	 .oc_name = CS_AES128_GCM,
 	 .gnutls_name =
@@ -82,6 +84,7 @@ static const dtls_ciphersuite_st ciphersuites[] = {
 	 .gnutls_version = GNUTLS_DTLS1_2,
 	 .gnutls_mac = GNUTLS_MAC_AEAD,
 	 .gnutls_cipher = GNUTLS_CIPHER_AES_128_GCM,
+	 .txt_version = "3.2.7",
 	 .server_prio = 90},
 	{
 	 .oc_name = CS_AES256_GCM,
@@ -91,8 +94,8 @@ static const dtls_ciphersuite_st ciphersuites[] = {
 	 .gnutls_mac = GNUTLS_MAC_AEAD,
 	 .gnutls_cipher = GNUTLS_CIPHER_AES_256_GCM,
 	 .server_prio = 80,
+	 .txt_version = "3.2.7",
 	 },
-#endif
 	{
 	 .oc_name = "AES128-SHA",
 	 .gnutls_name =
@@ -111,6 +114,18 @@ static const dtls_ciphersuite_st ciphersuites[] = {
 	 .gnutls_cipher = GNUTLS_CIPHER_3DES_CBC,
 	 .server_prio = 1,
 	 },
+#if GNUTLS_VERSION_NUMBER >= 0x030400
+	{
+	 .oc_name = CS_CHACHA20_POLY1305,
+	 .gnutls_name =
+	 "NONE:+VERS-DTLS1.2:+COMP-NULL:+CHACHA20-POLY1305:+AEAD:+RSA:%COMPAT:+SIGN-ALL",
+	 .gnutls_version = GNUTLS_DTLS1_2,
+	 .gnutls_mac = GNUTLS_MAC_AEAD,
+	 .gnutls_cipher = GNUTLS_CIPHER_CHACHA20_POLY1305,
+	 .txt_version = "3.4.0",
+	 .server_prio = 40
+	},
+#endif
 };
 
 #ifdef HAVE_LZ4
@@ -130,6 +145,7 @@ int lz4_compress(void *dst, int dstlen, const void *src, int srclen)
 }
 #endif
 
+#ifdef ENABLE_COMPRESSION
 struct compression_method_st comp_methods[] = {
 #ifdef HAVE_LZ4
 	{
@@ -148,6 +164,7 @@ struct compression_method_st comp_methods[] = {
 		.server_prio = 80,
 	}
 };
+#endif
 
 static
 void header_value_check(struct worker_st *ws, struct http_req_st *req)
@@ -166,7 +183,7 @@ void header_value_check(struct worker_st *ws, struct http_req_st *req)
 	if (req->value.length <= 0)
 		return;
 
-	oclog(ws, LOG_HTTP_DEBUG, "HTTP: %.*s: %.*s", (int)req->header.length,
+	oclog(ws, LOG_HTTP_DEBUG, "HTTP processing: %.*s: %.*s", (int)req->header.length,
 	      req->header.data, (int)req->value.length, req->value.data);
 
 	value = talloc_size(ws, req->value.length + 1);
@@ -203,6 +220,17 @@ void header_value_check(struct worker_st *ws, struct http_req_st *req)
 		break;
 	case HEADER_DEVICE_TYPE:
 		req->is_mobile = 1;
+		break;
+	case HEADER_SUPPORT_SPNEGO:
+		ws_switch_auth_to(ws, AUTH_TYPE_GSSAPI);
+		req->spnego_set = 1;
+		break;
+	case HEADER_AUTHORIZATION:
+		if (req->authorization != NULL)
+			talloc_free(req->authorization);
+		req->authorization = value;
+		req->authorization_size = value_length;
+		value = NULL;
 		break;
 	case HEADER_USER_AGENT:
 		if (value_length + 1 > MAX_AGENT_NAME) {
@@ -241,6 +269,9 @@ void header_value_check(struct worker_st *ws, struct http_req_st *req)
 			     i < sizeof(ciphersuites) / sizeof(ciphersuites[0]);
 			     i++) {
 				if (strcmp(token, ciphersuites[i].oc_name) == 0) {
+					if (ciphersuites[i].txt_version != NULL && gnutls_check_version(ciphersuites[i].txt_version) == NULL)
+						continue; /* not supported */
+
 					if (cand == NULL ||
 					    cand->server_prio <
 					    ciphersuites[i].server_prio) {
@@ -262,7 +293,7 @@ void header_value_check(struct worker_st *ws, struct http_req_st *req)
 	        req->selected_ciphersuite = cand;
 
 		break;
-
+#ifdef ENABLE_COMPRESSION
 	case HEADER_DTLS_ENCODING:
 	case HEADER_CSTP_ENCODING:
 	        if (ws->config->enable_compression == 0)
@@ -291,8 +322,8 @@ void header_value_check(struct worker_st *ws, struct http_req_st *req)
 			str = NULL;
 		}
 	        *selected_comp = comp_cand;
-
 		break;
+#endif
 
 	case HEADER_CSTP_BASE_MTU:
 		req->base_mtu = atoi((char *)value);
@@ -398,9 +429,10 @@ url_handler_fn http_get_url_handler(const char *url)
 	return NULL;
 }
 
-url_handler_fn http_post_url_handler(const char *url)
+url_handler_fn http_post_url_handler(struct worker_st *ws, const char *url)
 {
 	const struct known_urls_st *p;
+	unsigned i;
 
 	p = known_urls;
 	do {
@@ -408,6 +440,11 @@ url_handler_fn http_post_url_handler(const char *url)
 			return p->post_handler;
 		p++;
 	} while (p->url != NULL);
+
+	for (i=0;i<ws->config->kkdcp_size;i++) {
+		if (ws->config->kkdcp[i].url && strcmp(ws->config->kkdcp[i].url, url) == 0)
+			return post_kkdcp_handler;
+	}
 
 	return NULL;
 }
@@ -492,6 +529,14 @@ int http_header_complete_cb(http_parser * parser)
 	/* handle header value */
 	header_value_check(ws, req);
 
+	if (ws->selected_auth->type & AUTH_TYPE_GSSAPI && ws->auth_state == S_AUTH_INACTIVE &&
+	    req->spnego_set == 0) {
+		/* client retried getting the form without the SPNEGO header, probably
+		 * wants a fallback authentication method */
+		if (ws_switch_auth_to(ws, AUTH_TYPE_USERNAME_PASS) == 0)
+			oclog(ws, LOG_INFO, "no fallback from gssapi authentication");
+	}
+
 	req->headers_complete = 1;
 	return 0;
 }
@@ -534,6 +579,7 @@ void http_req_reset(worker_st * ws)
 	ws->req.headers_complete = 0;
 	ws->req.message_complete = 0;
 	ws->req.body_length = 0;
+	ws->req.spnego_set = 0;
 	ws->req.url[0] = 0;
 
 	ws->req.header_state = HTTP_HEADER_INIT;

@@ -34,6 +34,7 @@
 
 #include <vpn.h>
 #include <main.h>
+#include <common-config.h>
 #include <sec-mod-sup-config.h>
 
 struct cfg_options {
@@ -44,8 +45,8 @@ struct cfg_options {
 static struct cfg_options available_options[] = {
 	{ .name = "no-udp", .type = OPTION_BOOLEAN },
 	{ .name = "deny-roaming", .type = OPTION_BOOLEAN },
-	{ .name = "require-cert", .type = OPTION_BOOLEAN },
 	{ .name = "route", .type = OPTION_MULTI_LINE },
+	{ .name = "no-route", .type = OPTION_MULTI_LINE },
 	{ .name = "iroute", .type = OPTION_MULTI_LINE },
 	{ .name = "dns", .type = OPTION_MULTI_LINE },
 	{ .name = "ipv4-dns", .type = OPTION_MULTI_LINE }, /* alias of dns */
@@ -57,29 +58,21 @@ static struct cfg_options available_options[] = {
 	{ .name = "ipv6-network", .type = OPTION_STRING },
 	{ .name = "ipv4-netmask", .type = OPTION_STRING },
 	{ .name = "ipv6-prefix", .type = OPTION_NUMERIC },
+	{ .name = "explicit-ipv4", .type = OPTION_STRING },
+	{ .name = "explicit-ipv6", .type = OPTION_STRING },
 	{ .name = "rx-data-per-sec", .type = OPTION_NUMERIC },
 	{ .name = "tx-data-per-sec", .type = OPTION_NUMERIC },
 	{ .name = "net-priority", .type = OPTION_STRING },
 	{ .name = "cgroup", .type = OPTION_STRING },
 	{ .name = "user-profile", .type = OPTION_STRING },
+	{ .name = "session-timeout", .type = OPTION_NUMERIC},
+	{ .name = "stats-report-time", .type = OPTION_NUMERIC}
 };
 
 #define READ_RAW_MULTI_LINE(name, s_name, num) { \
 	val = optionGetValue(pov, name); \
 	if (val != NULL && val->valType == OPARG_TYPE_STRING) { \
-		if (s_name == NULL) { \
-			num = 0; \
-			s_name = talloc_size(pool, sizeof(char*)*MAX_CONFIG_ENTRIES); \
-		} \
-		do { \
-		        if (num >= MAX_CONFIG_ENTRIES) \
-			        break; \
-		        if (val && !strcmp(val->pzName, name)==0) \
-				continue; \
-		        s_name[num] = talloc_strdup(pool, val->v.strVal); \
-		        num++; \
-	      } while((val = optionNextValue(pov, val)) != NULL); \
-	      s_name[num] = NULL; \
+		add_multi_line_val(pool, name, &s_name, &num, pov, val); \
 	}}
 
 #define READ_RAW_STRING(name, s_name) { \
@@ -118,16 +111,16 @@ static struct cfg_options available_options[] = {
 		} \
 	}}
 
-#define READ_TF(name, s_name, def) { \
+#define READ_TF(name, s_name, is_set) { \
 	{ char* tmp_tf = NULL; \
 		READ_RAW_STRING(name, tmp_tf); \
-		if (tmp_tf == NULL) { def = 0; \
+		if (tmp_tf == NULL) { is_set = 0; \
 		} else { \
 			if (c_strcasecmp(tmp_tf, "true") == 0 || c_strcasecmp(tmp_tf, "yes") == 0) \
 				s_name = 1; \
 			else \
 				s_name = 0; \
-			def = 1; \
+			is_set = 1; \
 		} \
 		talloc_free(tmp_tf); \
 	}}
@@ -180,9 +173,9 @@ unsigned prefix = 0;
 
 	READ_TF("no-udp", msg->no_udp, msg->has_no_udp);
 	READ_TF("deny-roaming", msg->deny_roaming, msg->has_deny_roaming);
-	READ_TF("require-cert", msg->require_cert, msg->has_require_cert);
 
 	READ_RAW_MULTI_LINE("route", msg->routes, msg->n_routes);
+	READ_RAW_MULTI_LINE("no-route", msg->no_routes, msg->n_no_routes);
 	READ_RAW_MULTI_LINE("iroute", msg->iroutes, msg->n_iroutes);
 
 	READ_RAW_MULTI_LINE("dns", msg->dns, msg->n_dns);
@@ -203,6 +196,8 @@ unsigned prefix = 0;
 	READ_RAW_STRING("ipv4-network", msg->ipv4_net);
 	READ_RAW_STRING("ipv6-network", msg->ipv6_net);
 	READ_RAW_STRING("ipv4-netmask", msg->ipv4_netmask);
+	READ_RAW_STRING("explicit-ipv4", msg->explicit_ipv4);
+	READ_RAW_STRING("explicit-ipv6", msg->explicit_ipv6);
 
 	msg->ipv6_prefix = extract_prefix(msg->ipv6_net);
 	if (msg->ipv6_prefix == 0) {
@@ -221,6 +216,9 @@ unsigned prefix = 0;
 	READ_RAW_NUMERIC("tx-data-per-sec", msg->tx_per_sec, msg->has_tx_per_sec);
 	msg->rx_per_sec /= 1000; /* in kb */
 	msg->tx_per_sec /= 1000; /* in kb */
+
+	READ_RAW_NUMERIC("stats-report-time", msg->interim_update_secs, msg->has_interim_update_secs);
+	READ_RAW_NUMERIC("session-timeout", msg->session_timeout_secs, msg->has_session_timeout_secs);
 	
 	/* net-priority will contain the actual priority + 1,
 	 * to allow having zero as uninitialized. */
@@ -265,9 +263,9 @@ static int get_sup_config(struct cfg_st *cfg, client_entry_st *entry,
 	char file[_POSIX_PATH_MAX];
 	int ret;
 
-	if (cfg->per_group_dir != NULL && entry->groupname[0] != 0) {
+	if (cfg->per_group_dir != NULL && entry->auth_info.groupname[0] != 0) {
 		snprintf(file, sizeof(file), "%s/%s", cfg->per_group_dir,
-			 entry->groupname);
+			 entry->auth_info.groupname);
 
 		ret = read_sup_config_file(cfg, msg, pool, file, cfg->default_group_conf, "group");
 		if (ret < 0)
@@ -276,7 +274,7 @@ static int get_sup_config(struct cfg_st *cfg, client_entry_st *entry,
 
 	if (cfg->per_user_dir != NULL) {
 		snprintf(file, sizeof(file), "%s/%s", cfg->per_user_dir,
-			 entry->username);
+			 entry->auth_info.username);
 		ret = read_sup_config_file(cfg, msg, pool, file, cfg->default_user_conf, "user");
 		if (ret < 0)
 			return ret;

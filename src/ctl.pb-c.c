@@ -265,7 +265,136 @@ void   id_req__free_unpacked
   assert(message->base.descriptor == &id_req__descriptor);
   protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
 }
-static const ProtobufCFieldDescriptor status_rep__field_descriptors[7] =
+void   ban_info_rep__init
+                     (BanInfoRep         *message)
+{
+  static BanInfoRep init_value = BAN_INFO_REP__INIT;
+  *message = init_value;
+}
+size_t ban_info_rep__get_packed_size
+                     (const BanInfoRep *message)
+{
+  assert(message->base.descriptor == &ban_info_rep__descriptor);
+  return protobuf_c_message_get_packed_size ((const ProtobufCMessage*)(message));
+}
+size_t ban_info_rep__pack
+                     (const BanInfoRep *message,
+                      uint8_t       *out)
+{
+  assert(message->base.descriptor == &ban_info_rep__descriptor);
+  return protobuf_c_message_pack ((const ProtobufCMessage*)message, out);
+}
+size_t ban_info_rep__pack_to_buffer
+                     (const BanInfoRep *message,
+                      ProtobufCBuffer *buffer)
+{
+  assert(message->base.descriptor == &ban_info_rep__descriptor);
+  return protobuf_c_message_pack_to_buffer ((const ProtobufCMessage*)message, buffer);
+}
+BanInfoRep *
+       ban_info_rep__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data)
+{
+  return (BanInfoRep *)
+     protobuf_c_message_unpack (&ban_info_rep__descriptor,
+                                allocator, len, data);
+}
+void   ban_info_rep__free_unpacked
+                     (BanInfoRep *message,
+                      ProtobufCAllocator *allocator)
+{
+  assert(message->base.descriptor == &ban_info_rep__descriptor);
+  protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
+}
+void   ban_list_rep__init
+                     (BanListRep         *message)
+{
+  static BanListRep init_value = BAN_LIST_REP__INIT;
+  *message = init_value;
+}
+size_t ban_list_rep__get_packed_size
+                     (const BanListRep *message)
+{
+  assert(message->base.descriptor == &ban_list_rep__descriptor);
+  return protobuf_c_message_get_packed_size ((const ProtobufCMessage*)(message));
+}
+size_t ban_list_rep__pack
+                     (const BanListRep *message,
+                      uint8_t       *out)
+{
+  assert(message->base.descriptor == &ban_list_rep__descriptor);
+  return protobuf_c_message_pack ((const ProtobufCMessage*)message, out);
+}
+size_t ban_list_rep__pack_to_buffer
+                     (const BanListRep *message,
+                      ProtobufCBuffer *buffer)
+{
+  assert(message->base.descriptor == &ban_list_rep__descriptor);
+  return protobuf_c_message_pack_to_buffer ((const ProtobufCMessage*)message, buffer);
+}
+BanListRep *
+       ban_list_rep__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data)
+{
+  return (BanListRep *)
+     protobuf_c_message_unpack (&ban_list_rep__descriptor,
+                                allocator, len, data);
+}
+void   ban_list_rep__free_unpacked
+                     (BanListRep *message,
+                      ProtobufCAllocator *allocator)
+{
+  assert(message->base.descriptor == &ban_list_rep__descriptor);
+  protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
+}
+void   unban_req__init
+                     (UnbanReq         *message)
+{
+  static UnbanReq init_value = UNBAN_REQ__INIT;
+  *message = init_value;
+}
+size_t unban_req__get_packed_size
+                     (const UnbanReq *message)
+{
+  assert(message->base.descriptor == &unban_req__descriptor);
+  return protobuf_c_message_get_packed_size ((const ProtobufCMessage*)(message));
+}
+size_t unban_req__pack
+                     (const UnbanReq *message,
+                      uint8_t       *out)
+{
+  assert(message->base.descriptor == &unban_req__descriptor);
+  return protobuf_c_message_pack ((const ProtobufCMessage*)message, out);
+}
+size_t unban_req__pack_to_buffer
+                     (const UnbanReq *message,
+                      ProtobufCBuffer *buffer)
+{
+  assert(message->base.descriptor == &unban_req__descriptor);
+  return protobuf_c_message_pack_to_buffer ((const ProtobufCMessage*)message, buffer);
+}
+UnbanReq *
+       unban_req__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data)
+{
+  return (UnbanReq *)
+     protobuf_c_message_unpack (&unban_req__descriptor,
+                                allocator, len, data);
+}
+void   unban_req__free_unpacked
+                     (UnbanReq *message,
+                      ProtobufCAllocator *allocator)
+{
+  assert(message->base.descriptor == &unban_req__descriptor);
+  protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
+}
+static const ProtobufCFieldDescriptor status_rep__field_descriptors[8] =
 {
   {
     "status",
@@ -328,18 +457,6 @@ static const ProtobufCFieldDescriptor status_rep__field_descriptors[7] =
     0,NULL,NULL    /* reserved1,reserved2, etc */
   },
   {
-    "stored_cookies",
-    6,
-    PROTOBUF_C_LABEL_REQUIRED,
-    PROTOBUF_C_TYPE_UINT32,
-    0,   /* quantifier_offset */
-    offsetof(StatusRep, stored_cookies),
-    NULL,
-    NULL,
-    0,             /* flags */
-    0,NULL,NULL    /* reserved1,reserved2, etc */
-  },
-  {
     "stored_tls_sessions",
     7,
     PROTOBUF_C_LABEL_REQUIRED,
@@ -351,20 +468,46 @@ static const ProtobufCFieldDescriptor status_rep__field_descriptors[7] =
     0,             /* flags */
     0,NULL,NULL    /* reserved1,reserved2, etc */
   },
+  {
+    "banned_ips",
+    8,
+    PROTOBUF_C_LABEL_REQUIRED,
+    PROTOBUF_C_TYPE_UINT32,
+    0,   /* quantifier_offset */
+    offsetof(StatusRep, banned_ips),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "secmod_client_entries",
+    9,
+    PROTOBUF_C_LABEL_REQUIRED,
+    PROTOBUF_C_TYPE_UINT32,
+    0,   /* quantifier_offset */
+    offsetof(StatusRep, secmod_client_entries),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
 };
 static const unsigned status_rep__field_indices_by_name[] = {
   3,   /* field[3] = active_clients */
+  6,   /* field[6] = banned_ips */
   1,   /* field[1] = pid */
   2,   /* field[2] = sec_mod_pid */
+  7,   /* field[7] = secmod_client_entries */
   4,   /* field[4] = start_time */
   0,   /* field[0] = status */
-  5,   /* field[5] = stored_cookies */
-  6,   /* field[6] = stored_tls_sessions */
+  5,   /* field[5] = stored_tls_sessions */
 };
-static const ProtobufCIntRange status_rep__number_ranges[1 + 1] =
+static const ProtobufCIntRange status_rep__number_ranges[2 + 1] =
 {
   { 1, 0 },
-  { 0, 7 }
+  { 7, 5 },
+  { 0, 8 }
 };
 const ProtobufCMessageDescriptor status_rep__descriptor =
 {
@@ -374,10 +517,10 @@ const ProtobufCMessageDescriptor status_rep__descriptor =
   "StatusRep",
   "",
   sizeof(StatusRep),
-  7,
+  8,
   status_rep__field_descriptors,
   status_rep__field_indices_by_name,
-  1,  status_rep__number_ranges,
+  2,  status_rep__number_ranges,
   (ProtobufCMessageInit) status_rep__init,
   NULL,NULL,NULL    /* reserved[123] */
 };
@@ -420,7 +563,7 @@ const ProtobufCMessageDescriptor bool_msg__descriptor =
   (ProtobufCMessageInit) bool_msg__init,
   NULL,NULL,NULL    /* reserved[123] */
 };
-static const ProtobufCFieldDescriptor user_info_rep__field_descriptors[24] =
+static const ProtobufCFieldDescriptor user_info_rep__field_descriptors[25] =
 {
   {
     "id",
@@ -710,6 +853,18 @@ static const ProtobufCFieldDescriptor user_info_rep__field_descriptors[24] =
     0,             /* flags */
     0,NULL,NULL    /* reserved1,reserved2, etc */
   },
+  {
+    "no_routes",
+    25,
+    PROTOBUF_C_LABEL_REPEATED,
+    PROTOBUF_C_TYPE_STRING,
+    offsetof(UserInfoRep, n_no_routes),
+    offsetof(UserInfoRep, no_routes),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
 };
 static const unsigned user_info_rep__field_indices_by_name[] = {
   9,   /* field[9] = conn_time */
@@ -726,6 +881,7 @@ static const unsigned user_info_rep__field_indices_by_name[] = {
   8,   /* field[8] = local_ip6 */
   21,   /* field[21] = mtu */
   18,   /* field[18] = nbns */
+  24,   /* field[24] = no_routes */
   5,   /* field[5] = remote_ip */
   7,   /* field[7] = remote_ip6 */
   19,   /* field[19] = routes */
@@ -740,7 +896,7 @@ static const unsigned user_info_rep__field_indices_by_name[] = {
 static const ProtobufCIntRange user_info_rep__number_ranges[1 + 1] =
 {
   { 1, 0 },
-  { 0, 24 }
+  { 0, 25 }
 };
 const ProtobufCMessageDescriptor user_info_rep__descriptor =
 {
@@ -750,7 +906,7 @@ const ProtobufCMessageDescriptor user_info_rep__descriptor =
   "UserInfoRep",
   "",
   sizeof(UserInfoRep),
-  24,
+  25,
   user_info_rep__field_descriptors,
   user_info_rep__field_indices_by_name,
   1,  user_info_rep__number_ranges,
@@ -869,5 +1025,145 @@ const ProtobufCMessageDescriptor id_req__descriptor =
   id_req__field_indices_by_name,
   1,  id_req__number_ranges,
   (ProtobufCMessageInit) id_req__init,
+  NULL,NULL,NULL    /* reserved[123] */
+};
+static const ProtobufCFieldDescriptor ban_info_rep__field_descriptors[3] =
+{
+  {
+    "ip",
+    1,
+    PROTOBUF_C_LABEL_REQUIRED,
+    PROTOBUF_C_TYPE_STRING,
+    0,   /* quantifier_offset */
+    offsetof(BanInfoRep, ip),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "score",
+    2,
+    PROTOBUF_C_LABEL_REQUIRED,
+    PROTOBUF_C_TYPE_UINT32,
+    0,   /* quantifier_offset */
+    offsetof(BanInfoRep, score),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "expires",
+    3,
+    PROTOBUF_C_LABEL_OPTIONAL,
+    PROTOBUF_C_TYPE_UINT32,
+    offsetof(BanInfoRep, has_expires),
+    offsetof(BanInfoRep, expires),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+};
+static const unsigned ban_info_rep__field_indices_by_name[] = {
+  2,   /* field[2] = expires */
+  0,   /* field[0] = ip */
+  1,   /* field[1] = score */
+};
+static const ProtobufCIntRange ban_info_rep__number_ranges[1 + 1] =
+{
+  { 1, 0 },
+  { 0, 3 }
+};
+const ProtobufCMessageDescriptor ban_info_rep__descriptor =
+{
+  PROTOBUF_C__MESSAGE_DESCRIPTOR_MAGIC,
+  "ban_info_rep",
+  "BanInfoRep",
+  "BanInfoRep",
+  "",
+  sizeof(BanInfoRep),
+  3,
+  ban_info_rep__field_descriptors,
+  ban_info_rep__field_indices_by_name,
+  1,  ban_info_rep__number_ranges,
+  (ProtobufCMessageInit) ban_info_rep__init,
+  NULL,NULL,NULL    /* reserved[123] */
+};
+static const ProtobufCFieldDescriptor ban_list_rep__field_descriptors[1] =
+{
+  {
+    "info",
+    1,
+    PROTOBUF_C_LABEL_REPEATED,
+    PROTOBUF_C_TYPE_MESSAGE,
+    offsetof(BanListRep, n_info),
+    offsetof(BanListRep, info),
+    &ban_info_rep__descriptor,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+};
+static const unsigned ban_list_rep__field_indices_by_name[] = {
+  0,   /* field[0] = info */
+};
+static const ProtobufCIntRange ban_list_rep__number_ranges[1 + 1] =
+{
+  { 1, 0 },
+  { 0, 1 }
+};
+const ProtobufCMessageDescriptor ban_list_rep__descriptor =
+{
+  PROTOBUF_C__MESSAGE_DESCRIPTOR_MAGIC,
+  "ban_list_rep",
+  "BanListRep",
+  "BanListRep",
+  "",
+  sizeof(BanListRep),
+  1,
+  ban_list_rep__field_descriptors,
+  ban_list_rep__field_indices_by_name,
+  1,  ban_list_rep__number_ranges,
+  (ProtobufCMessageInit) ban_list_rep__init,
+  NULL,NULL,NULL    /* reserved[123] */
+};
+static const ProtobufCFieldDescriptor unban_req__field_descriptors[1] =
+{
+  {
+    "ip",
+    1,
+    PROTOBUF_C_LABEL_REQUIRED,
+    PROTOBUF_C_TYPE_STRING,
+    0,   /* quantifier_offset */
+    offsetof(UnbanReq, ip),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+};
+static const unsigned unban_req__field_indices_by_name[] = {
+  0,   /* field[0] = ip */
+};
+static const ProtobufCIntRange unban_req__number_ranges[1 + 1] =
+{
+  { 1, 0 },
+  { 0, 1 }
+};
+const ProtobufCMessageDescriptor unban_req__descriptor =
+{
+  PROTOBUF_C__MESSAGE_DESCRIPTOR_MAGIC,
+  "unban_req",
+  "UnbanReq",
+  "UnbanReq",
+  "",
+  sizeof(UnbanReq),
+  1,
+  unban_req__field_descriptors,
+  unban_req__field_indices_by_name,
+  1,  unban_req__number_ranges,
+  (ProtobufCMessageInit) unban_req__init,
   NULL,NULL,NULL    /* reserved[123] */
 };

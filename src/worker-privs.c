@@ -87,6 +87,9 @@ int disable_system_calls(struct worker_st *ws)
 	ADD_SYSCALL(rt_sigprocmask, 0);
 
 	ADD_SYSCALL(select, 0);
+	/* in x86, glibc uses _newselect() */
+	ADD_SYSCALL(_newselect, 0);
+
 	ADD_SYSCALL(pselect6, 0);
 	ADD_SYSCALL(close, 0);
 	ADD_SYSCALL(exit, 0);
@@ -96,6 +99,13 @@ int disable_system_calls(struct worker_st *ws)
 
 	ADD_SYSCALL(getsockopt, 0);
 	ADD_SYSCALL(setsockopt, 0);
+
+	/* we need to open files when we have an xml_config_file setup */
+	if (ws->config->xml_config_file) {
+		ADD_SYSCALL(fstat, 0);
+		ADD_SYSCALL(lseek, 0);
+		ADD_SYSCALL(open, 0);
+	}
 
 	/* this we need to get the MTU from
 	 * the TUN device */

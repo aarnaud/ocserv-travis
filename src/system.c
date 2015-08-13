@@ -21,17 +21,14 @@
 #include <unistd.h>
 #ifdef __linux__
 # include <sys/prctl.h>
-# include <sched.h>
-# include <linux/sched.h>
-# include <sys/syscall.h>
 #endif
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <sys/uio.h>
-#include <sys/errno.h>
 #include <sys/syslog.h>
 
+#include <errno.h>
 #include <signal.h>
 
 void kill_on_parent_kill(int sig)
@@ -52,23 +49,6 @@ void pr_set_undumpable(const char *mod)
 #endif
 }
 
-#if defined(__linux__) && defined(ENABLE_LINUX_NS)
-pid_t safe_fork(void)
-{
-	long ret;
-	/* fork: 100%
-	 * CLONE_NEWPID|CLONE_NEWNET|CLONE_NEWIPC: 3%
-	 * CLONE_NEWPID|CLONE_NEWIPC: 27%
-	 * CLONE_NEWPID: 36%
-	 */
-	int flags = SIGCHLD|CLONE_NEWPID|CLONE_NEWIPC;
-	ret = syscall(SYS_clone, flags, 0, 0, 0);
-	if (ret == 0 && syscall(SYS_getpid)!= 1)
-		return -1;
-	return ret;
-}
-#endif
-
 SIGHANDLER_T ocsignal(int signum, SIGHANDLER_T handler)
 {
 	struct sigaction new_action, old_action;
@@ -84,7 +64,7 @@ SIGHANDLER_T ocsignal(int signum, SIGHANDLER_T handler)
 /* Checks whether the peer in a socket has the expected @uid and @gid.
  * Returns zero on success.
  */
-int check_upeer_id(const char *mod, int debug, int cfd, uid_t uid, uid_t gid, uid_t *ruid)
+int check_upeer_id(const char *mod, int debug, int cfd, uid_t uid, uid_t gid, uid_t *ruid, pid_t *pid)
 {
 	int e, ret;
 #if defined(SO_PEERCRED) && defined(HAVE_STRUCT_UCRED)
@@ -104,7 +84,7 @@ int check_upeer_id(const char *mod, int debug, int cfd, uid_t uid, uid_t gid, ui
 		return -1;
 	}
 
-	if (debug != 0)
+	if (debug >= 3)
 		syslog(LOG_DEBUG,
 		       "%s: received request from pid %u and uid %u",
 		       mod, (unsigned)cr.pid, (unsigned)cr.uid);
@@ -112,8 +92,11 @@ int check_upeer_id(const char *mod, int debug, int cfd, uid_t uid, uid_t gid, ui
 	if (ruid)
 		*ruid = cr.uid;
 
+	if (pid)
+		*pid = cr.pid;
+
 	if (cr.uid != 0 && (cr.uid != uid || cr.gid != gid)) {
-		syslog(LOG_DEBUG,
+		syslog(LOG_ERR,
 		       "%s: received unauthorized request from pid %u and uid %u",
 		       mod, (unsigned)cr.pid, (unsigned)cr.uid);
 		       return -1;
@@ -134,12 +117,15 @@ int check_upeer_id(const char *mod, int debug, int cfd, uid_t uid, uid_t gid, ui
 	if (ruid)
 		*ruid = euid;
 
-	if (debug = 0)
+	if (pid)
+		*pid = 0;
+
+	if (debug >= 3)
 		syslog(LOG_DEBUG,
 		       "%s: received request from a processes with uid %u",
 		       mod, (unsigned)euid);
 	if (euid != 0 && (euid != uid || egid != gid)) {
-		syslog(LOG_DEBUG,
+		syslog(LOG_ERR,
 		       "%s: received unauthorized request from a process with uid %u",
 			mod, (unsigned)euid);
 			return -1;

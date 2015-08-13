@@ -27,9 +27,11 @@
 struct radius_ctx_st {
 	char username[MAX_USERNAME_SIZE*2];
 	char groupname[MAX_GROUPNAME_SIZE];
-	char sid[BASE64_LENGTH(SID_SIZE) + 1];
 
 	char remote_ip[MAX_IP_STR];
+	char our_ip[MAX_IP_STR];
+	unsigned interim_interval_secs;
+	unsigned session_timeout_secs;
 
 	/* variables for configuration */
 	char ipv4[MAX_IP_STR];
@@ -46,9 +48,9 @@ struct radius_ctx_st {
 	char **routes;
 	unsigned routes_size;
 
-	const char *config;	/* radius config file */
 	const char *pass_msg;
 	unsigned retries;
+	unsigned id;
 };
 
 extern const struct auth_mod_st radius_auth_funcs;
