@@ -10,10 +10,7 @@ Copyright: 2013-2015 Nikos Mavrogiannopoulos
            2009-2013 Free Software Foundation, Inc.
 License: GPL-2+
 
-Files: build-aux/snippet/*
-       libopts/gettext.h
-       libopts/parse-duration.c
-       libopts/parse-duration.h
+Files: build-aux/snippet/* libopts/*
 Copyright: 1995-2014 Free Software Foundation, Inc.
 License: LGPL-2.1+
 
