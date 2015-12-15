@@ -1,5 +1,0 @@
-0001-Listen-to-Port-443-as-in-sample.config.patch
-0002-Replace-LIBSYSTEMD_DAEMON-with-LIBSYSTEMD.patch
-0003-Run-in-foreground-when-using-systemd.patch
-0004-Remove-syslog.target-from-systemd-service-files.patch
-0005-Run-after-network-online.target-instead-of-network.t.patch
