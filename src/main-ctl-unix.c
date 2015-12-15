@@ -110,8 +110,10 @@ int ctl_handler_init(main_server_st * s)
 	struct sockaddr_un sa;
 	int sd, e;
 
-	if (s->config->use_occtl == 0 || s->perm_config->occtl_socket_file == NULL)
+	if (s->config->use_occtl == 0 || s->perm_config->occtl_socket_file == NULL) {
+		mslog(s, NULL, LOG_INFO, "not using control unix socket");
 		return 0;
+	}
 
 	mslog(s, NULL, LOG_DEBUG, "initializing control unix socket: %s", s->perm_config->occtl_socket_file);
 	memset(&sa, 0, sizeof(sa));
@@ -264,6 +266,17 @@ static int append_user_info(method_ctx *ctx,
 		strtmp = "";
 	rep->ip = strtmp;
 
+	ipbuf = talloc_size(ctx->pool, IPBUF_SIZE);
+	if (ipbuf == NULL)
+		return -1;
+
+	strtmp =
+	    human_addr2((struct sockaddr *)&ctmp->our_addr,
+			ctmp->our_addr_len, ipbuf, IPBUF_SIZE, 0);
+	if (strtmp == NULL)
+		strtmp = "";
+	rep->local_dev_ip = strtmp;
+
 	rep->tun = ctmp->tun_lease.name;
 
 	ipbuf = talloc_size(ctx->pool, IPBUF_SIZE);
@@ -323,6 +336,7 @@ static int append_user_info(method_ctx *ctx,
 	rep->conn_time = ctmp->conn_time;
 	rep->hostname = ctmp->hostname;
 	rep->user_agent = ctmp->user_agent;
+	rep->restrict_to_routes = ctmp->config.restrict_user_to_routes;
 
 	if (ctmp->status == PS_AUTH_COMPLETED)
 		strtmp = "connected";
@@ -360,6 +374,19 @@ static int append_user_info(method_ctx *ctx,
 	tmp *= 1000;
 	rep->tx_per_sec = tmp;
 
+	if (ctmp->config.dpd)
+		rep->dpd = ctmp->config.dpd;
+	else
+		rep->dpd = ctx->s->config->dpd;
+
+	if (ctmp->config.keepalive)
+		rep->keepalive = ctmp->config.keepalive;
+	else
+		rep->dpd = ctx->s->config->dpd;
+
+	rep->domains = ctx->s->config->split_dns;
+	rep->n_domains = ctx->s->config->split_dns_size;
+
 	if (ctmp->config.dns_size > 0) {
 		rep->dns = ctmp->config.dns;
 		rep->n_dns = ctmp->config.dns_size;
@@ -376,20 +403,22 @@ static int append_user_info(method_ctx *ctx,
 		rep->n_nbns = ctx->s->config->network.nbns_size;
 	}
 
-	if (ctmp->config.routes_size > 0) {
-		rep->routes = ctmp->config.routes;
-		rep->n_routes = ctmp->config.routes_size;
+	rep->n_routes = ctmp->config.routes_size + ctx->s->config->network.routes_size;
+	rep->routes = talloc_size(rep, sizeof(char*)*rep->n_routes);
+	if (rep->routes != NULL) {
+		memcpy(rep->routes, ctmp->config.routes, sizeof(char*)*ctmp->config.routes_size);
+		memcpy(&rep->routes[ctmp->config.routes_size], ctx->s->config->network.routes, sizeof(char*)*ctx->s->config->network.routes_size);
 	} else {
-		rep->routes = ctx->s->config->network.routes;
-		rep->n_routes = ctx->s->config->network.routes_size;
+		rep->n_routes = 0;
 	}
 
-	if (ctmp->config.no_routes_size > 0) {
-		rep->no_routes = ctmp->config.no_routes;
-		rep->n_no_routes = ctmp->config.no_routes_size;
+	rep->n_no_routes = ctmp->config.no_routes_size + ctx->s->config->network.no_routes_size;
+	rep->no_routes = talloc_size(rep, sizeof(char*)*rep->n_no_routes);
+	if (rep->no_routes != NULL) {
+		memcpy(rep->no_routes, ctmp->config.no_routes, sizeof(char*)*ctmp->config.no_routes_size);
+		memcpy(&rep->no_routes[ctmp->config.no_routes_size], ctx->s->config->network.no_routes, sizeof(char*)*ctx->s->config->network.no_routes_size);
 	} else {
-		rep->no_routes = ctx->s->config->network.no_routes;
-		rep->n_no_routes = ctx->s->config->network.no_routes_size;
+		rep->n_no_routes = 0;
 	}
 
 	if (ctmp->config.iroutes_size > 0) {
@@ -448,7 +477,8 @@ static int append_ban_info(method_ctx *ctx,
 
 	ban_info_rep__init(rep);
 
-	rep->ip = e->ip;
+	rep->ip.data = e->ip.ip;
+	rep->ip.len = e->ip.size;
 	rep->score = e->score;
 
 	if (ctx->s->config->max_ban_score > 0 && e->score >= ctx->s->config->max_ban_score) {
@@ -603,10 +633,7 @@ static void method_unban_ip(method_ctx *ctx,
 		return;
 	}
 
-	if (remove_ip_from_ban_list(ctx->s, req->ip) != 0) {
-		if (req->ip)
-			mslog(ctx->s, NULL, LOG_INFO,
-				      "unbanning IP '%s' due to ctl request", req->ip);
+	if (remove_ip_from_ban_list(ctx->s, req->ip.data, req->ip.len) != 0) {
 		rep.status = 1;
 	}
 

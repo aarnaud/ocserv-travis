@@ -87,10 +87,9 @@ static int parse_cstp_data(struct worker_st *ws, uint8_t * buf, size_t buf_size,
 static int parse_dtls_data(struct worker_st *ws, uint8_t * buf, size_t buf_size,
 			   time_t);
 void exit_worker(worker_st * ws);
-
 static void exit_worker_reason(worker_st * ws, unsigned reason);
-
 static int connect_handler(worker_st * ws);
+static void session_info_send(worker_st * ws);
 
 static void handle_alarm(int signo)
 {
@@ -307,9 +306,6 @@ void send_stats_to_secmod(worker_st * ws, time_t now, unsigned discon_reason)
 	CliStatsMsg msg = CLI_STATS_MSG__INIT;
 	int sd, ret, e;
 
-	if (now - ws->last_stats_msg < MIN_STATS_INTERVAL)
-		return;
-
 	ws->last_stats_msg = now;
 
 	sd = connect_to_secmod(ws);
@@ -339,7 +335,7 @@ void send_stats_to_secmod(worker_st * ws, time_t now, unsigned discon_reason)
 		close(sd);
 
 		if (ret >= 0) {
-			oclog(ws, LOG_DEBUG,
+			oclog(ws, LOG_INFO,
 			      "sent periodic stats (in: %lu, out: %lu) to sec-mod",
 			      (unsigned long)msg.bytes_in,
 			      (unsigned long)msg.bytes_out);
@@ -468,17 +464,11 @@ void vpn_server(struct worker_st *ws)
 		} while (ret < 0 && gnutls_error_is_fatal(ret) == 0);
 		GNUTLS_S_FATAL_ERR(session, ret);
 
-		if (!ws->config->listen_proxy_proto) {
-			memset(&ws->our_addr, 0, sizeof(ws->our_addr));
-			ws->our_addr_len = sizeof(ws->our_addr);
-			if (getsockname(ws->conn_fd, (struct sockaddr*)&ws->our_addr, &ws->our_addr_len) < 0)
-				ws->our_addr_len = 0;
-		}
-
 		oclog(ws, LOG_DEBUG, "TLS handshake completed");
 	} else {
 		oclog(ws, LOG_DEBUG, "Accepted unix connection");
 	}
+	session_info_send(ws);
 
 	memset(&settings, 0, sizeof(settings));
 
@@ -629,6 +619,15 @@ void session_info_send(worker_st * ws)
 		msg.user_agent = ws->req.user_agent;
 	}
 
+	if (ws->config->listen_proxy_proto) {
+		msg.our_addr.data = (uint8_t*)&ws->our_addr;
+		msg.our_addr.len = ws->our_addr_len;
+		msg.has_our_addr = 1;
+		msg.remote_addr.data = (uint8_t*)&ws->remote_addr;
+		msg.remote_addr.len = ws->remote_addr_len;
+		msg.has_remote_addr = 1;
+	}
+
 	send_msg_to_main(ws, CMD_SESSION_INFO, &msg,
 			 (pack_size_func) session_info_msg__get_packed_size,
 			 (pack_func) session_info_msg__pack);
@@ -680,7 +679,7 @@ int mtu_not_ok(worker_st * ws)
 		}
 
 		mtu_set(ws, ws->last_good_mtu);
-		oclog(ws, LOG_DEBUG, "MTU %u is too large, switching to %u",
+		oclog(ws, LOG_INFO, "MTU %u is too large, switching to %u",
 		      ws->last_bad_mtu, ws->conn_mtu);
 	} else if (ws->proto == AF_INET6) { /* IPv6 */
 		int mtu;
@@ -1173,7 +1172,7 @@ static int tun_mainloop(struct worker_st *ws, struct timespec *tnow)
 	if (ws->udp_state == UP_ACTIVE && ws->dtls_selected_comp != NULL && l > ws->config->no_compress_limit) {
 		/* otherwise don't compress */
 		ret = ws->dtls_selected_comp->compress(ws->decomp+8, sizeof(ws->decomp)-8, ws->buffer+8, l);
-		oclog(ws, LOG_DEBUG, "compressed %d to %d\n", (int)l, ret);
+		oclog(ws, LOG_TRANSFER_DEBUG, "compressed %d to %d\n", (int)l, ret);
 		if (ret > 0 && ret < l) {
 			dtls_to_send.data = ws->decomp;
 			dtls_to_send.size = ret;
@@ -1190,7 +1189,7 @@ static int tun_mainloop(struct worker_st *ws, struct timespec *tnow)
 	} else if (ws->cstp_selected_comp != NULL && l > ws->config->no_compress_limit) {
 		/* otherwise don't compress */
 		ret = ws->cstp_selected_comp->compress(ws->decomp+8, sizeof(ws->decomp)-8, ws->buffer+8, l);
-		oclog(ws, LOG_DEBUG, "compressed %d to %d\n", (int)l, ret);
+		oclog(ws, LOG_TRANSFER_DEBUG, "compressed %d to %d\n", (int)l, ret);
 		if (ret > 0 && ret < l) {
 			cstp_to_send.data = ws->decomp;
 			cstp_to_send.size = ret;
@@ -1251,6 +1250,11 @@ char *replace_vals(worker_st *ws, const char *txt)
 {
 	str_st str;
 	int ret;
+	str_rep_tab tab[3];
+
+	STR_TAB_SET(0, "%{U}", ws->username);
+	STR_TAB_SET(1, "%{G}", ws->groupname);
+	STR_TAB_TERM(2);
 
 	str_init(&str, ws);
 
@@ -1258,13 +1262,7 @@ char *replace_vals(worker_st *ws, const char *txt)
 	if (ret < 0)
 		return NULL;
 
-	ret = str_replace_str(&str, "%{U}", ws->username);
-	if (ret < 0) {
-		str_clear(&str);
-		return NULL;
-	}
-
-	ret = str_replace_str(&str, "%{G}", ws->groupname);
+	ret = str_replace_str(&str, tab);
 	if (ret < 0) {
 		str_clear(&str);
 		return NULL;
@@ -1297,7 +1295,7 @@ static int send_routes(worker_st *ws, struct http_req_st *req,
 			continue;
 		if (req->no_ipv4 != 0 && ip6 == 0)
 			continue;
-		oclog(ws, LOG_DEBUG, "%s route %s", txt, routes[i]);
+		oclog(ws, LOG_INFO, "%s route %s", txt, routes[i]);
 
 		if (ip6 != 0 && ws->full_ipv6) {
 			ret = cstp_printf(ws,
@@ -1429,7 +1427,7 @@ static int connect_handler(worker_st * ws)
 		ws->config->idle_timeout = ws->config->mobile_idle_timeout;
 	}
 
-	oclog(ws, LOG_DEBUG, "suggesting DPD of %d secs", ws->config->dpd);
+	oclog(ws, LOG_INFO, "suggesting DPD of %d secs", ws->config->dpd);
 	if (ws->config->dpd > 0) {
 		ret =
 		    cstp_printf(ws, "X-CSTP-DPD: %u\r\n",
@@ -1458,7 +1456,7 @@ static int connect_handler(worker_st * ws)
 	}
 
 	if (req->base_mtu > 0) {
-		oclog(ws, LOG_DEBUG, "peer's base MTU is %u", req->base_mtu);
+		oclog(ws, LOG_INFO, "peer's base MTU is %u", req->base_mtu);
 		ws->vinfo.mtu = MIN(ws->vinfo.mtu, req->base_mtu);
 	}
 
@@ -1471,10 +1469,9 @@ static int connect_handler(worker_st * ws)
 			      strerror(e));
 		} else {
 			max -= 13;
-			oclog(ws, LOG_DEBUG, "TCP MSS is %u", max);
 			if (max > 0 && max < ws->vinfo.mtu) {
-				oclog(ws, LOG_DEBUG,
-				      "reducing MTU due to TCP MSS to %u", max);
+				oclog(ws, LOG_INFO,
+				      "reducing MTU due to TCP MSS to %u (from %u)", max, ws->vinfo.mtu);
 				ws->vinfo.mtu = max;
 			}
 		}
@@ -1482,7 +1479,7 @@ static int connect_handler(worker_st * ws)
 
 	ret = cstp_printf(ws, "X-CSTP-Base-MTU: %u\r\n", ws->vinfo.mtu);
 	SEND_ERR(ret);
-	oclog(ws, LOG_DEBUG, "CSTP Base MTU is %u bytes", ws->vinfo.mtu);
+	oclog(ws, LOG_INFO, "CSTP Base MTU is %u bytes", ws->vinfo.mtu);
 
 	/* calculate TLS channel MTU */
 	if (ws->session == NULL) {
@@ -1506,7 +1503,7 @@ static int connect_handler(worker_st * ws)
 
 	/* Send IP addresses */
 	if (ws->vinfo.ipv4 && req->no_ipv4 == 0) {
-		oclog(ws, LOG_DEBUG, "sending IPv4 %s", ws->vinfo.ipv4);
+		oclog(ws, LOG_INFO, "sending IPv4 %s", ws->vinfo.ipv4);
 		ret =
 		    cstp_printf(ws, "X-CSTP-Address: %s\r\n",
 			       ws->vinfo.ipv4);
@@ -1521,7 +1518,7 @@ static int connect_handler(worker_st * ws)
 	}
 
 	if (ws->vinfo.ipv6 && req->no_ipv6 == 0 && ws->vinfo.ipv6_prefix != 0) {
-		oclog(ws, LOG_DEBUG, "sending IPv6 %s/%u", ws->vinfo.ipv6, ws->vinfo.ipv6_prefix);
+		oclog(ws, LOG_INFO, "sending IPv6 %s/%u", ws->vinfo.ipv6, ws->vinfo.ipv6_prefix);
 		if (ws->full_ipv6 && ws->vinfo.ipv6_prefix) {
 			ret =
 			    cstp_printf(ws,
@@ -1564,6 +1561,7 @@ static int connect_handler(worker_st * ws)
 		if (req->no_ipv4 != 0 && ip6 == 0)
 			continue;
 
+		oclog(ws, LOG_INFO, "adding DNS %s", ws->vinfo.dns[i]);
 		ret =
 		    cstp_printf(ws, "X-CSTP-DNS: %s\r\n",
 			       ws->vinfo.dns[i]);
@@ -1581,6 +1579,7 @@ static int connect_handler(worker_st * ws)
 		if (req->no_ipv4 != 0 && ip6 == 0)
 			continue;
 
+		oclog(ws, LOG_INFO, "adding NBNS %s", ws->vinfo.nbns[i]);
 		ret =
 		    cstp_printf(ws, "X-CSTP-NBNS: %s\r\n",
 			       ws->vinfo.nbns[i]);
@@ -1598,7 +1597,7 @@ static int connect_handler(worker_st * ws)
 		if (req->no_ipv4 != 0 && ip6 == 0)
 			continue;
 
-		oclog(ws, LOG_DEBUG, "adding split DNS %s",
+		oclog(ws, LOG_INFO, "adding split DNS %s",
 		      ws->config->split_dns[i]);
 		ret =
 		    cstp_printf(ws, "X-CSTP-Split-DNS: %s\r\n",
@@ -1612,7 +1611,18 @@ static int connect_handler(worker_st * ws)
 
 		ret = send_routes(ws, req, ws->routes, ws->routes_size, 1);
 		SEND_ERR(ret);
+
+	} else {
+		/* default route */
+		ws->config->tunnel_all_dns = 1;
 	}
+
+	if (ws->config->tunnel_all_dns) {
+		ret = cstp_puts(ws, "X-CSTP-Tunnel-All-DNS: true\r\n");
+	} else {
+		ret = cstp_puts(ws, "X-CSTP-Tunnel-All-DNS: false\r\n");
+	}
+	SEND_ERR(ret);
 
 	ret = send_routes(ws, req, ws->vinfo.no_routes, ws->vinfo.no_routes_size, 0);
 	SEND_ERR(ret);
@@ -1686,7 +1696,6 @@ static int connect_handler(worker_st * ws)
 		       "X-CSTP-Disconnected-Timeout: none\r\n"
 		       "X-CSTP-Keep: true\r\n"
 		       "X-CSTP-TCP-Keepalive: true\r\n"
-		       "X-CSTP-Tunnel-All-DNS: false\r\n"
 		       "X-CSTP-License: accept\r\n");
 	SEND_ERR(ret);
 
@@ -1694,7 +1703,7 @@ static int connect_handler(worker_st * ws)
 		char *h = replace_vals(ws, ws->config->custom_header[i]);
 
 		if (h) {
-			oclog(ws, LOG_DEBUG, "adding custom header '%s'", h);
+			oclog(ws, LOG_INFO, "adding custom header '%s'", h);
 			ret =
 			    cstp_printf(ws, "%s\r\n", h);
 			SEND_ERR(ret);
@@ -1761,7 +1770,7 @@ static int connect_handler(worker_st * ws)
 			       ws->config->keepalive);
 		SEND_ERR(ret);
 
-		oclog(ws, LOG_DEBUG, "DTLS ciphersuite: %s",
+		oclog(ws, LOG_INFO, "DTLS ciphersuite: %s",
 		      ws->req.selected_ciphersuite->oc_name);
 		ret =
 		    cstp_printf(ws, "X-DTLS-CipherSuite: %s\r\n",
@@ -1798,7 +1807,7 @@ static int connect_handler(worker_st * ws)
 		ret =
 		    cstp_printf(ws, "X-DTLS-MTU: %u\r\n", ws->conn_mtu);
 		SEND_ERR(ret);
-		oclog(ws, LOG_DEBUG, "suggesting DTLS MTU %u", ws->conn_mtu);
+		oclog(ws, LOG_INFO, "suggesting DTLS MTU %u", ws->conn_mtu);
 
 		if (ws->config->output_buffer > 0) {
 			t = MIN(2048, ws->conn_mtu * ws->config->output_buffer);
@@ -1835,7 +1844,7 @@ static int connect_handler(worker_st * ws)
 
 	/* send any compression methods */
 	if (ws->dtls_selected_comp) {
-		oclog(ws, LOG_DEBUG, "selected DTLS compression method %s\n", ws->dtls_selected_comp->name);
+		oclog(ws, LOG_INFO, "selected DTLS compression method %s\n", ws->dtls_selected_comp->name);
 		ret =
 		    cstp_printf(ws, "X-DTLS-Content-Encoding: %s\r\n",
 			        ws->dtls_selected_comp->name);
@@ -1843,7 +1852,7 @@ static int connect_handler(worker_st * ws)
 	}
 
 	if (ws->cstp_selected_comp) {
-		oclog(ws, LOG_DEBUG, "selected CSTP compression method %s\n", ws->cstp_selected_comp->name);
+		oclog(ws, LOG_INFO, "selected CSTP compression method %s\n", ws->cstp_selected_comp->name);
 		ret =
 		    cstp_printf(ws, "X-CSTP-Content-Encoding: %s\r\n",
 			        ws->cstp_selected_comp->name);
@@ -1863,7 +1872,6 @@ static int connect_handler(worker_st * ws)
 	bandwidth_init(&ws->b_rx, ws->config->rx_per_sec);
 	bandwidth_init(&ws->b_tx, ws->config->tx_per_sec);
 
-	session_info_send(ws);
 	sigprocmask(SIG_BLOCK, &blockset, NULL);
 
 	/* worker main loop  */
@@ -2065,7 +2073,7 @@ static int parse_data(struct worker_st *ws, uint8_t *buf, size_t buf_size,
 
 		break;
 	case AC_PKT_DISCONN:
-		oclog(ws, LOG_DEBUG, "received BYE packet; exiting");
+		oclog(ws, LOG_INFO, "received BYE packet; exiting");
 		exit_worker_reason(ws, REASON_USER_DISCONNECT);
 		break;
 	case AC_PKT_COMPRESSED:

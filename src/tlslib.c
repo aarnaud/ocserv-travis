@@ -112,23 +112,24 @@ ssize_t cstp_send(worker_st *ws, const void *data,
 
 ssize_t cstp_send_file(worker_st *ws, const char *file)
 {
-FILE* fp;
+int fd;
 char buf[512];
 ssize_t len, total = 0;
 int ret;
 
-	fp = fopen(file, "r");
-	if (fp == NULL)
+	fd = open(file, O_RDONLY);
+	if (fd == -1)
 		return GNUTLS_E_FILE_ERROR;
 
-	while (	(len = fread( buf, 1, sizeof(buf), fp)) > 0) {
+	while (	(len = read( fd, buf, sizeof(buf))) > 0 ||
+		(len == -1 && (errno == EINTR || errno == EAGAIN))) {
 		ret = cstp_send(ws, buf, len);
 		FATAL_ERR(ws, ret);
 
 		total += ret;
 	}
 
-	fclose(fp);
+	close(fd);
 
 	return total;
 }
@@ -609,6 +610,7 @@ unsigned pcert_list_size, i;
 gnutls_privkey_t key;
 gnutls_datum_t data;
 struct key_cb_data * cdata;
+unsigned flags;
 
 	for (i=0;i<s->perm_config->key_size;i++) {
 		/* load the certificate */
@@ -629,8 +631,13 @@ struct key_cb_data * cdata;
 				return -1;
 			}
 
+			flags = GNUTLS_X509_CRT_LIST_FAIL_IF_UNSORTED|GNUTLS_X509_CRT_LIST_IMPORT_FAIL_IF_EXCEED;
+#if GNUTLS_VERSION_NUMBER >= 0x030400
+			flags |= GNUTLS_X509_CRT_LIST_SORT;
+#endif
+
 			ret = gnutls_pcert_list_import_x509_raw(pcert_list, &pcert_list_size,
-				&data, GNUTLS_X509_FMT_PEM, GNUTLS_X509_CRT_LIST_FAIL_IF_UNSORTED|GNUTLS_X509_CRT_LIST_IMPORT_FAIL_IF_EXCEED);
+								&data, GNUTLS_X509_FMT_PEM, flags);
 			GNUTLS_FATAL_ERR(ret);
 
 			gnutls_free(data.data);
@@ -716,7 +723,7 @@ const char* perr;
 			mslog(s, NULL, LOG_INFO, "processed %d CA certificate(s)", ret);
 		}
 
-		tls_reload_crl(s, creds);
+		tls_reload_crl(s, creds, 1);
 
 		gnutls_certificate_set_verify_function(creds->xcred,
 						       verify_certificate_cb);
@@ -736,25 +743,51 @@ const char* perr;
 	return;
 }
 
-void tls_reload_crl(main_server_st* s, tls_st *creds)
+void tls_reload_crl(main_server_st* s, tls_st *creds, unsigned force)
 {
-int ret;
+int ret, e, saved_ret;
+static time_t old_mtime = 0;
+static unsigned crl_type = GNUTLS_X509_FMT_PEM;
+struct stat st;
+
+	if (force)
+		old_mtime = 0;
 
 	if (s->config->cert_req != GNUTLS_CERT_IGNORE && s->config->crl != NULL) {
-		ret =
-		    gnutls_certificate_set_x509_crl_file(creds->xcred,
-							 s->config->crl,
-							 GNUTLS_X509_FMT_PEM);
-		if (ret < 0) {
-			/* ignore the CRL file when empty */
-			if (ret == GNUTLS_E_BASE64_DECODING_ERROR) {
-				mslog(s, NULL, LOG_ERR, "empty or unreadable CRL file (%s); check documentation to generate an empty CRL",
-					s->config->crl);
-			} else {
+		ret = stat(s->config->crl, &st);
+		if (ret == -1) {
+			e = errno;
+			mslog(s, NULL, LOG_INFO, "CRL file (%s) not found: %s; check documentation to generate an empty CRL",
+				s->config->crl, strerror(e));
+			return;
+		}
+
+		/* reload only if it is a newer file */
+		if (st.st_mtime > old_mtime) {
+			ret =
+			    gnutls_certificate_set_x509_crl_file(creds->xcred,
+								 s->config->crl,
+								 crl_type);
+			if (ret == GNUTLS_E_BASE64_DECODING_ERROR && crl_type == GNUTLS_X509_FMT_PEM) {
+				crl_type = GNUTLS_X509_FMT_DER;
+				saved_ret = ret;
+				ret =
+				    gnutls_certificate_set_x509_crl_file(creds->xcred,
+									 s->config->crl,
+									 crl_type);
+				if (ret < 0)
+					ret = saved_ret;
+			}
+			if (ret < 0) {
+				/* ignore the CRL file when empty */
 				mslog(s, NULL, LOG_ERR, "error reading the CRL (%s) file: %s",
 					s->config->crl, gnutls_strerror(ret));
+				exit(1);
 			}
-			exit(1);
+			mslog(s, NULL, LOG_INFO, "loaded CRL: %s", s->config->crl);
+			old_mtime = st.st_mtime;
+		} else {
+			mslog(s, NULL, LOG_DEBUG, "skipping already loaded CRL: %s", s->config->crl);
 		}
 	}
 }

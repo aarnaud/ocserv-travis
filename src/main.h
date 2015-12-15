@@ -39,6 +39,9 @@
 
 #define COOKIE_KEY_SIZE 16
 
+extern int saved_argc;
+extern char **saved_argv;
+
 extern sigset_t sig_default_set;
 int cmd_parser (void *pool, int argc, char **argv, struct perm_cfg_st** config);
 void reload_cfg_file(void *pool, struct perm_cfg_st* config);
@@ -99,6 +102,8 @@ typedef struct proc_st {
 
 	struct sockaddr_storage remote_addr; /* peer address */
 	socklen_t remote_addr_len;
+	struct sockaddr_storage our_addr; /* our address */
+	socklen_t our_addr_len;
 
 	/* The SID present in the cookie. Used for session control only */
 	uint8_t sid[SID_SIZE];
@@ -174,6 +179,9 @@ typedef struct main_server_st {
 	tls_st *creds;
 	
 	uint8_t cookie_key[COOKIE_KEY_SIZE];
+	/* when we rotate keys, key the previous one active for verification */
+	uint8_t prev_cookie_key[COOKIE_KEY_SIZE];
+	unsigned prev_cookie_key_active;
 
 	struct listen_list_st listen_list;
 	struct proc_list_st proc_list;
@@ -231,18 +239,27 @@ int handle_resume_store_req(main_server_st* s, struct proc_st *proc,
 int session_open(main_server_st * s, struct proc_st *proc, const uint8_t *cookie, unsigned cookie_size);
 int session_close(main_server_st * s, struct proc_st *proc);
 
+#ifdef DISABLE_LOGS
+/* for testing */
+# define mslog(...)
+
+#else
+
 void 
 __attribute__ ((format(printf, 4, 5)))
     _mslog(const main_server_st * s, const struct proc_st* proc,
     	int priority, const char *fmt, ...);
 
-#ifdef __GNUC__
-# define mslog(s, proc, prio, fmt, ...) \
+# ifdef __GNUC__
+#  define mslog(s, proc, prio, fmt, ...) \
 	(prio==LOG_ERR)?_mslog(s, proc, prio, "%s:%d: "fmt, __FILE__, __LINE__, ##__VA_ARGS__): \
 	_mslog(s, proc, prio, fmt, ##__VA_ARGS__)
-#else
-# define mslog _mslog
+# else
+#  define mslog _mslog
+# endif
+
 #endif
+
 
 void  mslog_hex(const main_server_st * s, const struct proc_st* proc,
     	int priority, const char *prefix, uint8_t* bin, unsigned bin_size, unsigned b64);
@@ -265,6 +282,7 @@ int run_sec_mod(main_server_st * s, int *sync_fd);
 
 struct proc_st *new_proc(main_server_st * s, pid_t pid, int cmd_fd,
 			struct sockaddr_storage *remote_addr, socklen_t remote_addr_len,
+			struct sockaddr_storage *our_addr, socklen_t our_addr_len,
 			uint8_t *sid, size_t sid_size);
 
 /* kill the pid */

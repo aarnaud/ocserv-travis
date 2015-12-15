@@ -69,6 +69,9 @@ extern const ASN1_ARRAY_TYPE kkdcp_asn1_tab[];
 ASN1_TYPE _kkdcp_pkix1_asn = ASN1_TYPE_EMPTY;
 #endif
 
+int saved_argc = 0;
+char **saved_argv = NULL;
+
 int syslog_open = 0;
 static unsigned int terminate = 0;
 static unsigned int reload_conf = 0;
@@ -130,10 +133,12 @@ int y;
 		       (const void *)&y, sizeof(y)) < 0)
 		perror("setsockopt(IP_PKTINFO) failed");
 #elif defined(IP_RECVDSTADDR) /* *BSD */
-	y = 1;
-	if (setsockopt(fd, IPPROTO_IP, IP_RECVDSTADDR,
-		       (const void *)&y, sizeof(y)) < 0)
-		perror("setsockopt(IP_RECVDSTADDR) failed");
+	if (family == AF_INET) {
+		y = 1;
+		if (setsockopt(fd, IPPROTO_IP, IP_RECVDSTADDR,
+			       (const void *)&y, sizeof(y)) < 0)
+			perror("setsockopt(IP_RECVDSTADDR) failed");
+	}
 #endif
 #if defined(IPV6_RECVPKTINFO)
 	if (family == AF_INET6) {
@@ -487,6 +492,9 @@ struct script_wait_st *stmp = NULL, *spos;
 
 	while ((pid = waitpid(-1, &status, WNOHANG)) > 0) {
 		estatus = WEXITSTATUS(status);
+
+		if (WIFSIGNALED(status))
+			estatus = 1;
 
 		if (pid == s->sec_mod_pid) {
 			mslog(s, NULL, LOG_ERR, "ocserv-secmod died unexpectedly");
@@ -843,7 +851,7 @@ unsigned total = 10;
 	if (reload_conf != 0) {
 		mslog(s, NULL, LOG_INFO, "reloading configuration");
 		reload_cfg_file(s->main_pool, s->perm_config);
-		tls_reload_crl(s, s->creds);
+		tls_reload_crl(s, s->creds, 1);
 		reload_conf = 0;
 		kill(s->sec_mod_pid, SIGHUP);
 	}
@@ -884,6 +892,9 @@ unsigned total = 10;
 	if (need_maintenance != 0) {
 		need_maintenance = 0;
 		mslog(s, NULL, LOG_DEBUG, "performing maintenance (banned IPs: %d)", main_ban_db_elems(s));
+
+		/* will make sure it only reloads when needed */
+		tls_reload_crl(s, s->creds, 0);
 		expire_tls_sessions(s);
 		cleanup_banned_entries(s);
 		alarm(MAINTAINANCE_TIME(s));
@@ -934,6 +945,9 @@ int main(int argc, char** argv)
 #ifdef DEBUG_LEAKS
 	talloc_enable_leak_report_full();
 #endif
+
+	saved_argc = argc;
+	saved_argv = argv;
 
 	memset(&creds, 0, sizeof(creds));
 
@@ -1175,9 +1189,16 @@ int main(int argc, char** argv)
 					break;
 				}
 
-				if (check_if_banned(s, &ws->remote_addr, ws->remote_addr_len) != 0) {
-					close(fd);
-					break;
+				if (ws->conn_type != SOCK_TYPE_UNIX && !s->config->listen_proxy_proto) {
+					memset(&ws->our_addr, 0, sizeof(ws->our_addr));
+					ws->our_addr_len = sizeof(ws->our_addr);
+					if (getsockname(fd, (struct sockaddr*)&ws->our_addr, &ws->our_addr_len) < 0)
+						ws->our_addr_len = 0;
+
+					if (check_if_banned(s, &ws->remote_addr, ws->remote_addr_len) != 0) {
+						close(fd);
+						break;
+					}
 				}
 
 				/* Create a command socket */
@@ -1201,6 +1222,7 @@ int main(int argc, char** argv)
 
 					/* clear the cookie key */
 					safe_memset(s->cookie_key, 0, sizeof(s->cookie_key));
+					safe_memset(s->prev_cookie_key, 0, sizeof(s->prev_cookie_key));
 
 					setproctitle(PACKAGE_NAME"-worker");
 					kill_on_parent_kill(SIGTERM);
@@ -1243,6 +1265,7 @@ fork_failed:
 					/* add_proc */
 					ctmp = new_proc(s, pid, cmd_fd[0], 
 							&ws->remote_addr, ws->remote_addr_len,
+							&ws->our_addr, ws->our_addr_len,
 							ws->sid, sizeof(ws->sid));
 					if (ctmp == NULL) {
 						kill(pid, SIGTERM);

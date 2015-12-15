@@ -18,85 +18,102 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <talloc.h>
 
-#include "../src/common.h"
+#include "../src/ip-util.h"
+#include "../src/ip-util.c"
 
 int main()
 {
 	char *p;
 
-	p = ipv4_prefix_to_mask(NULL, 32);
+	p = ipv4_prefix_to_strmask(NULL, 32);
 	if (p == NULL || strcmp(p, "255.255.255.255") != 0) {
 		fprintf(stderr, "error in %d: %s\n", __LINE__, p);
 		exit(1);
 	}
 	talloc_free(p);
 
-	p = ipv4_prefix_to_mask(NULL, 30);
+	p = ipv4_prefix_to_strmask(NULL, 30);
 	if (p == NULL || strcmp(p, "255.255.255.252") != 0) {
 		fprintf(stderr, "error in %d: %s\n", __LINE__, p);
 		exit(1);
 	}
 	talloc_free(p);
 
-	p = ipv4_prefix_to_mask(NULL, 27);
+	p = ipv4_prefix_to_strmask(NULL, 27);
 	if (p == NULL || strcmp(p, "255.255.255.224") != 0) {
 		fprintf(stderr, "error in %d: %s\n", __LINE__, p);
 		exit(1);
 	}
 	talloc_free(p);
 
-	p = ipv4_prefix_to_mask(NULL, 24);
+	p = ipv4_prefix_to_strmask(NULL, 24);
 	if (p == NULL || strcmp(p, "255.255.255.0") != 0) {
 		fprintf(stderr, "error in %d: %s\n", __LINE__, p);
 		exit(1);
 	}
 	talloc_free(p);
 
-	p = ipv4_prefix_to_mask(NULL, 22);
+	p = ipv4_prefix_to_strmask(NULL, 22);
 	if (p == NULL || strcmp(p, "255.255.252.0") != 0) {
 		fprintf(stderr, "error in %d: %s\n", __LINE__, p);
 		exit(1);
 	}
 	talloc_free(p);
 
-	p = ipv4_prefix_to_mask(NULL, 20);
+	p = ipv4_prefix_to_strmask(NULL, 20);
 	if (p == NULL || strcmp(p, "255.255.240.0") != 0) {
 		fprintf(stderr, "error in %d: %s\n", __LINE__, p);
 		exit(1);
 	}
 	talloc_free(p);
 
-	p = ipv4_prefix_to_mask(NULL, 18);
+	p = ipv4_prefix_to_strmask(NULL, 18);
 	if (p == NULL || strcmp(p, "255.255.192.0") != 0) {
 		fprintf(stderr, "error in %d: %s\n", __LINE__, p);
 		exit(1);
 	}
 	talloc_free(p);
 
-	p = ipv4_prefix_to_mask(NULL, 16);
+	p = ipv4_prefix_to_strmask(NULL, 16);
 	if (p == NULL || strcmp(p, "255.255.0.0") != 0) {
 		fprintf(stderr, "error in %d: %s\n", __LINE__, p);
 		exit(1);
 	}
 	talloc_free(p);
 
-	p = ipv4_prefix_to_mask(NULL, 8);
+	p = ipv4_prefix_to_strmask(NULL, 8);
 	if (p == NULL || strcmp(p, "255.0.0.0") != 0) {
 		fprintf(stderr, "error in %d: %s\n", __LINE__, p);
 		exit(1);
 	}
 	talloc_free(p);
 
-	p = ipv4_prefix_to_mask(NULL, 5);
+	p = ipv4_prefix_to_strmask(NULL, 5);
 	if (p == NULL || strcmp(p, "248.0.0.0") != 0) {
 		fprintf(stderr, "error in %d: %s\n", __LINE__, p);
 		exit(1);
 	}
 	talloc_free(p);
 
-	p = ipv4_prefix_to_mask(NULL, 3);
+	p = ipv4_prefix_to_strmask(NULL, 3);
 	if (p == NULL || strcmp(p, "224.0.0.0") != 0) {
+		fprintf(stderr, "error in %d: %s\n", __LINE__, p);
+		exit(1);
+	}
+	talloc_free(p);
+
+	/* Check ipv4_route_to_cidr */
+	p = ipv4_route_to_cidr(NULL, "192.168.5.0/255.255.255.0");
+	if (p == NULL || strcmp(p, "192.168.5.0/24") != 0) {
+		fprintf(stderr, "error in %d: %s\n", __LINE__, p);
+		exit(1);
+	}
+	talloc_free(p);
+
+	p = ipv4_route_to_cidr(NULL, "192.168.4.0/255.255.0.0");
+	if (p == NULL || strcmp(p, "192.168.4.0/16") != 0) {
 		fprintf(stderr, "error in %d: %s\n", __LINE__, p);
 		exit(1);
 	}

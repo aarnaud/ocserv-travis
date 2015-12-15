@@ -279,6 +279,9 @@
 /* have libnl */
 #undef HAVE_LIBNL
 
+/* Enable the liboath library */
+#undef HAVE_LIBOATH
+
 /* Define if you have the libprotobuf-c library. */
 #undef HAVE_LIBPROTOBUF_C
 

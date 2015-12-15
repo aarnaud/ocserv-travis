@@ -1,3 +1,54 @@
+* Version 0.10.10 (released 2015-11-28)
+- Increase the number of log messages logged in the default level. That
+  is added messages that could be of use to administrators.
+- Introduced ipv6-subnet-prefix config option. That option allows to specify
+  the IPv6 subnet prefix to be given to client. That is, allow providing the
+  clients networks larger than /128. The default setting is 128 to keep
+  backwards compatibility.
+- Introduced the expose-iroutes config option. That option allows the server
+  to advertise routes offered by some clients to all of them. This requires
+  the config-per-user option.
+- When a client has assigned iroutes which cannot be applied, he will be
+  denied access.
+- Added restrict-user-to-routes configuration option which will execute
+  ocserv-fw script on user connection. The script will set firewall rules which
+  deny the user access to any other networks than the routes set for the user.
+  This is added as a tech preview; details of this option may change on later releases.
+- When banning IPv6 addresses treat a /64 network as a single address.
+- Fixed conflict with isolate-workers and user-profile.
+- occtl: Allow disabling the pager functionality on compile time using --with-pager="".
+
+
+* Version 0.10.9 (released 2015-10-07)
+- When compiled with GnuTLS 3.4 automatically sort the certificate list
+  to be imported.
+- Reload the CRL during periodic maintaince if its modification time
+  changes.
+- Address issue with duplicate check failing on IPv6 addresses (issue #5).
+- Added the ability to specify a UsersFile in plain auth for using an OTP.
+  This allows to use an OTP 2nd factor authentication without having
+  to rely on PAM. This change, also enables the usage of an empty password
+  field in the password file if an OTP file is present.
+- Allow loading DER-encoded CRLs.
+- Re-added the PAM accounting method. That accounting method can be combined
+  with any authentication method, and can be used to check for a valid
+  system account.
+
+
+* Version 0.10.8 (released 2015-09-04)
+- Pass the proxy protocol information at earlier stage to main process,
+  to allow the correct information to be passed at the connect script
+  and occtl. Reported by Niels Peen.
+- Added the IP_REAL_LOCAL environment variable to scripts. This passes
+  the local IP the client connected to.
+- The PAM accounting method was dropped as there was no practical
+  usage of it, the way it was implemented.
+- When assigning IPv6 addresses use the whole available netmask.
+- occtl: Print the local IP the client connected to, with the client
+  information.
+- occtl: Print the configured for the client split-dns domains.
+
+
 * Version 0.10.7 (released 2015-08-06)
 - Added a fuzzying factor to CPU intensive, or radius communication
   tasks when initiated by worker process. That avoids a very high load

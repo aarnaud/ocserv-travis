@@ -94,10 +94,16 @@ struct  _UserInfoRep
   char *dtls_compr;
   size_t n_no_routes;
   char **no_routes;
+  char *local_dev_ip;
+  size_t n_domains;
+  char **domains;
+  uint32_t dpd;
+  uint32_t keepalive;
+  protobuf_c_boolean restrict_to_routes;
 };
 #define USER_INFO_REP__INIT \
  { PROTOBUF_C_MESSAGE_INIT (&user_info_rep__descriptor) \
-    , 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, 0,0, 0,0, 0,NULL, 0,NULL, 0,NULL, 0,NULL, 0,0, NULL, NULL, 0,NULL }
+    , 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, 0,0, 0,0, 0,NULL, 0,NULL, 0,NULL, 0,NULL, 0,0, NULL, NULL, 0,NULL, NULL, 0,NULL, 0, 0, 0 }
 
 
 struct  _UserListRep
@@ -134,14 +140,14 @@ struct  _IdReq
 struct  _BanInfoRep
 {
   ProtobufCMessage base;
-  char *ip;
+  ProtobufCBinaryData ip;
   uint32_t score;
   protobuf_c_boolean has_expires;
   uint32_t expires;
 };
 #define BAN_INFO_REP__INIT \
  { PROTOBUF_C_MESSAGE_INIT (&ban_info_rep__descriptor) \
-    , NULL, 0, 0,0 }
+    , {0,NULL}, 0, 0,0 }
 
 
 struct  _BanListRep
@@ -158,11 +164,11 @@ struct  _BanListRep
 struct  _UnbanReq
 {
   ProtobufCMessage base;
-  char *ip;
+  ProtobufCBinaryData ip;
 };
 #define UNBAN_REQ__INIT \
  { PROTOBUF_C_MESSAGE_INIT (&unban_req__descriptor) \
-    , NULL }
+    , {0,NULL} }
 
 
 /* StatusRep methods */

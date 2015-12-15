@@ -33,6 +33,7 @@ typedef struct _SecOpMsg SecOpMsg;
 typedef struct _Cookie Cookie;
 typedef struct _SecAuthSessionMsg SecAuthSessionMsg;
 typedef struct _SecAuthSessionReplyMsg SecAuthSessionReplyMsg;
+typedef struct _SecRefreshCookieKey SecRefreshCookieKey;
 
 
 /* --- enums --- */
@@ -102,10 +103,20 @@ struct  _AuthReplyMsg
   uint32_t interim_update_secs;
   protobuf_c_boolean has_session_timeout_secs;
   uint32_t session_timeout_secs;
+  protobuf_c_boolean has_ipv6_subnet_prefix;
+  uint32_t ipv6_subnet_prefix;
+  protobuf_c_boolean has_dpd;
+  uint32_t dpd;
+  protobuf_c_boolean has_mobile_dpd;
+  uint32_t mobile_dpd;
+  protobuf_c_boolean has_keepalive;
+  uint32_t keepalive;
+  protobuf_c_boolean has_tunnel_all_dns;
+  uint32_t tunnel_all_dns;
 };
 #define AUTH_REPLY_MSG__INIT \
  { PROTOBUF_C_MESSAGE_INIT (&auth_reply_msg__descriptor) \
-    , 0, 0,{0,NULL}, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0,0, 0,0, 0,0, 0,0, 0,NULL, 0,NULL, 0,NULL, 0,0, NULL, NULL, NULL, 0,NULL, {0,NULL}, 0,0, 0,0 }
+    , 0, 0,{0,NULL}, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0,0, 0,0, 0,0, 0,0, 0,NULL, 0,NULL, 0,NULL, 0,0, NULL, NULL, NULL, 0,NULL, {0,NULL}, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0 }
 
 
 struct  _SessionResumeFetchMsg
@@ -192,10 +203,14 @@ struct  _SessionInfoMsg
   char *user_agent;
   char *cstp_compr;
   char *dtls_compr;
+  protobuf_c_boolean has_our_addr;
+  ProtobufCBinaryData our_addr;
+  protobuf_c_boolean has_remote_addr;
+  ProtobufCBinaryData remote_addr;
 };
 #define SESSION_INFO_MSG__INIT \
  { PROTOBUF_C_MESSAGE_INIT (&session_info_msg__descriptor) \
-    , NULL, NULL, NULL, NULL, NULL }
+    , NULL, NULL, NULL, NULL, NULL, 0,{0,NULL}, 0,{0,NULL} }
 
 
 struct  _BanIpMsg
@@ -360,10 +375,34 @@ struct  _SecAuthSessionReplyMsg
   char *explicit_ipv6;
   size_t n_no_routes;
   char **no_routes;
+  protobuf_c_boolean has_ipv6_subnet_prefix;
+  uint32_t ipv6_subnet_prefix;
+  protobuf_c_boolean has_dpd;
+  uint32_t dpd;
+  protobuf_c_boolean has_mobile_dpd;
+  uint32_t mobile_dpd;
+  protobuf_c_boolean has_keepalive;
+  uint32_t keepalive;
+  protobuf_c_boolean has_max_same_clients;
+  uint32_t max_same_clients;
+  protobuf_c_boolean has_tunnel_all_dns;
+  uint32_t tunnel_all_dns;
+  protobuf_c_boolean has_restrict_user_to_routes;
+  protobuf_c_boolean restrict_user_to_routes;
 };
 #define SEC_AUTH_SESSION_REPLY_MSG__INIT \
  { PROTOBUF_C_MESSAGE_INIT (&sec_auth_session_reply_msg__descriptor) \
-    , 0, 0,0, 0,0, 0,0, 0,0, 0,NULL, 0,NULL, 0,NULL, 0,NULL, NULL, NULL, NULL, 0,0, NULL, NULL, 0,0, 0,0, 0,0, NULL, NULL, 0,NULL }
+    , 0, 0,0, 0,0, 0,0, 0,0, 0,NULL, 0,NULL, 0,NULL, 0,NULL, NULL, NULL, NULL, 0,0, NULL, NULL, 0,0, 0,0, 0,0, NULL, NULL, 0,NULL, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0 }
+
+
+struct  _SecRefreshCookieKey
+{
+  ProtobufCMessage base;
+  ProtobufCBinaryData key;
+};
+#define SEC_REFRESH_COOKIE_KEY__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&sec_refresh_cookie_key__descriptor) \
+    , {0,NULL} }
 
 
 /* AuthCookieRequestMsg methods */
@@ -708,6 +747,25 @@ SecAuthSessionReplyMsg *
 void   sec_auth_session_reply_msg__free_unpacked
                      (SecAuthSessionReplyMsg *message,
                       ProtobufCAllocator *allocator);
+/* SecRefreshCookieKey methods */
+void   sec_refresh_cookie_key__init
+                     (SecRefreshCookieKey         *message);
+size_t sec_refresh_cookie_key__get_packed_size
+                     (const SecRefreshCookieKey   *message);
+size_t sec_refresh_cookie_key__pack
+                     (const SecRefreshCookieKey   *message,
+                      uint8_t             *out);
+size_t sec_refresh_cookie_key__pack_to_buffer
+                     (const SecRefreshCookieKey   *message,
+                      ProtobufCBuffer     *buffer);
+SecRefreshCookieKey *
+       sec_refresh_cookie_key__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data);
+void   sec_refresh_cookie_key__free_unpacked
+                     (SecRefreshCookieKey *message,
+                      ProtobufCAllocator *allocator);
 /* --- per-message closures --- */
 
 typedef void (*AuthCookieRequestMsg_Closure)
@@ -764,6 +822,9 @@ typedef void (*SecAuthSessionMsg_Closure)
 typedef void (*SecAuthSessionReplyMsg_Closure)
                  (const SecAuthSessionReplyMsg *message,
                   void *closure_data);
+typedef void (*SecRefreshCookieKey_Closure)
+                 (const SecRefreshCookieKey *message,
+                  void *closure_data);
 
 /* --- services --- */
 
@@ -790,6 +851,7 @@ extern const ProtobufCMessageDescriptor sec_op_msg__descriptor;
 extern const ProtobufCMessageDescriptor cookie__descriptor;
 extern const ProtobufCMessageDescriptor sec_auth_session_msg__descriptor;
 extern const ProtobufCMessageDescriptor sec_auth_session_reply_msg__descriptor;
+extern const ProtobufCMessageDescriptor sec_refresh_cookie_key__descriptor;
 
 PROTOBUF_C__END_DECLS
 

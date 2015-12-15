@@ -45,6 +45,11 @@ message user_info_rep
 	optional string cstp_compr = 23;
 	optional string dtls_compr = 24;
 	repeated string no_routes = 25;
+	optional string local_dev_ip = 26;
+	repeated string domains = 27; /* split-dns domains */
+	required uint32 dpd = 28;
+	required uint32 keepalive = 29;
+	required bool restrict_to_routes = 30;
 }
 
 message user_list_rep
@@ -64,7 +69,7 @@ message id_req
 
 message ban_info_rep
 {
-	required string ip = 1;
+	required bytes ip = 1;
 	required uint32 score = 2;
 	optional uint32 expires = 3;
 }
@@ -76,6 +81,6 @@ message ban_list_rep
 
 message unban_req
 {
-	required string ip = 1;
+	required bytes ip = 1;
 }
 

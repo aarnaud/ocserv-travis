@@ -36,46 +36,57 @@
 #include <str.h>
 #include "auth/pam.h"
 
-static int pam_acct_open_session(unsigned auth_method, void *ctx, const struct common_auth_info_st *ai, const void *sid, unsigned sid_size)
+static int ocserv_conv(int msg_size, const struct pam_message **msg, 
+		struct pam_response **resp, void *uptr)
 {
-struct pam_ctx_st * pctx = ctx;
-int pret;
-
-	if (auth_method != AUTH_TYPE_PAM) {
-		syslog(LOG_AUTH, "PAM-acct: pam_open_session cannot be combined with this authentication method (%x)", auth_method);
-		return -1;
-	}
-
-	if (pctx->cr != NULL) {
-		co_delete(pctx->cr);
-		pctx->cr = NULL;
-	}
-
-	pret = pam_open_session(pctx->ph, PAM_SILENT);
-	if (pret != PAM_SUCCESS) {
-		syslog(LOG_AUTH, "PAM-acct: pam_open_session: %s", pam_strerror(pctx->ph, pret));
-		return -1;
-	}
-
-	return 0;
+	*resp = NULL;
+	return PAM_SUCCESS;
 }
 
-static void pam_acct_close_session(unsigned auth_method, void *ctx, const struct common_auth_info_st *ai, stats_st *stats, unsigned status)
+static int pam_acct_open_session(unsigned auth_method, const struct common_auth_info_st *ai, const void *sid, unsigned sid_size)
 {
-struct pam_ctx_st * pctx = ctx;
 int pret;
+pam_handle_t *ph;
+struct pam_conv dc;
 
-	pret = pam_close_session(pctx->ph, PAM_SILENT);
-	if (pret != PAM_SUCCESS) {
-		syslog(LOG_AUTH, "PAM-acct: pam_close_session: %s", pam_strerror(pctx->ph, pret));
+	if (ai->username[0] == 0) {
+		syslog(LOG_AUTH,
+		       "PAM-acct: no username present");
+		return ERR_AUTH_FAIL;
 	}
 
+	dc.conv = ocserv_conv;
+	dc.appdata_ptr = NULL;
+	pret = pam_start(PACKAGE, ai->username, &dc, &ph);
+	if (pret != PAM_SUCCESS) {
+		syslog(LOG_AUTH, "PAM-acct init: %s", pam_strerror(ph, pret));
+		goto fail1;
+	}
+
+	pret = pam_acct_mgmt(ph, PAM_DISALLOW_NULL_AUTHTOK);
+	if (pret != PAM_SUCCESS) {
+		syslog(LOG_INFO, "PAM-acct account error: %s", pam_strerror(ph, pret));
+		goto fail2;
+	}
+
+	pam_end(ph, pret);
+	return 0;
+
+fail2:
+	pam_end(ph, pret);
+fail1:
+	return -1;
+
+}
+
+static void pam_acct_close_session(unsigned auth_method, const struct common_auth_info_st *ai, stats_st *stats, unsigned status)
+{
 	return;
 }
 
 const struct acct_mod_st pam_acct_funcs = {
   .type = ACCT_TYPE_PAM,
-  .auth_types = AUTH_TYPE_PAM & (~VIRTUAL_AUTH_TYPES),
+  .auth_types = ALL_AUTH_TYPES,
   .open_session = pam_acct_open_session,
   .close_session = pam_acct_close_session,
 };

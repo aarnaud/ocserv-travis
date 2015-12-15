@@ -91,6 +91,7 @@ int send_cookie_auth_reply(main_server_st* s, struct proc_st* proc,
 
 		msg.ipv4_network = proc->config.ipv4_network;
 		msg.ipv6_network = proc->config.ipv6_network;
+		msg.ipv6_subnet_prefix = proc->config.ipv6_subnet_prefix;
 
 		if (proc->ipv6) {
 			msg.ipv6_prefix = proc->ipv6->prefix;
@@ -105,6 +106,21 @@ int send_cookie_auth_reply(main_server_st* s, struct proc_st* proc,
 		if (proc->config.session_timeout_secs) {
 			msg.has_session_timeout_secs = 1;
 			msg.session_timeout_secs = proc->config.session_timeout_secs;
+		}
+
+		if (proc->config.dpd != 0) {
+			msg.has_dpd = 1;
+			msg.dpd = proc->config.dpd;
+		}
+
+		if (proc->config.keepalive != 0) {
+			msg.has_keepalive = 1;
+			msg.keepalive = proc->config.keepalive;
+		}
+
+		if (proc->config.mobile_dpd != 0) {
+			msg.has_mobile_dpd = 1;
+			msg.mobile_dpd = proc->config.mobile_dpd;
 		}
 
 		if (proc->config.rx_per_sec != 0) {
@@ -125,6 +141,11 @@ int send_cookie_auth_reply(main_server_st* s, struct proc_st* proc,
 		if (proc->config.no_udp != 0) {
 			msg.has_no_udp = 1;
 			msg.no_udp = proc->config.no_udp;
+		}
+
+		if (proc->config.tunnel_all_dns != 0) {
+			msg.has_tunnel_all_dns = 1;
+			msg.tunnel_all_dns = proc->config.tunnel_all_dns;
 		}
 
 		if (proc->config.xml_config_file != NULL) {
@@ -199,6 +220,15 @@ struct proc_st *old_proc;
 	}
 
 	ret = decrypt_cookie(&pa, &key, req->cookie.data, req->cookie.len, &cmsg);
+	if (ret < 0 && s->prev_cookie_key_active) {
+		/* try the old key */
+		key.data = s->prev_cookie_key;
+		key.size = sizeof(s->prev_cookie_key);
+		ret = decrypt_cookie(&pa, &key, req->cookie.data, req->cookie.len, &cmsg);
+		if (ret == 0)
+			mslog(s, proc, LOG_INFO, "decrypted cookie with previous key");
+	}
+
 	if (ret < 0) {
 		mslog(s, proc, LOG_INFO, "error decrypting cookie");
 		return -1;
@@ -310,8 +340,9 @@ int check_multiple_users(main_server_st *s, struct proc_st* proc)
 {
 struct proc_st *ctmp = NULL, *cpos;
 unsigned int entries = 1; /* that one */
+unsigned max;
 
-	if (s->config->max_same_clients == 0)
+	if (s->config->max_same_clients == 0 && proc->config.max_same_clients == 0)
 		return 0;
 
 	list_for_each_safe(&s->proc_list.head, ctmp, cpos, list) {
@@ -322,7 +353,12 @@ unsigned int entries = 1; /* that one */
 		}
 	}
 
-	if (s->config->max_same_clients && entries > s->config->max_same_clients)
+	if (proc->config.max_same_clients > 0)
+		max = proc->config.max_same_clients;
+	else
+		max = s->config->max_same_clients;
+
+	if (max && entries > max)
 		return -1;
 
 	return 0;

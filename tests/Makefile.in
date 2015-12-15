@@ -87,17 +87,10 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
-check_PROGRAMS = ipv4-prefix$(EXEEXT) ipv6-prefix$(EXEEXT) \
-	kkdcp-parsing$(EXEEXT) json-escape$(EXEEXT)
-TESTS = test-pass test-pass-cert test-cert test-iroute \
-	test-pass-script test-multi-cookie full-test test-group-pass \
-	test-pass-group-cert ocpasswd-test \
-	test-pass-group-cert-no-pass unix-test test-pass-opt-cert \
-	test-cookie-timeout test-cookie-timeout-2 test-explicit-ip \
-	radius-test test-gssapi kerberos-test pam-test test-ban \
-	test-sighup ipv4-prefix$(EXEEXT) radius-test-config \
-	kkdcp-parsing$(EXEEXT) json-escape$(EXEEXT) test-enc-key \
-	proxyproto-test
+@LOCAL_TALLOC_TRUE@am__append_1 = -I$(srcdir)/../src/ccan/talloc
+check_PROGRAMS = str-test$(EXEEXT) ipv4-prefix$(EXEEXT) \
+	ipv6-prefix$(EXEEXT) kkdcp-parsing$(EXEEXT) \
+	json-escape$(EXEEXT) ban-ips$(EXEEXT)
 subdir = tests
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/libopts/m4/libopts.m4 \
@@ -150,22 +143,31 @@ mkinstalldirs = $(install_sh) -d
 CONFIG_HEADER = $(top_builddir)/config.h
 CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
-am__dirstamp = $(am__leading_dot)dirstamp
-am_ipv4_prefix_OBJECTS = ../src/common.$(OBJEXT) ipv4-prefix.$(OBJEXT)
-ipv4_prefix_OBJECTS = $(am_ipv4_prefix_OBJECTS)
+am_ban_ips_OBJECTS = ban_ips-ban-ips.$(OBJEXT)
+ban_ips_OBJECTS = $(am_ban_ips_OBJECTS)
 am__DEPENDENCIES_1 =
-ipv4_prefix_DEPENDENCIES = ../gl/libgnu.a $(am__DEPENDENCIES_1)
-am_ipv6_prefix_OBJECTS = ../src/common.$(OBJEXT) ipv6-prefix.$(OBJEXT)
+ban_ips_DEPENDENCIES = ../gl/libgnu.a $(am__DEPENDENCIES_1) \
+	../src/ccan/libccan.a
+am_ipv4_prefix_OBJECTS = ipv4-prefix.$(OBJEXT)
+ipv4_prefix_OBJECTS = $(am_ipv4_prefix_OBJECTS)
+ipv4_prefix_DEPENDENCIES = ../gl/libgnu.a $(am__DEPENDENCIES_1) \
+	../src/ccan/libccan.a
+am_ipv6_prefix_OBJECTS = ipv6-prefix.$(OBJEXT)
 ipv6_prefix_OBJECTS = $(am_ipv6_prefix_OBJECTS)
-ipv6_prefix_DEPENDENCIES = ../gl/libgnu.a $(am__DEPENDENCIES_1)
-am_json_escape_OBJECTS = ../src/common-json.$(OBJEXT) \
-	json-escape.$(OBJEXT)
+ipv6_prefix_DEPENDENCIES = ../gl/libgnu.a $(am__DEPENDENCIES_1) \
+	../src/ccan/libccan.a
+am_json_escape_OBJECTS = json-escape.$(OBJEXT)
 json_escape_OBJECTS = $(am_json_escape_OBJECTS)
-json_escape_DEPENDENCIES = ../gl/libgnu.a $(am__DEPENDENCIES_1)
-am_kkdcp_parsing_OBJECTS = ../src/config-kkdcp.$(OBJEXT) \
-	kkdcp-parsing.$(OBJEXT)
+json_escape_DEPENDENCIES = ../gl/libgnu.a $(am__DEPENDENCIES_1) \
+	../src/ccan/libccan.a
+am_kkdcp_parsing_OBJECTS = kkdcp-parsing.$(OBJEXT)
 kkdcp_parsing_OBJECTS = $(am_kkdcp_parsing_OBJECTS)
-kkdcp_parsing_DEPENDENCIES = ../gl/libgnu.a $(am__DEPENDENCIES_1)
+kkdcp_parsing_DEPENDENCIES = ../gl/libgnu.a $(am__DEPENDENCIES_1) \
+	../src/ccan/libccan.a
+am_str_test_OBJECTS = str-test.$(OBJEXT)
+str_test_OBJECTS = $(am_str_test_OBJECTS)
+str_test_DEPENDENCIES = ../gl/libgnu.a $(am__DEPENDENCIES_1) \
+	../src/ccan/libccan.a
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -182,6 +184,10 @@ DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)
 depcomp = $(SHELL) $(top_srcdir)/build-aux/depcomp
 am__depfiles_maybe = depfiles
 am__mv = mv -f
+AM_V_lt = $(am__v_lt_@AM_V@)
+am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
+am__v_lt_0 = --silent
+am__v_lt_1 = 
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
 AM_V_CC = $(am__v_CC_@AM_V@)
@@ -194,10 +200,12 @@ AM_V_CCLD = $(am__v_CCLD_@AM_V@)
 am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
-SOURCES = $(ipv4_prefix_SOURCES) $(ipv6_prefix_SOURCES) \
-	$(json_escape_SOURCES) $(kkdcp_parsing_SOURCES)
-DIST_SOURCES = $(ipv4_prefix_SOURCES) $(ipv6_prefix_SOURCES) \
-	$(json_escape_SOURCES) $(kkdcp_parsing_SOURCES)
+SOURCES = $(ban_ips_SOURCES) $(ipv4_prefix_SOURCES) \
+	$(ipv6_prefix_SOURCES) $(json_escape_SOURCES) \
+	$(kkdcp_parsing_SOURCES) $(str_test_SOURCES)
+DIST_SOURCES = $(ban_ips_SOURCES) $(ipv4_prefix_SOURCES) \
+	$(ipv6_prefix_SOURCES) $(json_escape_SOURCES) \
+	$(kkdcp_parsing_SOURCES) $(str_test_SOURCES)
 RECURSIVE_TARGETS = all-recursive check-recursive cscopelist-recursive \
 	ctags-recursive dvi-recursive html-recursive info-recursive \
 	install-data-recursive install-dvi-recursive \
@@ -884,6 +892,8 @@ LIBLZ4_CFLAGS = @LIBLZ4_CFLAGS@
 LIBLZ4_LIBS = @LIBLZ4_LIBS@
 LIBNL3_CFLAGS = @LIBNL3_CFLAGS@
 LIBNL3_LIBS = @LIBNL3_LIBS@
+LIBOATH_CFLAGS = @LIBOATH_CFLAGS@
+LIBOATH_LIBS = @LIBOATH_LIBS@
 LIBOBJS = @LIBOBJS@
 LIBOPTS_CFLAGS = @LIBOPTS_CFLAGS@
 LIBOPTS_DIR = @LIBOPTS_DIR@
@@ -1152,6 +1162,7 @@ pdfdir = @pdfdir@
 prefix = @prefix@
 program_transform_name = @program_transform_name@
 psdir = @psdir@
+runstatedir = @runstatedir@
 sbindir = @sbindir@
 sharedstatedir = @sharedstatedir@
 srcdir = @srcdir@
@@ -1171,33 +1182,36 @@ EXTRA_DIST = ca-key.pem ca.pem common.sh server-cert.pem server-key.pem test1.co
 	user-config-explicit/test4 test-pass-opt-cert.config test-gssapi.config \
 	test-ban.config test-sighup.config test-gssapi-local-map.config \
 	test-cookie-invalidation.config test-enc-key2.config test-enc-key.config \
-	server-key-ossl.pem server-key-p8.pem proxyproto-unix-test user-cn.pem
+	server-key-ossl.pem server-key-p8.pem proxyproto-unix-test user-cn.pem \
+	user-cert-testuser.pem test-stress test-user-config.config user-config/testuser
 
 SUBDIRS = docker-ocserv docker-kerberos
 dist_check_SCRIPTS = test-pass test-pass-cert test-cert test-iroute test-pass-script \
-	test-multi-cookie test-stress full-test test-group-pass test-pass-group-cert \
+	test-multi-cookie full-test test-group-pass test-pass-group-cert \
 	ocpasswd-test test-pass-group-cert-no-pass unix-test test-pass-opt-cert \
 	test-cookie-timeout test-cookie-timeout-2 radius-test test-explicit-ip \
 	radius-test test-gssapi kerberos-test pam-test test-ban test-sighup \
-	test-cookie-invalidation radius-test-config test-enc-key proxyproto-test
+	test-cookie-invalidation radius-test-config test-enc-key proxyproto-test \
+	proxyproto-unix-test pam-noauth-test otp-test test-user-config firewall-test
 
-AM_CPPFLAGS = \
-	$(LIBOPTS_CFLAGS) \
-	-I$(top_srcdir)/src/ \
-	-I$(top_builddir)/src/ \
-	-I$(top_srcdir)/gl/ \
-	-I$(top_builddir)/gl/ \
-	-I$(top_srcdir)/ \
-	-I$(top_builddir)/
-
-kkdcp_parsing_SOURCES = ../src/config-kkdcp.c kkdcp-parsing.c
-kkdcp_parsing_LDADD = ../gl/libgnu.a $(LIBTALLOC_LIBS)
-json_escape_SOURCES = ../src/common-json.c json-escape.c
-json_escape_LDADD = ../gl/libgnu.a $(LIBTALLOC_LIBS)
-ipv4_prefix_SOURCES = ../src/common.c ../src/common.h ipv4-prefix.c
-ipv4_prefix_LDADD = ../gl/libgnu.a $(LIBTALLOC_LIBS)
-ipv6_prefix_SOURCES = ../src/common.c ../src/common.h ipv6-prefix.c
-ipv6_prefix_LDADD = ../gl/libgnu.a $(LIBTALLOC_LIBS)
+AM_CPPFLAGS = $(LIBOPTS_CFLAGS) $(LIBTALLOC_CFLAGS) \
+	-I$(top_srcdir)/src/ -I$(top_builddir)/src/ \
+	-I$(top_srcdir)/gl/ -I$(top_builddir)/gl/ -I$(top_srcdir)/ \
+	-I$(top_builddir)/ $(am__append_1)
+kkdcp_parsing_SOURCES = kkdcp-parsing.c
+kkdcp_parsing_LDADD = ../gl/libgnu.a $(LIBTALLOC_LIBS) ../src/ccan/libccan.a
+json_escape_SOURCES = json-escape.c
+json_escape_LDADD = ../gl/libgnu.a $(LIBTALLOC_LIBS) ../src/ccan/libccan.a
+ipv4_prefix_SOURCES = ipv4-prefix.c
+ipv4_prefix_LDADD = ../gl/libgnu.a $(LIBTALLOC_LIBS) ../src/ccan/libccan.a
+ban_ips_CPPFLAGS = $(AM_CPPFLAGS) -DDISABLE_LOGS
+ban_ips_SOURCES = ban-ips.c
+ban_ips_LDADD = ../gl/libgnu.a $(LIBTALLOC_LIBS) ../src/ccan/libccan.a
+str_test_SOURCES = str-test.c
+str_test_LDADD = ../gl/libgnu.a $(LIBTALLOC_LIBS) ../src/ccan/libccan.a
+ipv6_prefix_SOURCES = ipv6-prefix.c
+ipv6_prefix_LDADD = ../gl/libgnu.a $(LIBTALLOC_LIBS) ../src/ccan/libccan.a
+TESTS = $(dist_check_SCRIPTS) $(check_PROGRAMS)
 TESTS_ENVIRONMENT = srcdir="$(srcdir)" \
 	top_builddir="$(top_builddir)"
 
@@ -1237,14 +1251,10 @@ $(am__aclocal_m4_deps):
 
 clean-checkPROGRAMS:
 	-test -z "$(check_PROGRAMS)" || rm -f $(check_PROGRAMS)
-../src/$(am__dirstamp):
-	@$(MKDIR_P) ../src
-	@: > ../src/$(am__dirstamp)
-../src/$(DEPDIR)/$(am__dirstamp):
-	@$(MKDIR_P) ../src/$(DEPDIR)
-	@: > ../src/$(DEPDIR)/$(am__dirstamp)
-../src/common.$(OBJEXT): ../src/$(am__dirstamp) \
-	../src/$(DEPDIR)/$(am__dirstamp)
+
+ban-ips$(EXEEXT): $(ban_ips_OBJECTS) $(ban_ips_DEPENDENCIES) $(EXTRA_ban_ips_DEPENDENCIES) 
+	@rm -f ban-ips$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(ban_ips_OBJECTS) $(ban_ips_LDADD) $(LIBS)
 
 ipv4-prefix$(EXEEXT): $(ipv4_prefix_OBJECTS) $(ipv4_prefix_DEPENDENCIES) $(EXTRA_ipv4_prefix_DEPENDENCIES) 
 	@rm -f ipv4-prefix$(EXEEXT)
@@ -1253,33 +1263,31 @@ ipv4-prefix$(EXEEXT): $(ipv4_prefix_OBJECTS) $(ipv4_prefix_DEPENDENCIES) $(EXTRA
 ipv6-prefix$(EXEEXT): $(ipv6_prefix_OBJECTS) $(ipv6_prefix_DEPENDENCIES) $(EXTRA_ipv6_prefix_DEPENDENCIES) 
 	@rm -f ipv6-prefix$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(ipv6_prefix_OBJECTS) $(ipv6_prefix_LDADD) $(LIBS)
-../src/common-json.$(OBJEXT): ../src/$(am__dirstamp) \
-	../src/$(DEPDIR)/$(am__dirstamp)
 
 json-escape$(EXEEXT): $(json_escape_OBJECTS) $(json_escape_DEPENDENCIES) $(EXTRA_json_escape_DEPENDENCIES) 
 	@rm -f json-escape$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(json_escape_OBJECTS) $(json_escape_LDADD) $(LIBS)
-../src/config-kkdcp.$(OBJEXT): ../src/$(am__dirstamp) \
-	../src/$(DEPDIR)/$(am__dirstamp)
 
 kkdcp-parsing$(EXEEXT): $(kkdcp_parsing_OBJECTS) $(kkdcp_parsing_DEPENDENCIES) $(EXTRA_kkdcp_parsing_DEPENDENCIES) 
 	@rm -f kkdcp-parsing$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(kkdcp_parsing_OBJECTS) $(kkdcp_parsing_LDADD) $(LIBS)
 
+str-test$(EXEEXT): $(str_test_OBJECTS) $(str_test_DEPENDENCIES) $(EXTRA_str_test_DEPENDENCIES) 
+	@rm -f str-test$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(str_test_OBJECTS) $(str_test_LDADD) $(LIBS)
+
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
-	-rm -f ../src/*.$(OBJEXT)
 
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/common-json.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/common.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/config-kkdcp.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ban_ips-ban-ips.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ipv4-prefix.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ipv6-prefix.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/json-escape.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/kkdcp-parsing.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/str-test.Po@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(AM_V_CC)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.o$$||'`;\
@@ -1296,6 +1304,20 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(COMPILE) -c -o $@ `$(CYGPATH_W) '$<'`
+
+ban_ips-ban-ips.o: ban-ips.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ban_ips_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ban_ips-ban-ips.o -MD -MP -MF $(DEPDIR)/ban_ips-ban-ips.Tpo -c -o ban_ips-ban-ips.o `test -f 'ban-ips.c' || echo '$(srcdir)/'`ban-ips.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/ban_ips-ban-ips.Tpo $(DEPDIR)/ban_ips-ban-ips.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='ban-ips.c' object='ban_ips-ban-ips.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ban_ips_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ban_ips-ban-ips.o `test -f 'ban-ips.c' || echo '$(srcdir)/'`ban-ips.c
+
+ban_ips-ban-ips.obj: ban-ips.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ban_ips_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ban_ips-ban-ips.obj -MD -MP -MF $(DEPDIR)/ban_ips-ban-ips.Tpo -c -o ban_ips-ban-ips.obj `if test -f 'ban-ips.c'; then $(CYGPATH_W) 'ban-ips.c'; else $(CYGPATH_W) '$(srcdir)/ban-ips.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/ban_ips-ban-ips.Tpo $(DEPDIR)/ban_ips-ban-ips.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='ban-ips.c' object='ban_ips-ban-ips.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ban_ips_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ban_ips-ban-ips.obj `if test -f 'ban-ips.c'; then $(CYGPATH_W) 'ban-ips.c'; else $(CYGPATH_W) '$(srcdir)/ban-ips.c'; fi`
 
 # This directory's subdirectories are mostly independent; you can cd
 # into them and run 'make' without going through this Makefile.
@@ -1642,16 +1664,16 @@ test-cookie-timeout-2.log: test-cookie-timeout-2
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
-test-explicit-ip.log: test-explicit-ip
-	@p='test-explicit-ip'; \
-	b='test-explicit-ip'; \
+radius-test.log: radius-test
+	@p='radius-test'; \
+	b='radius-test'; \
 	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
-radius-test.log: radius-test
-	@p='radius-test'; \
-	b='radius-test'; \
+test-explicit-ip.log: test-explicit-ip
+	@p='test-explicit-ip'; \
+	b='test-explicit-ip'; \
 	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
@@ -1691,9 +1713,9 @@ test-sighup.log: test-sighup
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
-ipv4-prefix.log: ipv4-prefix$(EXEEXT)
-	@p='ipv4-prefix$(EXEEXT)'; \
-	b='ipv4-prefix'; \
+test-cookie-invalidation.log: test-cookie-invalidation
+	@p='test-cookie-invalidation'; \
+	b='test-cookie-invalidation'; \
 	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
@@ -1701,6 +1723,76 @@ ipv4-prefix.log: ipv4-prefix$(EXEEXT)
 radius-test-config.log: radius-test-config
 	@p='radius-test-config'; \
 	b='radius-test-config'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+test-enc-key.log: test-enc-key
+	@p='test-enc-key'; \
+	b='test-enc-key'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+proxyproto-test.log: proxyproto-test
+	@p='proxyproto-test'; \
+	b='proxyproto-test'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+proxyproto-unix-test.log: proxyproto-unix-test
+	@p='proxyproto-unix-test'; \
+	b='proxyproto-unix-test'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+pam-noauth-test.log: pam-noauth-test
+	@p='pam-noauth-test'; \
+	b='pam-noauth-test'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+otp-test.log: otp-test
+	@p='otp-test'; \
+	b='otp-test'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+test-user-config.log: test-user-config
+	@p='test-user-config'; \
+	b='test-user-config'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+firewall-test.log: firewall-test
+	@p='firewall-test'; \
+	b='firewall-test'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+str-test.log: str-test$(EXEEXT)
+	@p='str-test$(EXEEXT)'; \
+	b='str-test'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+ipv4-prefix.log: ipv4-prefix$(EXEEXT)
+	@p='ipv4-prefix$(EXEEXT)'; \
+	b='ipv4-prefix'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+ipv6-prefix.log: ipv6-prefix$(EXEEXT)
+	@p='ipv6-prefix$(EXEEXT)'; \
+	b='ipv6-prefix'; \
 	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
@@ -1719,16 +1811,9 @@ json-escape.log: json-escape$(EXEEXT)
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
-test-enc-key.log: test-enc-key
-	@p='test-enc-key'; \
-	b='test-enc-key'; \
-	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
-	--log-file $$b.log --trs-file $$b.trs \
-	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
-	"$$tst" $(AM_TESTS_FD_REDIRECT)
-proxyproto-test.log: proxyproto-test
-	@p='proxyproto-test'; \
-	b='proxyproto-test'; \
+ban-ips.log: ban-ips$(EXEEXT)
+	@p='ban-ips$(EXEEXT)'; \
+	b='ban-ips'; \
 	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
@@ -1840,8 +1925,6 @@ clean-generic:
 distclean-generic:
 	-test -z "$(CONFIG_CLEAN_FILES)" || rm -f $(CONFIG_CLEAN_FILES)
 	-test . = "$(srcdir)" || test -z "$(CONFIG_CLEAN_VPATH_FILES)" || rm -f $(CONFIG_CLEAN_VPATH_FILES)
-	-rm -f ../src/$(DEPDIR)/$(am__dirstamp)
-	-rm -f ../src/$(am__dirstamp)
 
 maintainer-clean-generic:
 	@echo "This command is intended for maintainers to use"
@@ -1851,7 +1934,7 @@ clean: clean-recursive
 clean-am: clean-checkPROGRAMS clean-generic mostlyclean-am
 
 distclean: distclean-recursive
-	-rm -rf ../src/$(DEPDIR) ./$(DEPDIR)
+	-rm -rf ./$(DEPDIR)
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-tags
@@ -1897,7 +1980,7 @@ install-ps-am:
 installcheck-am:
 
 maintainer-clean: maintainer-clean-recursive
-	-rm -rf ../src/$(DEPDIR) ./$(DEPDIR)
+	-rm -rf ./$(DEPDIR)
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 

@@ -563,7 +563,7 @@ const ProtobufCMessageDescriptor bool_msg__descriptor =
   (ProtobufCMessageInit) bool_msg__init,
   NULL,NULL,NULL    /* reserved[123] */
 };
-static const ProtobufCFieldDescriptor user_info_rep__field_descriptors[25] =
+static const ProtobufCFieldDescriptor user_info_rep__field_descriptors[30] =
 {
   {
     "id",
@@ -865,11 +865,73 @@ static const ProtobufCFieldDescriptor user_info_rep__field_descriptors[25] =
     0,             /* flags */
     0,NULL,NULL    /* reserved1,reserved2, etc */
   },
+  {
+    "local_dev_ip",
+    26,
+    PROTOBUF_C_LABEL_OPTIONAL,
+    PROTOBUF_C_TYPE_STRING,
+    0,   /* quantifier_offset */
+    offsetof(UserInfoRep, local_dev_ip),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "domains",
+    27,
+    PROTOBUF_C_LABEL_REPEATED,
+    PROTOBUF_C_TYPE_STRING,
+    offsetof(UserInfoRep, n_domains),
+    offsetof(UserInfoRep, domains),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "dpd",
+    28,
+    PROTOBUF_C_LABEL_REQUIRED,
+    PROTOBUF_C_TYPE_UINT32,
+    0,   /* quantifier_offset */
+    offsetof(UserInfoRep, dpd),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "keepalive",
+    29,
+    PROTOBUF_C_LABEL_REQUIRED,
+    PROTOBUF_C_TYPE_UINT32,
+    0,   /* quantifier_offset */
+    offsetof(UserInfoRep, keepalive),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "restrict_to_routes",
+    30,
+    PROTOBUF_C_LABEL_REQUIRED,
+    PROTOBUF_C_TYPE_BOOL,
+    0,   /* quantifier_offset */
+    offsetof(UserInfoRep, restrict_to_routes),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
 };
 static const unsigned user_info_rep__field_indices_by_name[] = {
   9,   /* field[9] = conn_time */
   22,   /* field[22] = cstp_compr */
   17,   /* field[17] = dns */
+  26,   /* field[26] = domains */
+  27,   /* field[27] = dpd */
   14,   /* field[14] = dtls_ciphersuite */
   23,   /* field[23] = dtls_compr */
   2,   /* field[2] = groupname */
@@ -877,6 +939,8 @@ static const unsigned user_info_rep__field_indices_by_name[] = {
   0,   /* field[0] = id */
   3,   /* field[3] = ip */
   20,   /* field[20] = iroutes */
+  28,   /* field[28] = keepalive */
+  25,   /* field[25] = local_dev_ip */
   6,   /* field[6] = local_ip */
   8,   /* field[8] = local_ip6 */
   21,   /* field[21] = mtu */
@@ -884,6 +948,7 @@ static const unsigned user_info_rep__field_indices_by_name[] = {
   24,   /* field[24] = no_routes */
   5,   /* field[5] = remote_ip */
   7,   /* field[7] = remote_ip6 */
+  29,   /* field[29] = restrict_to_routes */
   19,   /* field[19] = routes */
   15,   /* field[15] = rx_per_sec */
   12,   /* field[12] = status */
@@ -896,7 +961,7 @@ static const unsigned user_info_rep__field_indices_by_name[] = {
 static const ProtobufCIntRange user_info_rep__number_ranges[1 + 1] =
 {
   { 1, 0 },
-  { 0, 25 }
+  { 0, 30 }
 };
 const ProtobufCMessageDescriptor user_info_rep__descriptor =
 {
@@ -906,7 +971,7 @@ const ProtobufCMessageDescriptor user_info_rep__descriptor =
   "UserInfoRep",
   "",
   sizeof(UserInfoRep),
-  25,
+  30,
   user_info_rep__field_descriptors,
   user_info_rep__field_indices_by_name,
   1,  user_info_rep__number_ranges,
@@ -1033,7 +1098,7 @@ static const ProtobufCFieldDescriptor ban_info_rep__field_descriptors[3] =
     "ip",
     1,
     PROTOBUF_C_LABEL_REQUIRED,
-    PROTOBUF_C_TYPE_STRING,
+    PROTOBUF_C_TYPE_BYTES,
     0,   /* quantifier_offset */
     offsetof(BanInfoRep, ip),
     NULL,
@@ -1135,7 +1200,7 @@ static const ProtobufCFieldDescriptor unban_req__field_descriptors[1] =
     "ip",
     1,
     PROTOBUF_C_LABEL_REQUIRED,
-    PROTOBUF_C_TYPE_STRING,
+    PROTOBUF_C_TYPE_BYTES,
     0,   /* quantifier_offset */
     offsetof(UnbanReq, ip),
     NULL,
