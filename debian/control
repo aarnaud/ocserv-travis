@@ -28,7 +28,7 @@ Homepage: http://www.infradead.org/ocserv/
 
 Package: ocserv
 Architecture: any
-Depends: ${misc:Depends}, ${shlibs:Depends}
+Depends: ${misc:Depends}, ${shlibs:Depends}, dbus
 Recommends: ca-certificates, ssl-cert
 Description: OpenConnect VPN server compatible with Cisco AnyConnect VPN
  OpenConnect server (ocserv) is an SSL VPN server. Its purpose is to be a
