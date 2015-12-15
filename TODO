@@ -1,7 +1,7 @@
 Short term items:
 
-* Use the UDP address to report the client's IP when sniproxy or haproxy
-  are being used.
+* Modify the test suite to be able to run without root privileges. That
+  could be done by using virt-builder for the tests instead of docker.
 
 * When a user (IP) gets into the BAN list multiple times, disable it for
   longer time (or should we drop this functionality altogether and rely
@@ -12,6 +12,8 @@ Short term items:
 * Give each worker a limited number of accesses to the security module.
 
 Long term items:
+
+* radius: Consider supporting rfc5176.
 
 * Think how the DTLS part can use better negotiation of algorithms and DTLS
   is negotiated properly. Using PSK ciphersuites seem to be like a solution, 

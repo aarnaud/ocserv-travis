@@ -84,11 +84,13 @@ int handle_worker_commands(struct worker_st *ws)
 	hdr.msg_control = control_un.control;
 	hdr.msg_controllen = sizeof(control_un.control);
 	
-	ret = recvmsg( ws->cmd_fd, &hdr, 0);
+	do {
+		ret = recvmsg( ws->cmd_fd, &hdr, 0);
+	} while(ret == -1 && errno == EINTR);
 	if (ret == -1) {
 		e = errno;
 		oclog(ws, LOG_ERR, "cannot obtain data from command socket: %s", strerror(e));
-		exit(1);
+		exit_worker(ws);
 	}
 
 	if (ret == 0) {
@@ -98,7 +100,7 @@ int handle_worker_commands(struct worker_st *ws)
 
 	if (length > ret - 3) {
 		oclog(ws, LOG_DEBUG, "worker received invalid message %s of %u bytes that claims to be %u\n", cmd_request_to_str(cmd), (unsigned)ret-3, (unsigned)length);
-		exit(1);
+		exit_worker(ws);
 	} else {
 		oclog(ws, LOG_DEBUG, "worker received message %s of %u bytes\n", cmd_request_to_str(cmd), (unsigned)length);
 	}
@@ -107,7 +109,7 @@ int handle_worker_commands(struct worker_st *ws)
 	
 	switch(cmd) {
 		case CMD_TERMINATE:
-			exit(0);
+			exit_worker(ws);
 		case CMD_UDP_FD: {
 			unsigned hello = 1;
 			int fd;
@@ -134,7 +136,8 @@ int handle_worker_commands(struct worker_st *ws)
 					if ((ws->udp_state != UP_ACTIVE && ws->udp_state != UP_INACTIVE) ||
 						time(0) - ws->last_msg_udp < ACTIVE_SESSION_TIMEOUT) {
 						oclog(ws, LOG_INFO, "received UDP fd message but our session is active!");
-						udp_fd_msg__free_unpacked(tmsg, NULL);
+						if (tmsg)
+							udp_fd_msg__free_unpacked(tmsg, NULL);
 						close(fd);
 						return 0;
 					}
@@ -144,8 +147,8 @@ int handle_worker_commands(struct worker_st *ws)
 
 				if (ws->dtls_tptr.fd != -1)
 					close(ws->dtls_tptr.fd);
-				if (ws->dtls_tptr.msg != NULL)
-					udp_fd_msg__free_unpacked(tmsg, NULL);
+				if (tmsg && ws->dtls_tptr.msg != NULL)
+					udp_fd_msg__free_unpacked(ws->dtls_tptr.msg, NULL);
 
 				ws->dtls_tptr.msg = tmsg;
 
@@ -163,13 +166,14 @@ int handle_worker_commands(struct worker_st *ws)
 			break;
 		default:
 			oclog(ws, LOG_ERR, "unknown CMD 0x%x", (unsigned)cmd);
-			exit(1);
+			exit_worker(ws);
 	}
 	
 	return 0;
 
 udp_fd_fail:
-	udp_fd_msg__free_unpacked(tmsg, NULL);
+	if (tmsg)
+		udp_fd_msg__free_unpacked(tmsg, NULL);
 	if (ws->dtls_tptr.fd == -1)
 		ws->udp_state = UP_DISABLED;
 
@@ -227,11 +231,16 @@ int complete_vpn_info(worker_st * ws, struct vpn_st *vinfo)
 	if (check_if_default_route(vinfo->routes, vinfo->routes_size))
 		ws->default_route = 1;
 
+	vinfo->no_routes_size = ws->config->network.no_routes_size;
+	if (ws->config->network.no_routes_size > 0)
+		vinfo->no_routes = ws->config->network.no_routes;
+
 	vinfo->ipv4_network = ws->config->network.ipv4_network;
 	vinfo->ipv6_network = ws->config->network.ipv6_network;
 
 	vinfo->ipv4_netmask = ws->config->network.ipv4_netmask;
 	vinfo->ipv6_prefix = ws->config->network.ipv6_prefix;
+	vinfo->ipv6_subnet_prefix = ws->config->network.ipv6_subnet_prefix;
 
 	if (ws->config->network.mtu != 0) {
 		vinfo->mtu = ws->config->network.mtu;

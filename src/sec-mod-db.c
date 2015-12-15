@@ -83,23 +83,39 @@ struct htable *db = sec->client_db;
 		return 0;
 }
 
-client_entry_st *new_client_entry(sec_mod_st *sec, const char *ip)
+client_entry_st *new_client_entry(sec_mod_st *sec, const char *ip, unsigned pid)
 {
 	struct htable *db = sec->client_db;
-	client_entry_st *e;
+	client_entry_st *e, *te;
 	int ret;
+	int retries = 3;
 
 	e = talloc_zero(db, client_entry_st);
 	if (e == NULL) {
 		return NULL;
 	}
 
-	strlcpy(e->ip, ip, sizeof(e->ip));
-	ret = gnutls_rnd(GNUTLS_RND_RANDOM, e->sid, sizeof(e->sid));
-	if (ret < 0) {
-		seclog(sec, LOG_ERR, "error generating SID");
+	strlcpy(e->auth_info.remote_ip, ip, sizeof(e->auth_info.remote_ip));
+	e->auth_info.id = pid;
+
+	do {
+		ret = gnutls_rnd(GNUTLS_RND_RANDOM, e->sid, sizeof(e->sid));
+		if (ret < 0) {
+			seclog(sec, LOG_ERR, "error generating SID");
+			goto fail;
+		}
+
+		/* check if in use */
+		te = find_client_entry(sec, e->sid);
+	} while(te != NULL && retries-- >= 0);
+
+	if (te != NULL) {
+		seclog(sec, LOG_ERR,
+		       "could not generate a unique SID!");
 		goto fail;
 	}
+
+	base64_encode((char *)e->sid, SID_SIZE, (char *)e->auth_info.psid, sizeof(e->auth_info.psid));
 	e->time = time(0);
 
 	if (htable_add(db, rehash(e, NULL), e) == 0) {
@@ -138,13 +154,9 @@ client_entry_st *find_client_entry(sec_mod_st *sec, uint8_t sid[SID_SIZE])
 static void clean_entry(sec_mod_st *sec, client_entry_st * e)
 {
 	sec_auth_user_deinit(sec, e);
+	talloc_free(e->msg_str);
 	talloc_free(e);
 }
-
-/* Allow few seconds prior to cleaning up entries, to avoid any race
- * conditions when session control is enabled.
- */
-#define SLACK_TIME 10
 
 void cleanup_client_entries(sec_mod_st *sec)
 {
@@ -155,7 +167,8 @@ void cleanup_client_entries(sec_mod_st *sec)
 
 	t = htable_first(db, &iter);
 	while (t != NULL) {
-		if (t->have_session == 0 && now - t->time > MAX_AUTH_SECS + SLACK_TIME) {
+		if (t->time != -1 && (now - t->time) > (sec->config->cookie_timeout + AUTH_SLACK_TIME) && 
+		    t->in_use == 0) {
 			htable_delval(db, &iter);
 			clean_entry(sec, t);
 		}
@@ -170,4 +183,23 @@ void del_client_entry(sec_mod_st *sec, client_entry_st * e)
 
 	htable_del(db, rehash(e, NULL), e);
 	clean_entry(sec, e);
+}
+
+void expire_client_entry(sec_mod_st *sec, client_entry_st * e)
+{
+	if (e->in_use > 0)
+		e->in_use--;
+	if (e->in_use == 0) {
+		e->time = time(0);
+
+		if (sec->config->persistent_cookies == 0 && (e->discon_reason == REASON_USER_DISCONNECT
+		    || e->discon_reason == REASON_SERVER_DISCONNECT || e->discon_reason == REASON_SESSION_TIMEOUT)) {
+			seclog(sec, LOG_INFO, "invalidating session of user '%s' "SESSION_STR,
+				e->auth_info.username, e->auth_info.psid);
+			/* immediately disconnect the user */
+			del_client_entry(sec, e);
+		} else {
+			seclog(sec, LOG_INFO, "temporarily closing session for %s "SESSION_STR, e->auth_info.username, e->auth_info.psid);
+		}
+	}
 }

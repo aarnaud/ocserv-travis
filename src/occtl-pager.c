@@ -28,7 +28,8 @@
 
 static const char* get_pager(void)
 {
-char* pager;
+	char* pager;
+
 	pager = getenv("OCCTL_PAGER");
 	if (pager == NULL)
 		pager = getenv("PAGER");
@@ -39,20 +40,29 @@ char* pager;
 }
 
 /* Always succeeds */
-FILE* pager_start(void)
+FILE* pager_start(cmd_params_st *params)
 {
-FILE *fp;
+	FILE *fp;
+	const char *pager;
+
+	if (params && params->no_pager != 0)
+		return stdout;
 
 #ifdef HAVE_ISATTY
 	if (isatty(STDOUT_FILENO) == 0)
 		return stdout;
 #endif
 
+	pager = get_pager();
+	if (pager == NULL || pager[0] == 0)
+		return stdout;
+
 	if (!getenv("LESS")) {
 		setenv("LESS", "FRSX", 1);
 	}
-	fp = popen(get_pager(), "w");
-	
+
+	fp = popen(pager, "w");
+
 	if (fp == NULL) { /* no pager */
 		fprintf(stderr, "unable to start pager; check your $PAGER environment variable\n");
 		fp = stdout;

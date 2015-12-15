@@ -43,13 +43,32 @@ PID=$!
 wait_server $PID
 
 echo -n "Connecting to obtain cookie (without certificate)... "
-( openconnect -q localhost:$PORT --servercert=d66b507ae074d03b02eafca40d35f87dd81049d3 --cookieonly </dev/null >/dev/null 2>&1 ) &&
+( $OPENCONNECT -q localhost:$PORT --servercert=d66b507ae074d03b02eafca40d35f87dd81049d3 --cookieonly </dev/null >/dev/null 2>&1 ) &&
 	fail $PID "Connected without certificate!"
 
 echo ok
 
 echo -n "Connecting to obtain cookie (with certificate)... "
-( openconnect -q localhost:$PORT --sslkey ./user-key.pem -c ./user-cert.pem --servercert=d66b507ae074d03b02eafca40d35f87dd81049d3 --cookieonly </dev/null >/dev/null 2>&1 ) ||
+( $OPENCONNECT -q localhost:$PORT --sslkey ./user-key.pem -c ./user-cert.pem --servercert=d66b507ae074d03b02eafca40d35f87dd81049d3 --cookieonly </dev/null >/dev/null 2>&1 ) ||
+	fail $PID "Could not connect with certificate!"
+
+echo ok
+
+#Try DER encoded CRL
+
+certtool --generate-crl --load-ca-privkey ca-key.pem --load-ca-certificate ca.pem \
+	--outder --outfile crl.pem --template crl.tmpl >/dev/null 2>&1
+if test $? != 0;then
+	kill $PID
+	exit 77
+fi
+
+echo "Reloading server"
+kill -HUP $PID
+sleep 5
+
+echo -n "Connecting to obtain cookie (with DER CRL)... "
+( $OPENCONNECT -q localhost:$PORT --sslkey ./user-key.pem -c ./user-cert.pem --servercert=d66b507ae074d03b02eafca40d35f87dd81049d3 --cookieonly </dev/null >/dev/null 2>&1 ) ||
 	fail $PID "Could not connect with certificate!"
 
 echo ok
@@ -57,7 +76,7 @@ echo ok
 
 #revoke the certificate
 certtool --generate-crl --load-ca-privkey ca-key.pem --load-ca-certificate ca.pem \
-	--load-certificate ./user-cert.pem --outfile crl.pem --template crl.tmpl >/dev/null 2>&1
+	--load-certificate ./user-cert.pem --outder --outfile crl.pem --template crl.tmpl >/dev/null 2>&1
 if test $? != 0;then
 	kill $PID
 	exit 77
@@ -68,18 +87,23 @@ kill -HUP $PID
 sleep 5
 
 echo -n "Connecting to obtain cookie (with revoked certificate)... "
-( openconnect -q localhost:$PORT --sslkey ./user-key.pem -c ./user-cert.pem --servercert=d66b507ae074d03b02eafca40d35f87dd81049d3 --cookieonly </dev/null >/dev/null 2>&1 ) &&
+( $OPENCONNECT -q localhost:$PORT --sslkey ./user-key.pem -c ./user-cert.pem --servercert=d66b507ae074d03b02eafca40d35f87dd81049d3 --cookieonly </dev/null >/dev/null 2>&1 ) &&
 	fail $PID "Connected with revoked certificate!"
 
 echo ok
 
 #echo "Normal connection... "
-#( echo "test" | openconnect -q localhost:$PORT -u test --servercert=d66b507ae074d03b02eafca40d35f87dd81049d3 --script=/bin/true ) ||
+#( echo "test" | $OPENCONNECT -q localhost:$PORT -u test --servercert=d66b507ae074d03b02eafca40d35f87dd81049d3 --script=/bin/true ) ||
 #	fail $PID "Could not connect to server"
 
 rm -f crl.pem crl.tmpl
 
 kill $PID
+if test $? != 0;then
+	echo "server was already dead?"
+	exit 1
+fi
+
 wait
 
 exit 0

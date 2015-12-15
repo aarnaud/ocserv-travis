@@ -16,7 +16,7 @@ detail  = "Openconnect VPN server control (occtl) is a tool to control
 the ocserv VPN server.";
 
 copyright = {
-    date  = "2014";
+    date  = "2014, 2015";
     owner = "Red Hat";
     author = "Nikos Mavrogiannopoulos";
     eaddr  = "openconnect-devel@lists.infradead.org";
@@ -33,13 +33,27 @@ flag = {
     doc   = "This option is only needed if you have multiple servers.";
 };
 
+flag = {
+    name      = json;
+    value     = j;
+    descrip   = "Output will be JSON formatted";
+    doc   = "";
+};
+
+flag = {
+    name      = no-pager;
+    value     = n;
+    descrip   = "No pager will be used over output data";
+    doc   = "";
+};
+
 
 doc-section = {
   ds-type = 'SYNOPSIS';
   ds-format = 'texi';
   ds-text   = <<-_EOT_
 Openconnect VPN server control (occtl) is a tool to control
-the ocserv VPN server. It uses D-BUS to connect to ocserv.
+the ocserv VPN server.
 _EOT_;
 };
 
@@ -60,9 +74,7 @@ doc-section = {
   ds-type = 'IMPLEMENTATION NOTES';
   ds-format = 'texi';
   ds-text   = <<-_EOT_
-This tool uses unix domain sockets or D-BUS to connect to ocserv (depending on compilation options).
-In case D-BUS is being use the D-BUS access controls should be used to prevent potentially dangerous commands to be sent
-to ocserv by unprivileged users.
+This tool uses unix domain sockets to connect to ocserv.
 _EOT_;
 };
 

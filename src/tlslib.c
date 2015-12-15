@@ -26,6 +26,9 @@
 #include <errno.h>
 #include <stdlib.h>
 #include <stdarg.h>
+#ifndef _GNU_SOURCE
+# define _GNU_SOURCE /* for vasprintf() */
+#endif
 #include <stdio.h>
 #include <string.h>
 #include <sys/types.h>
@@ -109,23 +112,24 @@ ssize_t cstp_send(worker_st *ws, const void *data,
 
 ssize_t cstp_send_file(worker_st *ws, const char *file)
 {
-FILE* fp;
+int fd;
 char buf[512];
 ssize_t len, total = 0;
 int ret;
 
-	fp = fopen(file, "r");
-	if (fp == NULL)
+	fd = open(file, O_RDONLY);
+	if (fd == -1)
 		return GNUTLS_E_FILE_ERROR;
 
-	while (	(len = fread( buf, 1, sizeof(buf), fp)) > 0) {
+	while (	(len = read( fd, buf, sizeof(buf))) > 0 ||
+		(len == -1 && (errno == EINTR || errno == EAGAIN))) {
 		ret = cstp_send(ws, buf, len);
 		FATAL_ERR(ws, ret);
 
 		total += ret;
 	}
 
-	fclose(fp);
+	close(fd);
 
 	return total;
 }
@@ -198,17 +202,20 @@ unsigned tls_has_session_cert(struct worker_st * ws)
 int __attribute__ ((format(printf, 2, 3)))
     cstp_printf(worker_st *ws, const char *fmt, ...)
 {
-	char buf[1024];
+	char *buf;
 	va_list args;
-	size_t s;
-
-	buf[1023] = 0;
+	int ret, s;
 
 	va_start(args, fmt);
-	s = vsnprintf(buf, 1023, fmt, args);
+	s = vasprintf(&buf, fmt, args);
 	va_end(args);
-	return cstp_send(ws, buf, s);
 
+	if (s == -1)
+		return -1;
+
+	ret = cstp_send(ws, buf, s);
+	free(buf);
+	return ret;
 }
 
 void cstp_close(worker_st *ws)
@@ -368,6 +375,10 @@ static int verify_certificate_cb(gnutls_session_t session)
 	 * structure. So you must have installed one or more CA certificates.
 	 */
 	ret = gnutls_certificate_verify_peers2(session, &status);
+	if (ret == GNUTLS_E_NO_CERTIFICATE_FOUND) {
+		oclog(ws, LOG_ERR, "no certificate was found");
+		goto no_cert;
+	}
 	if (ret < 0) {
 		oclog(ws, LOG_ERR, "error verifying client certificate: %s", gnutls_strerror(ret));
 		goto fail;
@@ -395,14 +406,11 @@ static int verify_certificate_cb(gnutls_session_t session)
 
 	/* notify gnutls to continue handshake normally */
 	return 0;
-fail:
-	/* In cisco client compatibility we don't hangup immediately, we
-	 * simply use the flag (ws->cert_auth_ok). */
-	if (ws->config->cisco_client_compat == 0)
-		return GNUTLS_E_CERTIFICATE_ERROR;
-	else
+no_cert:
+	if (ws->config->cisco_client_compat != 0 || ws->config->cert_req != GNUTLS_CERT_REQUIRE)
 		return 0;
-
+fail:
+	return GNUTLS_E_CERTIFICATE_ERROR;
 }
 
 void tls_global_init(tls_st *creds)
@@ -438,12 +446,12 @@ gnutls_x509_crt_t crt = NULL;
 int ret;
 unsigned usage;
 
-	if (s->config->cert_size > 1)
+	if (s->perm_config->cert_size > 1)
 		return;
 
-	if (gnutls_url_is_supported(s->config->cert[0]) == 0) {
+	if (gnutls_url_is_supported(s->perm_config->cert[0]) == 0) {
 		/* no URL */
-		ret = gnutls_load_file(s->config->cert[0], &data);
+		ret = gnutls_load_file(s->perm_config->cert[0], &data);
 		if (ret < 0)
 			return;
 
@@ -462,7 +470,7 @@ unsigned usage;
 			if (!(usage & GNUTLS_KEY_KEY_ENCIPHERMENT)) {
 				mslog(s, NULL, LOG_WARNING, "server certificate key usage prevents key encipherment; unable to support the RSA ciphersuites; "
 					"if that is not intentional, regenerate the server certificate with the key usage flag 'key encipherment' set.");
-				if (s->config->dh_params_file != NULL)
+				if (s->perm_config->dh_params_file != NULL)
 					mslog(s, NULL, LOG_WARNING, "no DH-params file specified; server will be limited to ECDHE ciphersuites\n");
 			}
 		}
@@ -480,11 +488,11 @@ static void set_dh_params(main_server_st* s, tls_st *creds)
 gnutls_datum_t data;
 int ret;
 
-	if (s->config->dh_params_file != NULL) {
+	if (s->perm_config->dh_params_file != NULL) {
 		ret = gnutls_dh_params_init (&creds->dh_params);
 		GNUTLS_FATAL_ERR(ret);
 
-		ret = gnutls_load_file(s->config->dh_params_file, &data);
+		ret = gnutls_load_file(s->perm_config->dh_params_file, &data);
 		GNUTLS_FATAL_ERR(ret);
 
 		ret = gnutls_dh_params_import_pkcs3(creds->dh_params, &data, GNUTLS_X509_FMT_PEM);
@@ -541,7 +549,9 @@ int key_cb_common_func (gnutls_privkey_t key, void* userdata, const gnutls_datum
 		goto error;
 	}
 
-	ret = recv_msg(userdata, sd, type, (void*)&reply, (unpack_func)sec_op_msg__unpack);
+	ret = recv_msg(userdata, sd, type, (void*)&reply,
+		       (unpack_func)sec_op_msg__unpack,
+		       DEFAULT_SOCKET_TIMEOUT);
 	if (ret < 0) {
 		e = errno;
 		syslog(LOG_ERR, "error receiving sec-mod reply: %s", 
@@ -560,8 +570,7 @@ int key_cb_common_func (gnutls_privkey_t key, void* userdata, const gnutls_datum
 
 	memcpy(output->data, reply->data.data, reply->data.len);
 
-	if (reply != NULL)
-		sec_op_msg__free_unpacked(reply, &pa);
+	sec_op_msg__free_unpacked(reply, &pa);
 	return 0;
 
 error:
@@ -601,16 +610,17 @@ unsigned pcert_list_size, i;
 gnutls_privkey_t key;
 gnutls_datum_t data;
 struct key_cb_data * cdata;
+unsigned flags;
 
-	for (i=0;i<s->config->key_size;i++) {
+	for (i=0;i<s->perm_config->key_size;i++) {
 		/* load the certificate */
-		if (gnutls_url_is_supported(s->config->cert[i]) != 0) {
-			mslog(s, NULL, LOG_ERR, "Loading a certificate from '%s' is unsupported", s->config->cert[i]);
+		if (gnutls_url_is_supported(s->perm_config->cert[i]) != 0) {
+			mslog(s, NULL, LOG_ERR, "Loading a certificate from '%s' is unsupported", s->perm_config->cert[i]);
 			return -1;
 		} else {
-			ret = gnutls_load_file(s->config->cert[i], &data);
+			ret = gnutls_load_file(s->perm_config->cert[i], &data);
 			if (ret < 0) {
-				mslog(s, NULL, LOG_ERR, "error loading file '%s'", s->config->cert[i]);
+				mslog(s, NULL, LOG_ERR, "error loading file '%s'", s->perm_config->cert[i]);
 				return -1;
 			}
 
@@ -621,8 +631,13 @@ struct key_cb_data * cdata;
 				return -1;
 			}
 
+			flags = GNUTLS_X509_CRT_LIST_FAIL_IF_UNSORTED|GNUTLS_X509_CRT_LIST_IMPORT_FAIL_IF_EXCEED;
+#if GNUTLS_VERSION_NUMBER >= 0x030400
+			flags |= GNUTLS_X509_CRT_LIST_SORT;
+#endif
+
 			ret = gnutls_pcert_list_import_x509_raw(pcert_list, &pcert_list_size,
-				&data, GNUTLS_X509_FMT_PEM, GNUTLS_X509_CRT_LIST_FAIL_IF_UNSORTED|GNUTLS_X509_CRT_LIST_IMPORT_FAIL_IF_EXCEED);
+								&data, GNUTLS_X509_FMT_PEM, flags);
 			GNUTLS_FATAL_ERR(ret);
 
 			gnutls_free(data.data);
@@ -680,7 +695,7 @@ const char* perr;
 
 	set_dh_params(s, creds);
 
-	if (s->config->key_size == 0 || s->config->cert_size == 0) {
+	if (s->perm_config->key_size == 0 || s->perm_config->cert_size == 0) {
 		mslog(s, NULL, LOG_ERR, "no certificate or key files were specified"); 
 		exit(1);
 	}
@@ -694,21 +709,21 @@ const char* perr;
 	}
 
 	if (s->config->cert_req != GNUTLS_CERT_IGNORE) {
-		if (s->config->ca != NULL) {
+		if (s->perm_config->ca != NULL) {
 			ret =
 			    gnutls_certificate_set_x509_trust_file(creds->xcred,
-								   s->config->ca,
+								   s->perm_config->ca,
 								   GNUTLS_X509_FMT_PEM);
 			if (ret < 0) {
 				mslog(s, NULL, LOG_ERR, "error setting the CA (%s) file",
-					s->config->ca);
+					s->perm_config->ca);
 				exit(1);
 			}
 
 			mslog(s, NULL, LOG_INFO, "processed %d CA certificate(s)", ret);
 		}
 
-		tls_reload_crl(s, creds);
+		tls_reload_crl(s, creds, 1);
 
 		gnutls_certificate_set_verify_function(creds->xcred,
 						       verify_certificate_cb);
@@ -728,25 +743,51 @@ const char* perr;
 	return;
 }
 
-void tls_reload_crl(main_server_st* s, tls_st *creds)
+void tls_reload_crl(main_server_st* s, tls_st *creds, unsigned force)
 {
-int ret;
+int ret, e, saved_ret;
+static time_t old_mtime = 0;
+static unsigned crl_type = GNUTLS_X509_FMT_PEM;
+struct stat st;
+
+	if (force)
+		old_mtime = 0;
 
 	if (s->config->cert_req != GNUTLS_CERT_IGNORE && s->config->crl != NULL) {
-		ret =
-		    gnutls_certificate_set_x509_crl_file(creds->xcred,
-							 s->config->crl,
-							 GNUTLS_X509_FMT_PEM);
-		if (ret < 0) {
-			/* ignore the CRL file when empty */
-			if (ret == GNUTLS_E_BASE64_DECODING_ERROR) {
-				mslog(s, NULL, LOG_ERR, "empty or unreadable CRL file (%s); check documentation to generate an empty CRL",
-					s->config->crl);
-			} else {
+		ret = stat(s->config->crl, &st);
+		if (ret == -1) {
+			e = errno;
+			mslog(s, NULL, LOG_INFO, "CRL file (%s) not found: %s; check documentation to generate an empty CRL",
+				s->config->crl, strerror(e));
+			return;
+		}
+
+		/* reload only if it is a newer file */
+		if (st.st_mtime > old_mtime) {
+			ret =
+			    gnutls_certificate_set_x509_crl_file(creds->xcred,
+								 s->config->crl,
+								 crl_type);
+			if (ret == GNUTLS_E_BASE64_DECODING_ERROR && crl_type == GNUTLS_X509_FMT_PEM) {
+				crl_type = GNUTLS_X509_FMT_DER;
+				saved_ret = ret;
+				ret =
+				    gnutls_certificate_set_x509_crl_file(creds->xcred,
+									 s->config->crl,
+									 crl_type);
+				if (ret < 0)
+					ret = saved_ret;
+			}
+			if (ret < 0) {
+				/* ignore the CRL file when empty */
 				mslog(s, NULL, LOG_ERR, "error reading the CRL (%s) file: %s",
 					s->config->crl, gnutls_strerror(ret));
+				exit(1);
 			}
-			exit(1);
+			mslog(s, NULL, LOG_INFO, "loaded CRL: %s", s->config->crl);
+			old_mtime = st.st_mtime;
+		} else {
+			mslog(s, NULL, LOG_DEBUG, "skipping already loaded CRL: %s", s->config->crl);
 		}
 	}
 }
@@ -822,6 +863,7 @@ unsigned i;
 	return retval;
 }
 
+
 size_t tls_get_overhead(gnutls_protocol_t version, gnutls_cipher_algorithm_t cipher, gnutls_mac_algorithm_t mac)
 {
 #if GNUTLS_VERSION_NUMBER >= 0x030207
@@ -834,9 +876,7 @@ unsigned block_size;
 	switch(version) {
 		case GNUTLS_DTLS0_9:
 		case GNUTLS_DTLS1_0:
-#if GNUTLS_VERSION_NUMBER >= 0x030200
 		case GNUTLS_DTLS1_2:
-#endif
 			overhead += 13;
 			break;
 		default:

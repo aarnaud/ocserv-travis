@@ -1,3 +1,32 @@
+/* === Authentication ===
+ 
+  main                 sec-mod                 worker
+   |                      |                      |
+   |                      |  <--SEC_AUTH_INIT--- |
+   |                      |  ---SEC_AUTH_REP---> |
+   |                      |  <--SEC_AUTH_CONT--- |
+   |                      |         .            |
+   |                      |         .            |
+   |                      |         .            |
+   |                      |  ----SEC_AUTH_REP--> |
+   |                      |                      |
+   | <----------AUTH_COOKIE_REQ----------------- |
+   |                      |                      |
+   | ---SESSION_OPEN----> |                      |
+   | <--SESSION_REPLY---- |                      |   #contains additional config for client
+   |                      |                      |
+   | -----------------AUTH_REP-----------------> |   #forwards the additional config for client
+   |                      |                      |
+   | <------------SESSION_INFO------------------ |
+   |                      |                      |
+   |                      | <-- CLI_STATS ------ |
+   |                      |            (disconnect)
+   | ---SESSION_CLOSE---> |
+   | <-- CLI_STATS ------ |
+
+ */
+
+
 /*
  * == Auth in main process (cookie auth only) ==
  *
@@ -24,11 +53,10 @@ message auth_cookie_request_msg
 message auth_reply_msg
 {
 	required AUTH_REP reply = 1;
-	optional bytes session_id = 3;
+	optional bytes session_id = 3; /* dtls */
 	optional string vname = 4;
 	optional string user_name = 5;
 	optional string group_name = 25;
-	optional string msg = 6;
 
 	/* the ips of the tun device */
 	optional string ipv4 = 7;
@@ -50,6 +78,15 @@ message auth_reply_msg
 	optional string xml_config_file = 26;
 	optional string ipv4_network = 27;
 	optional string ipv6_network = 28;
+	repeated string no_routes = 29;
+	required bytes sid = 30;
+	optional uint32 interim_update_secs = 31;
+	optional uint32 session_timeout_secs = 32;
+	optional uint32 ipv6_subnet_prefix = 33;
+	optional uint32 dpd = 34;
+	optional uint32 mobile_dpd = 35;
+	optional uint32 keepalive = 36;
+	optional uint32 tunnel_all_dns = 37;
 }
 
 /* RESUME_FETCH_REQ + RESUME_DELETE_REQ */
@@ -86,8 +123,13 @@ message cli_stats_msg
 {
 	required uint64 bytes_in = 1;
 	required uint64 bytes_out = 2;
-	optional bytes sid = 3; /* only required by sec-mod */
-	required uint32 uptime = 4; /* sec-mod */
+	optional bytes sid = 3;
+	required uint32 uptime = 4;
+	optional string remote_ip = 5;
+	optional string ipv4 = 6;
+	optional string ipv6 = 7;
+	optional uint32 discon_reason = 8;
+	optional uint32 secmod_client_entries = 9; /* from sec-mod to main only */
 }
 
 /* UDP_FD */
@@ -105,8 +147,28 @@ message session_info_msg
 	required string user_agent = 3;
 	optional string cstp_compr = 4;
 	optional string dtls_compr = 5;
+	/* these two are of type sockaddr_storage,
+	 * and contain the addresses we got from proxy
+	 * protocol (if any).
+	 */
+	optional bytes our_addr = 6;
+	optional bytes remote_addr = 7;
 }
 
+/* WORKER_BAN_IP: sent from worker to main */
+message ban_ip_msg
+{
+	required string ip = 1;
+	required uint32 score = 2;
+	optional bytes sid = 3; /* sec-mod sends it */
+}
+
+message ban_ip_reply_msg
+{
+	/* whether to disconnect the user */
+	required AUTH_REP reply = 1;
+	optional bytes sid = 2; /* sec-mod needs it */
+}
 
 /* Messages to and from the security module */
 
@@ -139,6 +201,8 @@ message sec_auth_init_msg
 	repeated string cert_group_names = 6;
 	optional string hostname = 7;
 	required string ip = 8;
+	required uint32 auth_type = 9 [default = 0];
+	optional string our_ip = 10;
 }
 
 /* SEC_AUTH_CONT */
@@ -155,9 +219,10 @@ message sec_auth_reply_msg
 	required AUTH_REP reply = 1;
 	optional bytes cookie = 2;
 	optional string user_name = 3;
-	optional string msg = 4;
+	optional string msg = 4; /* message to display to user */
 	optional bytes dtls_session_id = 5;
 	optional bytes sid = 6;
+	optional uint32 passwd_counter = 8; /* if that's a password prompt indicates the number of password asked */
 }
 
 /* SEC_SIGN/DECRYPT */
@@ -185,27 +250,32 @@ message cookie
  *
  *   main                           sec-mod
  * SESSION_OPEN/CLOSE   ------>
- *
+ *                      <------     SESSION_REPLY
  */
 
 /* SEC_SESSION_CLOSE */
 message sec_auth_session_msg
 {
 	required bytes sid = 1;
+	/* on open */
+	optional bytes cookie = 2;
 	/* on close */
 	optional uint32 uptime = 3;
 	optional uint64 bytes_in = 4;
 	optional uint64 bytes_out = 5;
+	optional string ipv4 = 6;
+	optional string ipv6 = 7;
 }
 
 message sec_auth_session_reply_msg
 {
 	required AUTH_REP reply = 1;
+	optional uint32 interim_update_secs = 2;
+	optional uint32 session_timeout_secs = 3;
 
 	/* sup - config */
 	optional bool no_udp = 10;
 	optional bool deny_roaming = 11;
-	optional bool require_cert = 12;
 	repeated string routes = 13;
 	repeated string iroutes = 14;
 	repeated string dns = 15;
@@ -221,4 +291,20 @@ message sec_auth_session_reply_msg
 	optional uint32 net_priority = 25;
 	optional string explicit_ipv4 = 26;
 	optional string explicit_ipv6 = 27;
+	repeated string no_routes = 28;
+	optional uint32 ipv6_subnet_prefix = 29;
+	optional uint32 dpd = 30;
+	optional uint32 mobile_dpd = 31;
+	optional uint32 keepalive = 32;
+	optional uint32 max_same_clients = 33;
+	optional uint32 tunnel_all_dns = 34;
+	optional bool restrict_user_to_routes = 35;
 }
+
+message sec_refresh_cookie_key
+{
+	required bytes key = 1;
+}
+
+/* SEC_BAN_IP: sent from sec-mod to main */
+/* same as: ban_ip_msg */

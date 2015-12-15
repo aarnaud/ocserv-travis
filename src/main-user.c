@@ -1,5 +1,6 @@
 /*
- * Copyright (C) 2013 Nikos Mavrogiannopoulos
+ * Copyright (C) 2013-2015 Nikos Mavrogiannopoulos
+ * Copyright (C) 2015 Red Hat, Inc.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -38,6 +39,7 @@
 #include <gettime.h>
 
 #include <vpn.h>
+#include <str.h>
 #include <cookies.h>
 #include <tun.h>
 #include <main.h>
@@ -45,17 +47,192 @@
 #include <script-list.h>
 #include <ccan/list/list.h>
 
+#define OCSERV_FW_SCRIPT "/usr/bin/ocserv-fw"
+
+#define APPEND_TO_STR(str, val) \
+			ret = str_append_str(str, val); \
+			if (ret < 0) { \
+				mslog(s, proc, LOG_ERR, "could not append value to environment\n"); \
+				exit(1); \
+			}
+
+static void export_dns_route_info(main_server_st *s, struct proc_st* proc)
+{
+	str_st str4;
+	str_st str6;
+	str_st str_common;
+	unsigned i;
+	int ret;
+
+	str_init(&str4, proc);
+	str_init(&str6, proc);
+	str_init(&str_common, proc);
+
+	/* We use different export strings for IPv4 and IPv6 to ease handling
+	 * with legacy software such as iptables and ip6tables. */
+
+	/* append generic routes to str */
+	for (i=0;i<s->config->network.routes_size;i++) {
+		APPEND_TO_STR(&str_common, s->config->network.routes[i]);
+		APPEND_TO_STR(&str_common, " ");
+
+		if (strchr(s->config->network.routes[i], ':') != 0) {
+			APPEND_TO_STR(&str6, s->config->network.routes[i]);
+			APPEND_TO_STR(&str6, " ");
+		} else {
+			APPEND_TO_STR(&str4, s->config->network.routes[i]);
+			APPEND_TO_STR(&str4, " ");
+		}
+	}
+
+	/* append custom routes to str */
+	for (i=0;i<proc->config.routes_size;i++) {
+		APPEND_TO_STR(&str_common, proc->config.routes[i]);
+		APPEND_TO_STR(&str_common, " ");
+
+		if (strchr(proc->config.routes[i], ':') != 0) {
+			APPEND_TO_STR(&str6, proc->config.routes[i]);
+			APPEND_TO_STR(&str6, " ");
+		} else {
+			APPEND_TO_STR(&str4, proc->config.routes[i]);
+			APPEND_TO_STR(&str4, " ");
+		}
+	}
+
+	if (str4.length > 0 && setenv("OCSERV_ROUTES4", (char*)str4.data, 1) == -1) {
+		mslog(s, proc, LOG_ERR, "could not export routes\n");
+		exit(1);
+	}
+
+	if (str6.length > 0 && setenv("OCSERV_ROUTES6", (char*)str6.data, 1) == -1) {
+		mslog(s, proc, LOG_ERR, "could not export routes\n");
+		exit(1);
+	}
+
+	if (str_common.length > 0 && setenv("OCSERV_ROUTES", (char*)str_common.data, 1) == -1) {
+		mslog(s, proc, LOG_ERR, "could not export routes\n");
+		exit(1);
+	}
+
+	/* export the No-routes */
+
+	str_reset(&str4);
+	str_reset(&str6);
+	str_reset(&str_common);
+
+	/* append generic no_routes to str */
+	for (i=0;i<s->config->network.no_routes_size;i++) {
+		APPEND_TO_STR(&str_common, s->config->network.no_routes[i]);
+		APPEND_TO_STR(&str_common, " ");
+
+		if (strchr(s->config->network.no_routes[i], ':') != 0) {
+			APPEND_TO_STR(&str6, s->config->network.no_routes[i]);
+			APPEND_TO_STR(&str6, " ");
+		} else {
+			APPEND_TO_STR(&str4, s->config->network.no_routes[i]);
+			APPEND_TO_STR(&str4, " ");
+		}
+	}
+
+	/* append custom no_routes to str */
+	for (i=0;i<proc->config.no_routes_size;i++) {
+		APPEND_TO_STR(&str_common, proc->config.no_routes[i]);
+		APPEND_TO_STR(&str_common, " ");
+
+		if (strchr(proc->config.no_routes[i], ':') != 0) {
+			APPEND_TO_STR(&str6, proc->config.no_routes[i]);
+			APPEND_TO_STR(&str6, " ");
+		} else {
+			APPEND_TO_STR(&str4, proc->config.no_routes[i]);
+			APPEND_TO_STR(&str4, " ");
+		}
+	}
+
+	if (str4.length > 0 && setenv("OCSERV_NO_ROUTES4", (char*)str4.data, 1) == -1) {
+		mslog(s, proc, LOG_ERR, "could not export no-routes\n");
+		exit(1);
+	}
+
+	if (str6.length > 0 && setenv("OCSERV_NO_ROUTES6", (char*)str6.data, 1) == -1) {
+		mslog(s, proc, LOG_ERR, "could not export no-routes\n");
+		exit(1);
+	}
+
+	if (str_common.length > 0 && setenv("OCSERV_NO_ROUTES", (char*)str_common.data, 1) == -1) {
+		mslog(s, proc, LOG_ERR, "could not export no-routes\n");
+		exit(1);
+	}
+
+	/* export the DNS servers */
+
+	str_reset(&str4);
+	str_reset(&str6);
+	str_reset(&str_common);
+
+	if (proc->config.dns_size > 0) {
+		for (i=0;i<proc->config.dns_size;i++) {
+			APPEND_TO_STR(&str_common, proc->config.dns[i]);
+			APPEND_TO_STR(&str_common, " ");
+
+			if (strchr(proc->config.dns[i], ':') != 0) {
+				APPEND_TO_STR(&str6, proc->config.dns[i]);
+				APPEND_TO_STR(&str6, " ");
+			} else {
+				APPEND_TO_STR(&str4, proc->config.dns[i]);
+				APPEND_TO_STR(&str4, " ");
+			}
+		}
+	} else {
+		for (i=0;i<s->config->network.dns_size;i++) {
+			APPEND_TO_STR(&str_common, s->config->network.dns[i]);
+			APPEND_TO_STR(&str_common, " ");
+
+			if (strchr(s->config->network.dns[i], ':') != 0) {
+				APPEND_TO_STR(&str6, s->config->network.dns[i]);
+				APPEND_TO_STR(&str6, " ");
+			} else {
+				APPEND_TO_STR(&str4, s->config->network.dns[i]);
+				APPEND_TO_STR(&str4, " ");
+			}
+		}
+	}
+
+	if (str4.length > 0 && setenv("OCSERV_DNS4", (char*)str4.data, 1) == -1) {
+		mslog(s, proc, LOG_ERR, "could not export DNS servers\n");
+		exit(1);
+	}
+
+	if (str6.length > 0 && setenv("OCSERV_DNS6", (char*)str6.data, 1) == -1) {
+		mslog(s, proc, LOG_ERR, "could not export DNS servers\n");
+		exit(1);
+	}
+
+	if (str_common.length > 0 && setenv("OCSERV_DNS", (char*)str_common.data, 1) == -1) {
+		mslog(s, proc, LOG_ERR, "could not export DNS servers\n");
+		exit(1);
+	}
+
+	str_clear(&str4);
+	str_clear(&str6);
+	str_clear(&str_common);
+}
+
 static
 int call_script(main_server_st *s, struct proc_st* proc, unsigned up)
 {
 pid_t pid;
 int ret;
-const char* script;
+const char* script, *next_script = NULL;
 
 	if (up != 0)
 		script = s->config->connect_script;
 	else
 		script = s->config->disconnect_script;
+
+	if (proc->config.restrict_user_to_routes) {
+		next_script = script;
+		script = OCSERV_FW_SCRIPT;
+	}
 
 	if (script == NULL)
 		return 0;
@@ -72,11 +249,19 @@ const char* script;
 		setenv("ID", real, 1);
 
 		if (proc->remote_addr_len > 0) {
-			if (getnameinfo((void*)&proc->remote_addr, proc->remote_addr_len, real, sizeof(real), NULL, 0, NI_NUMERICHOST) != 0) {
-				mslog(s, proc, LOG_DEBUG, "cannot determine peer address; script failed");
+			if ((ret=getnameinfo((void*)&proc->remote_addr, proc->remote_addr_len, real, sizeof(real), NULL, 0, NI_NUMERICHOST)) != 0) {
+				mslog(s, proc, LOG_DEBUG, "cannot determine peer address: %s; script failed", gai_strerror(ret));
 				exit(1);
 			}
 			setenv("IP_REAL", real, 1);
+		}
+
+		if (proc->our_addr_len > 0) {
+			if ((ret=getnameinfo((void*)&proc->our_addr, proc->our_addr_len, real, sizeof(real), NULL, 0, NI_NUMERICHOST)) != 0) {
+				mslog(s, proc, LOG_DEBUG, "cannot determine our address: %s", gai_strerror(ret));
+			} else {
+				setenv("IP_REAL_LOCAL", real, 1);
+			}
 		}
 
 		if (proc->ipv4 != NULL || proc->ipv6 != NULL) {
@@ -112,7 +297,10 @@ const char* script;
 				}
 				if (remote[0] == 0)
 					setenv("IP_REMOTE", remote, 1);
-				setenv("IP_REMOTE", remote, 1);
+				setenv("IPV6_REMOTE", remote, 1);
+
+				snprintf(remote, sizeof(remote), "%u", proc->ipv6->prefix);
+				setenv("IPV6_PREFIX", remote, 1);
 			}
 		}
 
@@ -120,9 +308,9 @@ const char* script;
 		setenv("GROUPNAME", proc->groupname, 1);
 		setenv("HOSTNAME", proc->hostname, 1);
 		setenv("DEVICE", proc->tun_lease.name, 1);
-		if (up)
+		if (up) {
 			setenv("REASON", "connect", 1);
-		else {
+		} else {
 			/* use remote as temp buffer */
 			snprintf(remote, sizeof(remote), "%lu", (unsigned long)proc->bytes_in);
 			setenv("STATS_BYTES_IN", remote, 1);
@@ -135,7 +323,21 @@ const char* script;
 			setenv("REASON", "disconnect", 1);
 		}
 
-		mslog(s, proc, LOG_DEBUG, "executing script %s %s", up?"up":"down", script);
+		/* export DNS and route info */
+		export_dns_route_info(s, proc);
+
+		/* set stdout to be stderr to avoid confusing scripts - note we have stdout closed */
+		if (dup2(STDERR_FILENO, STDOUT_FILENO) < 0) {
+			int e = errno;
+			mslog(s, proc, LOG_INFO, "cannot dup2(STDERR_FILENO, STDOUT_FILENO): %s", strerror(e));
+		}
+
+		if (next_script) {
+			setenv("OCSERV_NEXT_SCRIPT", next_script, 1);
+			mslog(s, proc, LOG_DEBUG, "executing script %s %s (next: %s)", up?"up":"down", script, next_script);
+		} else
+			mslog(s, proc, LOG_DEBUG, "executing script %s %s", up?"up":"down", script);
+
 		ret = execl(script, script, NULL);
 		if (ret == -1) {
 			mslog(s, proc, LOG_ERR, "Could not execute script %s", script);

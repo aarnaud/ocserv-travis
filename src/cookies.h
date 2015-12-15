@@ -30,22 +30,12 @@
 
 /* The time after a disconnection the cookie is valid */
 #define DEFAULT_COOKIE_RECON_TIMEOUT 120
+#define DEFAULT_COOKIE_REKEY_TIME 14400
 
 int encrypt_cookie(void *pool, gnutls_datum_t *key, const Cookie *msg,
         uint8_t** ecookie, unsigned *ecookie_size);
 int decrypt_cookie(ProtobufCAllocator *pa, gnutls_datum_t *key,
 			uint8_t *cookie, unsigned cookie_size, 
 			Cookie **msg);
-
-void cookie_db_init(void *pool, struct cookie_entry_db_st* db);
-void cookie_db_deinit(struct cookie_entry_db_st* db);
-void expire_cookies(struct cookie_entry_db_st* db);
-struct cookie_entry_st *new_cookie_entry(struct cookie_entry_db_st* db, proc_st *proc, void *cookie, unsigned cookie_size);
-struct cookie_entry_st *find_cookie_entry(struct cookie_entry_db_st* db, void *cookie, unsigned cookie_len);
-
-inline static void revive_cookie(struct cookie_entry_st * e)
-{
-	e->expiration = -1;
-}
 
 #endif

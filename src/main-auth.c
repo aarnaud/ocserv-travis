@@ -1,5 +1,6 @@
 /*
- * Copyright (C) 2013, 2014 Nikos Mavrogiannopoulos
+ * Copyright (C) 2013, 2014, 2015 Nikos Mavrogiannopoulos
+ * Copyright (C) 2014, 2015 Red Hat, Inc.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -65,6 +66,9 @@ int send_cookie_auth_reply(main_server_st* s, struct proc_st* proc,
 		msg.session_id.data = proc->dtls_session_id;
 		msg.session_id.len = sizeof(proc->dtls_session_id);
 
+		msg.sid.data = proc->sid;
+		msg.sid.len = sizeof(proc->sid);
+
 		msg.vname = proc->tun_lease.name;
 		msg.user_name = proc->username;
 		msg.group_name = proc->groupname;
@@ -87,8 +91,38 @@ int send_cookie_auth_reply(main_server_st* s, struct proc_st* proc,
 
 		msg.ipv4_network = proc->config.ipv4_network;
 		msg.ipv6_network = proc->config.ipv6_network;
+		msg.ipv6_subnet_prefix = proc->config.ipv6_subnet_prefix;
 
-		msg.ipv6_prefix = proc->config.ipv6_prefix;
+		if (proc->ipv6) {
+			msg.ipv6_prefix = proc->ipv6->prefix;
+			msg.has_ipv6_prefix = 1;
+		}
+
+		if (proc->config.interim_update_secs) {
+			msg.has_interim_update_secs = 1;
+			msg.interim_update_secs = proc->config.interim_update_secs;
+		}
+
+		if (proc->config.session_timeout_secs) {
+			msg.has_session_timeout_secs = 1;
+			msg.session_timeout_secs = proc->config.session_timeout_secs;
+		}
+
+		if (proc->config.dpd != 0) {
+			msg.has_dpd = 1;
+			msg.dpd = proc->config.dpd;
+		}
+
+		if (proc->config.keepalive != 0) {
+			msg.has_keepalive = 1;
+			msg.keepalive = proc->config.keepalive;
+		}
+
+		if (proc->config.mobile_dpd != 0) {
+			msg.has_mobile_dpd = 1;
+			msg.mobile_dpd = proc->config.mobile_dpd;
+		}
+
 		if (proc->config.rx_per_sec != 0) {
 			msg.has_rx_per_sec = 1;
 			msg.rx_per_sec = proc->config.rx_per_sec;
@@ -107,6 +141,11 @@ int send_cookie_auth_reply(main_server_st* s, struct proc_st* proc,
 		if (proc->config.no_udp != 0) {
 			msg.has_no_udp = 1;
 			msg.no_udp = proc->config.no_udp;
+		}
+
+		if (proc->config.tunnel_all_dns != 0) {
+			msg.has_tunnel_all_dns = 1;
+			msg.tunnel_all_dns = proc->config.tunnel_all_dns;
 		}
 
 		if (proc->config.xml_config_file != NULL) {
@@ -131,6 +170,12 @@ int send_cookie_auth_reply(main_server_st* s, struct proc_st* proc,
 			msg.routes = proc->config.routes;
 		}
 
+		msg.n_no_routes = proc->config.no_routes_size;
+		for (i=0;i<proc->config.no_routes_size;i++) {
+			mslog(s, proc, LOG_DEBUG, "sending no-route '%s'", proc->config.no_routes[i]);
+			msg.no_routes = proc->config.no_routes;
+		}
+
 		ret = send_socket_msg_to_worker(s, proc, AUTH_COOKIE_REP, proc->tun_lease.fd,
 			 &msg,
 			 (pack_size_func)auth_reply_msg__get_packed_size,
@@ -153,9 +198,9 @@ int send_cookie_auth_reply(main_server_st* s, struct proc_st* proc,
 	return 0;
 }
 
-static void apply_default_sup_config(struct cfg_st *config, struct proc_st *proc)
+static void apply_default_sup_config(struct perm_cfg_st *config, struct proc_st *proc)
 {
-	proc->config.deny_roaming = config->deny_roaming;
+	proc->config.deny_roaming = config->config->deny_roaming;
 	proc->config.no_udp = (config->udp_port!=0)?0:1;
 }
 
@@ -164,11 +209,10 @@ int handle_auth_cookie_req(main_server_st* s, struct proc_st* proc,
 {
 int ret;
 Cookie *cmsg;
-time_t now = time(0);
 gnutls_datum_t key = {s->cookie_key, sizeof(s->cookie_key)};
 char str_ip[MAX_IP_STR+1];
 PROTOBUF_ALLOCATOR(pa, proc);
-struct cookie_entry_st *old;
+struct proc_st *old_proc;
 
 	if (req->cookie.len == 0) {
 		mslog(s, proc, LOG_INFO, "error in cookie size");
@@ -176,6 +220,15 @@ struct cookie_entry_st *old;
 	}
 
 	ret = decrypt_cookie(&pa, &key, req->cookie.data, req->cookie.len, &cmsg);
+	if (ret < 0 && s->prev_cookie_key_active) {
+		/* try the old key */
+		key.data = s->prev_cookie_key;
+		key.size = sizeof(s->prev_cookie_key);
+		ret = decrypt_cookie(&pa, &key, req->cookie.data, req->cookie.len, &cmsg);
+		if (ret == 0)
+			mslog(s, proc, LOG_INFO, "decrypted cookie with previous key");
+	}
+
 	if (ret < 0) {
 		mslog(s, proc, LOG_INFO, "error decrypting cookie");
 		return -1;
@@ -196,7 +249,6 @@ struct cookie_entry_st *old;
 	proc->dtls_session_id_size = sizeof(proc->dtls_session_id);
 
 	memcpy(proc->sid, cmsg->sid.data, cmsg->sid.len);
-	proc->active_sid = 1;
 
 	/* override the group name in order to load the correct configuration in
 	 * case his group is specified in the certificate */
@@ -206,14 +258,16 @@ struct cookie_entry_st *old;
 	/* cookie is good so far, now read config (in order to know
 	 * whether roaming is allowed or not */
 	memset(&proc->config, 0, sizeof(proc->config));
-	apply_default_sup_config(s->config, proc);
+	apply_default_sup_config(s->perm_config, proc);
 
 	/* loads sup config */
-	ret = session_open(s, proc);
+	ret = session_open(s, proc, req->cookie.data, req->cookie.len);
 	if (ret < 0) {
 		mslog(s, proc, LOG_INFO, "could not open session");
 		return -1;
 	}
+	/* this hints to call session_close() */
+	proc->active_sid = 1;
 
 	/* Put into right cgroup */
         if (proc->config.cgroup != NULL) {
@@ -237,43 +291,26 @@ struct cookie_entry_st *old;
 		}
 	}
 
-	/* check for a valid stored cookie */
-	if ((old=find_cookie_entry(&s->cookies, req->cookie.data, req->cookie.len)) != NULL) {
-		mslog(s, proc, LOG_DEBUG, "reusing cookie for '%s' (%u)", proc->username, (unsigned)proc->pid);
-		if (old->proc != NULL) {
-			mslog(s, old->proc, LOG_DEBUG, "disconnecting (%u) due to new cookie connection",
-				(unsigned)old->proc->pid);
+	/* check for a user with the same sid as in the cookie */
+	old_proc = proc_search_sid(s, cmsg->sid.data);
+	if (old_proc != NULL) {
+		mslog(s, old_proc, LOG_DEBUG, "disconnecting previous user session (%u) due to session re-use",
+			(unsigned)old_proc->pid);
 
-			/* steal its leases */
-			steal_ip_leases(old->proc, proc);
-
-			/* steal its cookie */
-			old->proc->cookie_ptr = NULL;
-
-			if (old->proc->pid > 0)
-				kill(old->proc->pid, SIGTERM);
-		} else {
-			revive_cookie(old);
+		if (strcmp(proc->username, old_proc->username) != 0) {
+			mslog(s, old_proc, LOG_ERR, "the user of the new session doesn't match the old (new: %s)",
+				proc->username);
+			return -1;
 		}
-		proc->cookie_ptr = old;
-		old->proc = proc;
+
+		/* steal its leases */
+		steal_ip_leases(old_proc, proc);
+
+		if (old_proc->pid > 0)
+			kill(old_proc->pid, SIGTERM);
+		mslog(s, proc, LOG_INFO, "re-using session");
 	} else {
-		if (cmsg->expiration < now) {
-			mslog(s, proc, LOG_INFO, "ignoring expired cookie");
-			return -1;
-		}
-
-		mslog(s, proc, LOG_DEBUG, "new cookie for (%u)", (unsigned)proc->pid);
-
-		proc->cookie_ptr = new_cookie_entry(&s->cookies, proc, req->cookie.data, req->cookie.len);
-		if (proc->cookie_ptr == NULL)
-			return -1;
-	}
-
-	if (proc->config.require_cert != 0 && cmsg->tls_auth_ok == 0) {
-		mslog(s, proc, LOG_ERR,
-		      "certificate is required for user '%s'", proc->username);
-		return -1;
+		mslog(s, proc, LOG_INFO, "new user session");
 	}
 
 	if (cmsg->hostname)
@@ -282,7 +319,10 @@ struct cookie_entry_st *old;
 	memcpy(proc->ipv4_seed, &cmsg->ipv4_seed, sizeof(proc->ipv4_seed));
 
 	/* add the links to proc hash */
-	proc_table_add(s, proc);
+	if (proc_table_add(s, proc) < 0) {
+		mslog(s, proc, LOG_ERR, "failed to add proc hashes");
+		return -1;
+	}
 
 	return 0;
 }
@@ -300,8 +340,9 @@ int check_multiple_users(main_server_st *s, struct proc_st* proc)
 {
 struct proc_st *ctmp = NULL, *cpos;
 unsigned int entries = 1; /* that one */
+unsigned max;
 
-	if (s->config->max_same_clients == 0)
+	if (s->config->max_same_clients == 0 && proc->config.max_same_clients == 0)
 		return 0;
 
 	list_for_each_safe(&s->proc_list.head, ctmp, cpos, list) {
@@ -312,7 +353,12 @@ unsigned int entries = 1; /* that one */
 		}
 	}
 
-	if (s->config->max_same_clients && entries > s->config->max_same_clients)
+	if (proc->config.max_same_clients > 0)
+		max = proc->config.max_same_clients;
+	else
+		max = s->config->max_same_clients;
+
+	if (max && entries > max)
 		return -1;
 
 	return 0;

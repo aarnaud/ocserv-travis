@@ -27,6 +27,10 @@
 #include <ccan/htable/htable.h>
 #include <errno.h>
 
+# if GNUTLS_VERSION_NUMBER < 0x030200
+#  define GNUTLS_DTLS1_2 202
+# endif
+
 typedef struct 
 {
 	struct htable *ht;
@@ -58,7 +62,7 @@ typedef struct tls_st {
 	gnutls_dh_params_t dh_params;
 } tls_st;
 
-void tls_reload_crl(struct main_server_st* s, struct tls_st *creds);
+void tls_reload_crl(struct main_server_st* s, struct tls_st *creds, unsigned force);
 void tls_global_init(struct tls_st *creds);
 void tls_global_deinit(struct tls_st *creds);
 void tls_load_certs(struct main_server_st* s, struct tls_st *creds);
