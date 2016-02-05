@@ -1,3 +1,10 @@
+* Version 0.10.11 (released 2016-01-08)
+- Corrected the reporting of keepalive to occtl.
+- Handle clients which send the first request to /VPN
+- Prevent a crash in per-user config dir is not available if
+  expose-iroutes is set to true.
+
+
 * Version 0.10.10 (released 2015-11-28)
 - Increase the number of log messages logged in the default level. That
   is added messages that could be of use to administrators.

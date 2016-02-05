@@ -1,3 +1,50 @@
+2016-01-08  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* NEWS, configure.ac: bumped version
+
+2016-01-06  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/worker-vpn.c: worker: enforce a default socket timeout for TCP
+	and UDP sockets That is because, although we  use select() to see whether a call to
+	recv() would block, there are certain cases in Linux where recv()
+	blocks even though select() notified of available data. Reported by
+	Yick Xie.
+
+2016-01-05  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* NEWS: doc update
+
+2016-01-05  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/config.c: don't attempt to open per_user_dir if it is NULL This addresses a crash in certain libc's.
+
+2015-12-06  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* NEWS: doc update
+
+2015-12-06  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/worker-http.c: Added /VPN to the list of known URLs for auth This URL is used by certain versions of the anyconnect client.
+	Reported by sskaje.
+
+2015-12-06  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/occtl-unix.c: occtl: use dash for no-dtls message to make it
+	more consistent with other output
+
+2015-11-29  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* doc/sample.config, src/ocserv-args.def: doc: document the behavior
+	of restrict-user-to-routes in case of defaultroute
+
+2015-11-28  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* NEWS: doc update
+
+2015-11-28  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/main-ctl-unix.c: corrected keepalive reporting in occtl
+
 2015-11-28  Nikos Mavrogiannopoulos <nmav@gnutls.org>
 
 	* src/Makefile.am: include ocserv-fw
