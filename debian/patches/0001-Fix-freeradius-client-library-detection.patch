@@ -1,0 +1,21 @@
+From: Aron Xu <aron@debian.org>
+Date: Sat, 6 Feb 2016 04:57:37 +0800
+Subject: Fix freeradius-client library detection
+
+---
+ configure.ac | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/configure.ac b/configure.ac
+index a932c08..d5fee8d 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -209,7 +209,7 @@ if test "$test_for_radius" = yes;then
+ 		AC_MSG_CHECKING([for freeradius client library])
+ 		AC_LINK_IFELSE([AC_LANG_PROGRAM([
+ 		   #include <freeradius-client.h>],[
+-#ifndef PW_MAX_MSG_SIZE
++#ifndef PW_ACCESS_REQUEST
+ #error 1
+ #endif
+ 		   rc_read_config(0);])],
