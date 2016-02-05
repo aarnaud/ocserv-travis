@@ -15,6 +15,7 @@
 @SET_MAKE@
 
 
+
 VPATH = @srcdir@
 am__is_gnu_make = { \
   if test -z '$(MAKELEVEL)'; then \
@@ -94,16 +95,13 @@ host_triplet = @host@
 @LOCAL_HTTP_PARSER_TRUE@am__append_1 = -I$(srcdir)/http-parser/
 bin_PROGRAMS = ocpasswd$(EXEEXT) occtl$(EXEEXT)
 sbin_PROGRAMS = ocserv$(EXEEXT)
-@LOCAL_TALLOC_TRUE@am__append_2 = ccan/talloc/talloc.c ccan/talloc/talloc.h ccan/compiler/compiler.h \
-@LOCAL_TALLOC_TRUE@	ccan/typesafe_cb/typesafe_cb.h
-
-@LOCAL_PROTOBUF_C_TRUE@am__append_3 = protobuf/protobuf-c/protobuf-c.h protobuf/protobuf-c/protobuf-c.c
-@ENABLE_COMPRESSION_TRUE@am__append_4 = lzs.c lzs.h
-@HAVE_GSSAPI_TRUE@am__append_5 = kkdcp_asn1_tab.c kkdcp.asn 
-@PCL_TRUE@am__append_6 = $(PCL_LIBS)
-@PCL_FALSE@am__append_7 = pcl/libpcl.a
-@PCL_FALSE@am__append_8 = pcl
-@PCL_FALSE@am__append_9 = -I$(srcdir)/pcl/
+@LOCAL_PROTOBUF_C_TRUE@am__append_2 = protobuf/protobuf-c/protobuf-c.h protobuf/protobuf-c/protobuf-c.c
+@ENABLE_COMPRESSION_TRUE@am__append_3 = lzs.c lzs.h
+@HAVE_GSSAPI_TRUE@am__append_4 = kkdcp_asn1_tab.c kkdcp.asn 
+@PCL_TRUE@am__append_5 = $(PCL_LIBS)
+@PCL_FALSE@am__append_6 = pcl/libpcl.a
+@PCL_FALSE@am__append_7 = pcl
+@PCL_FALSE@am__append_8 = -I$(srcdir)/pcl/
 subdir = src
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/libopts/m4/libopts.m4 \
@@ -168,37 +166,27 @@ libcmd_ocserv_a_AR = $(AR) $(ARFLAGS)
 libcmd_ocserv_a_LIBADD =
 am_libcmd_ocserv_a_OBJECTS = ocserv-args.$(OBJEXT)
 libcmd_ocserv_a_OBJECTS = $(am_libcmd_ocserv_a_OBJECTS)
-am__installdirs = "$(DESTDIR)$(bindir)" "$(DESTDIR)$(sbindir)"
+am__installdirs = "$(DESTDIR)$(bindir)" "$(DESTDIR)$(sbindir)" \
+	"$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS) $(sbin_PROGRAMS)
 am__occtl_SOURCES_DIST = occtl.c occtl-pager.c occtl.h occtl-time.c \
 	occtl-cache.c occtl-ip-cache.c occtl-nl.c ctl.h ctl.pb-c.c \
-	ctl.pb-c.h ccan/build_assert/build_assert.h \
-	ccan/check_type/check_type.h ccan/container_of/container_of.h \
-	ccan/hash/hash.c ccan/hash/hash.h ccan/htable/htable.c \
-	ccan/htable/htable.h ccan/htable/htable_type.h \
-	ccan/list/list.c ccan/list/list.h ccan/talloc/talloc.c \
-	ccan/talloc/talloc.h ccan/compiler/compiler.h \
-	ccan/typesafe_cb/typesafe_cb.h common.c common.h system.c \
-	system.h setproctitle.c setproctitle.h occtl-print.c \
+	ctl.pb-c.h common.c common.h system.c system.h occtl-print.c \
 	common-json.c common-json.h protobuf/protobuf-c/protobuf-c.h \
 	protobuf/protobuf-c/protobuf-c.c occtl-unix.c
+am__objects_1 = common.$(OBJEXT) system.$(OBJEXT)
 am__dirstamp = $(am__leading_dot)dirstamp
-@LOCAL_TALLOC_TRUE@am__objects_1 = ccan/talloc/talloc.$(OBJEXT)
-am__objects_2 = ccan/hash/hash.$(OBJEXT) ccan/htable/htable.$(OBJEXT) \
-	ccan/list/list.$(OBJEXT) $(am__objects_1)
-am__objects_3 = common.$(OBJEXT) system.$(OBJEXT) \
-	setproctitle.$(OBJEXT)
-@LOCAL_PROTOBUF_C_TRUE@am__objects_4 = protobuf/protobuf-c/protobuf-c.$(OBJEXT)
-am__objects_5 = $(am__objects_4)
+@LOCAL_PROTOBUF_C_TRUE@am__objects_2 = protobuf/protobuf-c/protobuf-c.$(OBJEXT)
+am__objects_3 = $(am__objects_2)
 am_occtl_OBJECTS = occtl.$(OBJEXT) occtl-pager.$(OBJEXT) \
 	occtl-time.$(OBJEXT) occtl-cache.$(OBJEXT) \
 	occtl-ip-cache.$(OBJEXT) occtl-nl.$(OBJEXT) ctl.pb-c.$(OBJEXT) \
-	$(am__objects_2) $(am__objects_3) occtl-print.$(OBJEXT) \
-	common-json.$(OBJEXT) $(am__objects_5) occtl-unix.$(OBJEXT)
+	$(am__objects_1) occtl-print.$(OBJEXT) common-json.$(OBJEXT) \
+	$(am__objects_3) occtl-unix.$(OBJEXT)
 occtl_OBJECTS = $(am_occtl_OBJECTS)
 am__DEPENDENCIES_1 =
 occtl_DEPENDENCIES = ../gl/libgnu.a $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
+	ccan/libccan.a $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
 	$(am__DEPENDENCIES_1)
 am_ocpasswd_OBJECTS = ocpasswd.$(OBJEXT)
 ocpasswd_OBJECTS = $(am_ocpasswd_OBJECTS)
@@ -213,37 +201,31 @@ am__ocserv_SOURCES_DIST = main.c main-auth.c worker-vpn.c \
 	main.h worker-extras.c html.c html.h worker-http.c main-user.c \
 	worker-misc.c route-add.c route-add.h worker-privs.c sec-mod.c \
 	sec-mod-db.c sec-mod-auth.c sec-mod-auth.h sec-mod.h \
-	script-list.h common.c common.h system.c system.h \
-	setproctitle.c setproctitle.h auth/pam.c auth/pam.h \
-	auth/plain.c auth/plain.h auth/radius.c auth/radius.h \
-	auth/common.c auth/common.h auth/gssapi.h auth/gssapi.c \
-	auth-unix.c auth-unix.h acct/pam.c acct/pam.h acct/radius.c \
-	acct/radius.h icmp-ping.c icmp-ping.h worker-kkdcp.c \
-	subconfig.c sec-mod-sup-config.c sec-mod-sup-config.h \
-	sup-config/file.c sup-config/file.h main-sec-mod-cmd.c \
-	sup-config/radius.c sup-config/radius.h worker-bandwidth.c \
-	worker-bandwidth.h ctl.h main-ctl.h vasprintf.c vasprintf.h \
-	worker-proxyproto.c proc-search.c proc-search.h http-heads.h \
-	main-ban.c main-ban.h common-config.h str.c str.h gettime.h \
-	ccan/build_assert/build_assert.h ccan/check_type/check_type.h \
-	ccan/container_of/container_of.h ccan/hash/hash.c \
-	ccan/hash/hash.h ccan/htable/htable.c ccan/htable/htable.h \
-	ccan/htable/htable_type.h ccan/list/list.c ccan/list/list.h \
-	ccan/talloc/talloc.c ccan/talloc/talloc.h \
-	ccan/compiler/compiler.h ccan/typesafe_cb/typesafe_cb.h \
+	script-list.h common.c common.h system.c system.h auth/pam.c \
+	auth/pam.h auth/plain.c auth/plain.h auth/radius.c \
+	auth/radius.h auth/common.c auth/common.h auth/gssapi.h \
+	auth/gssapi.c auth-unix.c auth-unix.h acct/radius.c \
+	acct/radius.h acct/pam.c acct/pam.h icmp-ping.c icmp-ping.h \
+	worker-kkdcp.c subconfig.c sec-mod-sup-config.c \
+	sec-mod-sup-config.h sup-config/file.c sup-config/file.h \
+	main-sec-mod-cmd.c sup-config/radius.c sup-config/radius.h \
+	worker-bandwidth.c worker-bandwidth.h ctl.h main-ctl.h \
+	vasprintf.c vasprintf.h worker-proxyproto.c proc-search.c \
+	proc-search.h http-heads.h ip-util.c ip-util.h main-ban.c \
+	main-ban.h common-config.h str.c str.h gettime.h \
 	http-parser/http_parser.c http-parser/http_parser.h \
 	protobuf/protobuf-c/protobuf-c.h \
-	protobuf/protobuf-c/protobuf-c.c sec-mod-acct.h lzs.c lzs.h \
-	kkdcp_asn1_tab.c kkdcp.asn ipc.pb-c.h ipc.pb-c.c ctl.pb-c.c \
-	ctl.pb-c.h main-ctl-unix.c
-am__objects_6 = auth/pam.$(OBJEXT) auth/plain.$(OBJEXT) \
+	protobuf/protobuf-c/protobuf-c.c sec-mod-acct.h setproctitle.c \
+	setproctitle.h lzs.c lzs.h kkdcp_asn1_tab.c kkdcp.asn \
+	ipc.pb-c.h ipc.pb-c.c ctl.pb-c.c ctl.pb-c.h main-ctl-unix.c
+am__objects_4 = auth/pam.$(OBJEXT) auth/plain.$(OBJEXT) \
 	auth/radius.$(OBJEXT) auth/common.$(OBJEXT) \
 	auth/gssapi.$(OBJEXT) auth-unix.$(OBJEXT)
-am__objects_7 = acct/pam.$(OBJEXT) acct/radius.$(OBJEXT)
-@LOCAL_HTTP_PARSER_TRUE@am__objects_8 =  \
+am__objects_5 = acct/radius.$(OBJEXT) acct/pam.$(OBJEXT)
+@LOCAL_HTTP_PARSER_TRUE@am__objects_6 =  \
 @LOCAL_HTTP_PARSER_TRUE@	http-parser/http_parser.$(OBJEXT)
-@ENABLE_COMPRESSION_TRUE@am__objects_9 = lzs.$(OBJEXT)
-@HAVE_GSSAPI_TRUE@am__objects_10 = kkdcp_asn1_tab.$(OBJEXT)
+@ENABLE_COMPRESSION_TRUE@am__objects_7 = lzs.$(OBJEXT)
+@HAVE_GSSAPI_TRUE@am__objects_8 = kkdcp_asn1_tab.$(OBJEXT)
 am_ocserv_OBJECTS = main.$(OBJEXT) main-auth.$(OBJEXT) \
 	worker-vpn.$(OBJEXT) worker-auth.$(OBJEXT) tlslib.$(OBJEXT) \
 	cookies.$(OBJEXT) main-misc.$(OBJEXT) ip-lease.$(OBJEXT) \
@@ -252,28 +234,57 @@ am_ocserv_OBJECTS = main.$(OBJEXT) main-auth.$(OBJEXT) \
 	worker-extras.$(OBJEXT) html.$(OBJEXT) worker-http.$(OBJEXT) \
 	main-user.$(OBJEXT) worker-misc.$(OBJEXT) route-add.$(OBJEXT) \
 	worker-privs.$(OBJEXT) sec-mod.$(OBJEXT) sec-mod-db.$(OBJEXT) \
-	sec-mod-auth.$(OBJEXT) $(am__objects_3) $(am__objects_6) \
-	$(am__objects_7) icmp-ping.$(OBJEXT) worker-kkdcp.$(OBJEXT) \
+	sec-mod-auth.$(OBJEXT) $(am__objects_1) $(am__objects_4) \
+	$(am__objects_5) icmp-ping.$(OBJEXT) worker-kkdcp.$(OBJEXT) \
 	subconfig.$(OBJEXT) sec-mod-sup-config.$(OBJEXT) \
 	sup-config/file.$(OBJEXT) main-sec-mod-cmd.$(OBJEXT) \
 	sup-config/radius.$(OBJEXT) worker-bandwidth.$(OBJEXT) \
 	vasprintf.$(OBJEXT) worker-proxyproto.$(OBJEXT) \
-	proc-search.$(OBJEXT) main-ban.$(OBJEXT) str.$(OBJEXT) \
-	$(am__objects_2) $(am__objects_8) $(am__objects_5) \
-	$(am__objects_9) $(am__objects_10) ipc.pb-c.$(OBJEXT) \
-	ctl.pb-c.$(OBJEXT) main-ctl-unix.$(OBJEXT)
+	proc-search.$(OBJEXT) ip-util.$(OBJEXT) main-ban.$(OBJEXT) \
+	str.$(OBJEXT) $(am__objects_6) $(am__objects_3) \
+	setproctitle.$(OBJEXT) $(am__objects_7) $(am__objects_8) \
+	ipc.pb-c.$(OBJEXT) ctl.pb-c.$(OBJEXT) main-ctl-unix.$(OBJEXT)
 ocserv_OBJECTS = $(am_ocserv_OBJECTS)
 @LOCAL_HTTP_PARSER_FALSE@am__DEPENDENCIES_3 = $(am__DEPENDENCIES_1)
 @PCL_TRUE@am__DEPENDENCIES_4 = $(am__DEPENDENCIES_1)
 ocserv_DEPENDENCIES = ../gl/libgnu.a $(am__DEPENDENCIES_2) \
-	libcmd-ocserv.a $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
+	libcmd-ocserv.a ccan/libccan.a $(am__DEPENDENCIES_1) \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_3) $(am__DEPENDENCIES_1) \
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_3) \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_4) $(am__append_7)
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
+	$(am__DEPENDENCIES_4) $(am__append_6)
+am__vpath_adj_setup = srcdirstrip=`echo "$(srcdir)" | sed 's|.|.|g'`;
+am__vpath_adj = case $$p in \
+    $(srcdir)/*) f=`echo "$$p" | sed "s|^$$srcdirstrip/||"`;; \
+    *) f=$$p;; \
+  esac;
+am__strip_dir = f=`echo $$p | sed -e 's|^.*/||'`;
+am__install_max = 40
+am__nobase_strip_setup = \
+  srcdirstrip=`echo "$(srcdir)" | sed 's/[].[^$$\\*|]/\\\\&/g'`
+am__nobase_strip = \
+  for p in $$list; do echo "$$p"; done | sed -e "s|$$srcdirstrip/||"
+am__nobase_list = $(am__nobase_strip_setup); \
+  for p in $$list; do echo "$$p $$p"; done | \
+  sed "s| $$srcdirstrip/| |;"' / .*\//!s/ .*/ ./; s,\( .*\)/[^/]*$$,\1,' | \
+  $(AWK) 'BEGIN { files["."] = "" } { files[$$2] = files[$$2] " " $$1; \
+    if (++n[$$2] == $(am__install_max)) \
+      { print $$2, files[$$2]; n[$$2] = 0; files[$$2] = "" } } \
+    END { for (dir in files) print dir, files[dir] }'
+am__base_list = \
+  sed '$$!N;$$!N;$$!N;$$!N;$$!N;$$!N;$$!N;s/\n/ /g' | \
+  sed '$$!N;$$!N;$$!N;$$!N;s/\n/ /g'
+am__uninstall_files_from_dir = { \
+  test -z "$$files" \
+    || { test ! -d "$$dir" && test ! -f "$$dir" && test ! -r "$$dir"; } \
+    || { echo " ( cd '$$dir' && rm -f" $$files ")"; \
+         $(am__cd) "$$dir" && rm -f $$files; }; \
+  }
+SCRIPTS = $(bin_SCRIPTS)
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -346,9 +357,9 @@ am__define_uniq_tagged_files = \
     if test -f "$$i"; then echo $$i; else echo $(srcdir)/$$i; fi; \
   done | $(am__uniquify_input)`
 ETAGS = etags
-DIST_SUBDIRS = pcl
+DIST_SUBDIRS = ccan pcl
 am__DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/version.inc.in \
-	$(top_srcdir)/build-aux/depcomp TODO
+	$(top_srcdir)/build-aux/depcomp
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 am__relativize = \
   dir0=`pwd`; \
@@ -789,6 +800,8 @@ LIBLZ4_CFLAGS = @LIBLZ4_CFLAGS@
 LIBLZ4_LIBS = @LIBLZ4_LIBS@
 LIBNL3_CFLAGS = @LIBNL3_CFLAGS@
 LIBNL3_LIBS = @LIBNL3_LIBS@
+LIBOATH_CFLAGS = @LIBOATH_CFLAGS@
+LIBOATH_LIBS = @LIBOATH_LIBS@
 LIBOBJS = @LIBOBJS@
 LIBOPTS_CFLAGS = @LIBOPTS_CFLAGS@
 LIBOPTS_DIR = @LIBOPTS_DIR@
@@ -1057,6 +1070,7 @@ pdfdir = @pdfdir@
 prefix = @prefix@
 program_transform_name = @program_transform_name@
 psdir = @psdir@
+runstatedir = @runstatedir@
 sbindir = @sbindir@
 sharedstatedir = @sharedstatedir@
 srcdir = @srcdir@
@@ -1065,13 +1079,14 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-SUBDIRS = $(am__append_8)
+SUBDIRS = ccan $(am__append_7)
 AM_CPPFLAGS = -I$(srcdir)/../gl/ -I$(builddir)/../gl/ -I$(srcdir)/ \
-	-I$(builddir)/../ $(LIBOPTS_CFLAGS) $(LIBGNUTLS_CFLAGS) \
-	$(LIBPROTOBUF_C_CFLAGS) $(LIBLZ4_CFLAGS) $(LIBNL3_CFLAGS) \
-	$(LIBREADLINE_CFLAGS) $(LIBTALLOC_CFLAGS) $(LIBDBUS_CFLAGS) \
-	$(LIBKRB5_CFLAGS) $(LIBTASN1_CFLAGS) $(RADCLI_CFLAGS) \
-	$(am__append_1) $(am__append_9)
+	-I$(builddir)/../ -I$(srcdir)/../ $(LIBOPTS_CFLAGS) \
+	$(LIBGNUTLS_CFLAGS) $(LIBPROTOBUF_C_CFLAGS) $(LIBLZ4_CFLAGS) \
+	$(LIBNL3_CFLAGS) $(LIBREADLINE_CFLAGS) $(LIBTALLOC_CFLAGS) \
+	$(LIBDBUS_CFLAGS) $(LIBOATH_CFLAGS) $(LIBKRB5_CFLAGS) \
+	$(LIBTASN1_CFLAGS) $(RADCLI_CFLAGS) $(am__append_1) \
+	$(am__append_8)
 BUILT_SOURCES = ocpasswd-args.c ocpasswd-args.h \
 	ocserv-args.c ocserv-args.h ipc.pb-c.c ipc.pb-c.h \
 	ctl.pb-c.c ctl.pb-c.h http-heads.h kkdcp_asn1_tab.c
@@ -1083,26 +1098,22 @@ BUILT_SOURCES = ocpasswd-args.c ocpasswd-args.h \
 @NEED_LIBOPTS_TRUE@NEEDED_LIBOPTS = ../libopts/libopts.a
 EXTRA_DIST = ccan/licenses/BSD-MIT version.inc.in \
 	ccan/licenses/CC0 ccan/licenses/LGPL-2.1 version.inc \
-	occtl-args.def ipc.proto ctl.proto http-heads.gperf
+	occtl-args.def ipc.proto ctl.proto http-heads.gperf ocserv-fw
 
-CCAN_SOURCES = ccan/build_assert/build_assert.h \
-	ccan/check_type/check_type.h ccan/container_of/container_of.h \
-	ccan/hash/hash.c ccan/hash/hash.h ccan/htable/htable.c \
-	ccan/htable/htable.h ccan/htable/htable_type.h \
-	ccan/list/list.c ccan/list/list.h $(am__append_2)
+bin_SCRIPTS = ocserv-fw
 noinst_LIBRARIES = libcmd-ocserv.a libcmd-ocpasswd.a
 libcmd_ocserv_a_SOURCES = ocserv-args.def ocserv-args.c ocserv-args.h
-PROTOBUF_SOURCES = $(am__append_3)
+PROTOBUF_SOURCES = $(am__append_2)
 
 # Files common to ocserv and occtl.
-COMMON_SOURCES = common.c common.h system.c system.h setproctitle.c setproctitle.h
+COMMON_SOURCES = common.c common.h system.c system.h
 
 # Authentication module sources
 AUTH_SOURCES = auth/pam.c auth/pam.h auth/plain.c auth/plain.h auth/radius.c auth/radius.h \
 	auth/common.c auth/common.h auth/gssapi.h auth/gssapi.c auth-unix.c \
 	auth-unix.h
 
-ACCT_SOURCES = acct/pam.c acct/pam.h acct/radius.c acct/radius.h
+ACCT_SOURCES = acct/radius.c acct/radius.h acct/pam.c acct/pam.h
 ocserv_SOURCES = main.c main-auth.c worker-vpn.c worker-auth.c \
 	tlslib.c cookies.c main-misc.c ip-lease.c ip-lease.h vpn.h \
 	cookies.h tlslib.h log.c tun.c tun.h config-kkdcp.c config.c \
@@ -1116,17 +1127,19 @@ ocserv_SOURCES = main.c main-auth.c worker-vpn.c worker-auth.c \
 	main-sec-mod-cmd.c sup-config/radius.c sup-config/radius.h \
 	worker-bandwidth.c worker-bandwidth.h ctl.h main-ctl.h \
 	vasprintf.c vasprintf.h worker-proxyproto.c proc-search.c \
-	proc-search.h http-heads.h main-ban.c main-ban.h \
-	common-config.h str.c str.h gettime.h $(CCAN_SOURCES) \
-	$(HTTP_PARSER_SOURCES) $(PROTOBUF_SOURCES) sec-mod-acct.h \
-	$(am__append_4) $(am__append_5) ipc.pb-c.h ipc.pb-c.c \
-	ctl.pb-c.c ctl.pb-c.h main-ctl-unix.c
+	proc-search.h http-heads.h ip-util.c ip-util.h main-ban.c \
+	main-ban.h common-config.h str.c str.h gettime.h \
+	$(CCAN_SOURCES) $(HTTP_PARSER_SOURCES) $(PROTOBUF_SOURCES) \
+	sec-mod-acct.h setproctitle.c setproctitle.h $(am__append_3) \
+	$(am__append_4) ipc.pb-c.h ipc.pb-c.c ctl.pb-c.c ctl.pb-c.h \
+	main-ctl-unix.c
 ocserv_LDADD = ../gl/libgnu.a $(NEEDED_LIBOPTS) libcmd-ocserv.a \
-	$(LIBGNUTLS_LIBS) $(PAM_LIBS) $(LIBUTIL) $(LIBSECCOMP) \
-	$(LIBWRAP) $(LIBCRYPT) $(NEEDED_HTTP_PARSER_LIBS) \
-	$(LIBPROTOBUF_C_LIBS) $(LIBSYSTEMD) $(LIBTALLOC_LIBS) \
-	$(RADCLI_LIBS) $(LIBLZ4_LIBS) $(LIBKRB5_LIBS) $(LIBTASN1_LIBS) \
-	$(am__append_6) $(am__append_7)
+	ccan/libccan.a $(LIBGNUTLS_LIBS) $(PAM_LIBS) $(LIBUTIL) \
+	$(LIBSECCOMP) $(LIBWRAP) $(LIBCRYPT) \
+	$(NEEDED_HTTP_PARSER_LIBS) $(LIBPROTOBUF_C_LIBS) $(LIBSYSTEMD) \
+	$(LIBTALLOC_LIBS) $(RADCLI_LIBS) $(LIBLZ4_LIBS) \
+	$(LIBKRB5_LIBS) $(LIBTASN1_LIBS) $(LIBOATH_LIBS) \
+	$(am__append_5) $(am__append_6)
 libcmd_ocpasswd_a_SOURCES = ocpasswd-args.def ocpasswd-args.c ocpasswd-args.h
 ocpasswd_SOURCES = ocpasswd.c
 ocpasswd_LDADD = ../gl/libgnu.a $(NEEDED_LIBOPTS) libcmd-ocpasswd.a \
@@ -1135,7 +1148,7 @@ occtl_SOURCES = occtl.c occtl-pager.c occtl.h occtl-time.c \
 	occtl-cache.c occtl-ip-cache.c occtl-nl.c ctl.h ctl.pb-c.c \
 	ctl.pb-c.h $(CCAN_SOURCES) $(COMMON_SOURCES) occtl-print.c \
 	common-json.c common-json.h $(PROTOBUF_SOURCES) occtl-unix.c
-occtl_LDADD = ../gl/libgnu.a $(LIBREADLINE_LIBS) \
+occtl_LDADD = ../gl/libgnu.a $(LIBREADLINE_LIBS) ccan/libccan.a \
 	$(LIBNL3_LIBS) $(LIBPROTOBUF_C_LIBS) $(LIBTALLOC_LIBS)
 
 all: $(BUILT_SOURCES)
@@ -1271,38 +1284,6 @@ uninstall-sbinPROGRAMS:
 
 clean-sbinPROGRAMS:
 	-test -z "$(sbin_PROGRAMS)" || rm -f $(sbin_PROGRAMS)
-ccan/hash/$(am__dirstamp):
-	@$(MKDIR_P) ccan/hash
-	@: > ccan/hash/$(am__dirstamp)
-ccan/hash/$(DEPDIR)/$(am__dirstamp):
-	@$(MKDIR_P) ccan/hash/$(DEPDIR)
-	@: > ccan/hash/$(DEPDIR)/$(am__dirstamp)
-ccan/hash/hash.$(OBJEXT): ccan/hash/$(am__dirstamp) \
-	ccan/hash/$(DEPDIR)/$(am__dirstamp)
-ccan/htable/$(am__dirstamp):
-	@$(MKDIR_P) ccan/htable
-	@: > ccan/htable/$(am__dirstamp)
-ccan/htable/$(DEPDIR)/$(am__dirstamp):
-	@$(MKDIR_P) ccan/htable/$(DEPDIR)
-	@: > ccan/htable/$(DEPDIR)/$(am__dirstamp)
-ccan/htable/htable.$(OBJEXT): ccan/htable/$(am__dirstamp) \
-	ccan/htable/$(DEPDIR)/$(am__dirstamp)
-ccan/list/$(am__dirstamp):
-	@$(MKDIR_P) ccan/list
-	@: > ccan/list/$(am__dirstamp)
-ccan/list/$(DEPDIR)/$(am__dirstamp):
-	@$(MKDIR_P) ccan/list/$(DEPDIR)
-	@: > ccan/list/$(DEPDIR)/$(am__dirstamp)
-ccan/list/list.$(OBJEXT): ccan/list/$(am__dirstamp) \
-	ccan/list/$(DEPDIR)/$(am__dirstamp)
-ccan/talloc/$(am__dirstamp):
-	@$(MKDIR_P) ccan/talloc
-	@: > ccan/talloc/$(am__dirstamp)
-ccan/talloc/$(DEPDIR)/$(am__dirstamp):
-	@$(MKDIR_P) ccan/talloc/$(DEPDIR)
-	@: > ccan/talloc/$(DEPDIR)/$(am__dirstamp)
-ccan/talloc/talloc.$(OBJEXT): ccan/talloc/$(am__dirstamp) \
-	ccan/talloc/$(DEPDIR)/$(am__dirstamp)
 protobuf/protobuf-c/$(am__dirstamp):
 	@$(MKDIR_P) protobuf/protobuf-c
 	@: > protobuf/protobuf-c/$(am__dirstamp)
@@ -1342,9 +1323,9 @@ acct/$(am__dirstamp):
 acct/$(DEPDIR)/$(am__dirstamp):
 	@$(MKDIR_P) acct/$(DEPDIR)
 	@: > acct/$(DEPDIR)/$(am__dirstamp)
-acct/pam.$(OBJEXT): acct/$(am__dirstamp) \
-	acct/$(DEPDIR)/$(am__dirstamp)
 acct/radius.$(OBJEXT): acct/$(am__dirstamp) \
+	acct/$(DEPDIR)/$(am__dirstamp)
+acct/pam.$(OBJEXT): acct/$(am__dirstamp) \
 	acct/$(DEPDIR)/$(am__dirstamp)
 sup-config/$(am__dirstamp):
 	@$(MKDIR_P) sup-config
@@ -1368,15 +1349,46 @@ http-parser/http_parser.$(OBJEXT): http-parser/$(am__dirstamp) \
 ocserv$(EXEEXT): $(ocserv_OBJECTS) $(ocserv_DEPENDENCIES) $(EXTRA_ocserv_DEPENDENCIES) 
 	@rm -f ocserv$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(ocserv_OBJECTS) $(ocserv_LDADD) $(LIBS)
+install-binSCRIPTS: $(bin_SCRIPTS)
+	@$(NORMAL_INSTALL)
+	@list='$(bin_SCRIPTS)'; test -n "$(bindir)" || list=; \
+	if test -n "$$list"; then \
+	  echo " $(MKDIR_P) '$(DESTDIR)$(bindir)'"; \
+	  $(MKDIR_P) "$(DESTDIR)$(bindir)" || exit 1; \
+	fi; \
+	for p in $$list; do \
+	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
+	  if test -f "$$d$$p"; then echo "$$d$$p"; echo "$$p"; else :; fi; \
+	done | \
+	sed -e 'p;s,.*/,,;n' \
+	    -e 'h;s|.*|.|' \
+	    -e 'p;x;s,.*/,,;$(transform)' | sed 'N;N;N;s,\n, ,g' | \
+	$(AWK) 'BEGIN { files["."] = ""; dirs["."] = 1; } \
+	  { d=$$3; if (dirs[d] != 1) { print "d", d; dirs[d] = 1 } \
+	    if ($$2 == $$4) { files[d] = files[d] " " $$1; \
+	      if (++n[d] == $(am__install_max)) { \
+		print "f", d, files[d]; n[d] = 0; files[d] = "" } } \
+	    else { print "f", d "/" $$4, $$1 } } \
+	  END { for (d in files) print "f", d, files[d] }' | \
+	while read type dir files; do \
+	     if test "$$dir" = .; then dir=; else dir=/$$dir; fi; \
+	     test -z "$$files" || { \
+	       echo " $(INSTALL_SCRIPT) $$files '$(DESTDIR)$(bindir)$$dir'"; \
+	       $(INSTALL_SCRIPT) $$files "$(DESTDIR)$(bindir)$$dir" || exit $$?; \
+	     } \
+	; done
+
+uninstall-binSCRIPTS:
+	@$(NORMAL_UNINSTALL)
+	@list='$(bin_SCRIPTS)'; test -n "$(bindir)" || exit 0; \
+	files=`for p in $$list; do echo "$$p"; done | \
+	       sed -e 's,.*/,,;$(transform)'`; \
+	dir='$(DESTDIR)$(bindir)'; $(am__uninstall_files_from_dir)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
 	-rm -f acct/*.$(OBJEXT)
 	-rm -f auth/*.$(OBJEXT)
-	-rm -f ccan/hash/*.$(OBJEXT)
-	-rm -f ccan/htable/*.$(OBJEXT)
-	-rm -f ccan/list/*.$(OBJEXT)
-	-rm -f ccan/talloc/*.$(OBJEXT)
 	-rm -f http-parser/*.$(OBJEXT)
 	-rm -f protobuf/protobuf-c/*.$(OBJEXT)
 	-rm -f sup-config/*.$(OBJEXT)
@@ -1394,6 +1406,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/html.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/icmp-ping.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ip-lease.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ip-util.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ipc.pb-c.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/kkdcp_asn1_tab.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/log.Po@am__quote@
@@ -1447,10 +1460,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@auth/$(DEPDIR)/pam.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@auth/$(DEPDIR)/plain.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@auth/$(DEPDIR)/radius.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@ccan/hash/$(DEPDIR)/hash.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@ccan/htable/$(DEPDIR)/htable.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@ccan/list/$(DEPDIR)/list.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@ccan/talloc/$(DEPDIR)/talloc.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@http-parser/$(DEPDIR)/http_parser.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@protobuf/protobuf-c/$(DEPDIR)/protobuf-c.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sup-config/$(DEPDIR)/file.Po@am__quote@
@@ -1629,10 +1638,10 @@ distdir: $(DISTFILES)
 check-am: all-am
 check: $(BUILT_SOURCES)
 	$(MAKE) $(AM_MAKEFLAGS) check-recursive
-all-am: Makefile $(LIBRARIES) $(PROGRAMS)
+all-am: Makefile $(LIBRARIES) $(PROGRAMS) $(SCRIPTS)
 installdirs: installdirs-recursive
 installdirs-am:
-	for dir in "$(DESTDIR)$(bindir)" "$(DESTDIR)$(sbindir)"; do \
+	for dir in "$(DESTDIR)$(bindir)" "$(DESTDIR)$(sbindir)" "$(DESTDIR)$(bindir)"; do \
 	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
 	done
 install: $(BUILT_SOURCES)
@@ -1666,14 +1675,6 @@ distclean-generic:
 	-rm -f acct/$(am__dirstamp)
 	-rm -f auth/$(DEPDIR)/$(am__dirstamp)
 	-rm -f auth/$(am__dirstamp)
-	-rm -f ccan/hash/$(DEPDIR)/$(am__dirstamp)
-	-rm -f ccan/hash/$(am__dirstamp)
-	-rm -f ccan/htable/$(DEPDIR)/$(am__dirstamp)
-	-rm -f ccan/htable/$(am__dirstamp)
-	-rm -f ccan/list/$(DEPDIR)/$(am__dirstamp)
-	-rm -f ccan/list/$(am__dirstamp)
-	-rm -f ccan/talloc/$(DEPDIR)/$(am__dirstamp)
-	-rm -f ccan/talloc/$(am__dirstamp)
 	-rm -f http-parser/$(DEPDIR)/$(am__dirstamp)
 	-rm -f http-parser/$(am__dirstamp)
 	-rm -f protobuf/protobuf-c/$(DEPDIR)/$(am__dirstamp)
@@ -1691,7 +1692,7 @@ clean-am: clean-binPROGRAMS clean-generic clean-noinstLIBRARIES \
 	clean-sbinPROGRAMS mostlyclean-am
 
 distclean: distclean-recursive
-	-rm -rf ./$(DEPDIR) acct/$(DEPDIR) auth/$(DEPDIR) ccan/hash/$(DEPDIR) ccan/htable/$(DEPDIR) ccan/list/$(DEPDIR) ccan/talloc/$(DEPDIR) http-parser/$(DEPDIR) protobuf/protobuf-c/$(DEPDIR) sup-config/$(DEPDIR)
+	-rm -rf ./$(DEPDIR) acct/$(DEPDIR) auth/$(DEPDIR) http-parser/$(DEPDIR) protobuf/protobuf-c/$(DEPDIR) sup-config/$(DEPDIR)
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-tags
@@ -1714,7 +1715,8 @@ install-dvi: install-dvi-recursive
 
 install-dvi-am:
 
-install-exec-am: install-binPROGRAMS install-sbinPROGRAMS
+install-exec-am: install-binPROGRAMS install-binSCRIPTS \
+	install-sbinPROGRAMS
 
 install-html: install-html-recursive
 
@@ -1737,7 +1739,7 @@ install-ps-am:
 installcheck-am:
 
 maintainer-clean: maintainer-clean-recursive
-	-rm -rf ./$(DEPDIR) acct/$(DEPDIR) auth/$(DEPDIR) ccan/hash/$(DEPDIR) ccan/htable/$(DEPDIR) ccan/list/$(DEPDIR) ccan/talloc/$(DEPDIR) http-parser/$(DEPDIR) protobuf/protobuf-c/$(DEPDIR) sup-config/$(DEPDIR)
+	-rm -rf ./$(DEPDIR) acct/$(DEPDIR) auth/$(DEPDIR) http-parser/$(DEPDIR) protobuf/protobuf-c/$(DEPDIR) sup-config/$(DEPDIR)
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 
@@ -1753,7 +1755,8 @@ ps: ps-recursive
 
 ps-am:
 
-uninstall-am: uninstall-binPROGRAMS uninstall-sbinPROGRAMS
+uninstall-am: uninstall-binPROGRAMS uninstall-binSCRIPTS \
+	uninstall-sbinPROGRAMS
 
 .MAKE: $(am__recursive_targets) all check install install-am \
 	install-strip
@@ -1763,15 +1766,16 @@ uninstall-am: uninstall-binPROGRAMS uninstall-sbinPROGRAMS
 	clean-noinstLIBRARIES clean-sbinPROGRAMS cscopelist-am ctags \
 	ctags-am distclean distclean-compile distclean-generic \
 	distclean-tags distdir dvi dvi-am html html-am info info-am \
-	install install-am install-binPROGRAMS install-data \
-	install-data-am install-dvi install-dvi-am install-exec \
-	install-exec-am install-html install-html-am install-info \
-	install-info-am install-man install-pdf install-pdf-am \
-	install-ps install-ps-am install-sbinPROGRAMS install-strip \
-	installcheck installcheck-am installdirs installdirs-am \
-	maintainer-clean maintainer-clean-generic mostlyclean \
-	mostlyclean-compile mostlyclean-generic pdf pdf-am ps ps-am \
-	tags tags-am uninstall uninstall-am uninstall-binPROGRAMS \
+	install install-am install-binPROGRAMS install-binSCRIPTS \
+	install-data install-data-am install-dvi install-dvi-am \
+	install-exec install-exec-am install-html install-html-am \
+	install-info install-info-am install-man install-pdf \
+	install-pdf-am install-ps install-ps-am install-sbinPROGRAMS \
+	install-strip installcheck installcheck-am installdirs \
+	installdirs-am maintainer-clean maintainer-clean-generic \
+	mostlyclean mostlyclean-compile mostlyclean-generic pdf pdf-am \
+	ps ps-am tags tags-am uninstall uninstall-am \
+	uninstall-binPROGRAMS uninstall-binSCRIPTS \
 	uninstall-sbinPROGRAMS
 
 .PRECIOUS: Makefile

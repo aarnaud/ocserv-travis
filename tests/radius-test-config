@@ -56,13 +56,22 @@ fi
 
 echo "Trying with correct password"
 echo "test" >pass-radius$TMP
-$OPENCONNECT $IP:$PORT_OCSERV -u testtime --passwd-on-stdin -v --servercert=d66b507ae074d03b02eafca40d35f87dd81049d3 <pass-radius$TMP &
-PID=$!
+$OPENCONNECT $IP:$PORT_OCSERV -b -u testtime --passwd-on-stdin -v --servercert=d66b507ae074d03b02eafca40d35f87dd81049d3 --pid-file ${srcdir}/pid1.$$ <pass-radius$TMP
+if test $? != 0;then
+	echo "Cannot connect to server"
+	stop
+fi
 
 #wait for openconnect
 sleep 5
 
 rm -f pass-radius$TMP
+
+if [ ! -f ${srcdir}/pid1.$$ ];then
+	echo "It was not possible to establish session!"
+	stop
+fi
+PID=`cat ${srcdir}/pid1.$$`
 
 # The client IP depends on the username so it shouldn't change.
 ping -w 5 192.168.66.1
@@ -73,7 +82,7 @@ if test $? != 0;then
 fi
 
 #check whether the routes have been applied
-retrieve_route_info testtime '192.168.67.0/24'
+retrieve_route_info testtime '10.154.92.0/24'
 
 echo "Waiting for accounting report"
 
@@ -83,6 +92,7 @@ FILE=`$DOCKER exec $IMAGE_NAME ls /var/log/radius/radacct/127.0.0.1/`
 
 OCTETS=`$DOCKER exec $IMAGE_NAME cat "/var/log/radius/radacct/127.0.0.1/$FILE"|grep Acct-Input-Octets|tail -1|sed 's/Acct-Input-Octets = //g'`
 if test -z "$OCTETS" || test "$OCTETS" = 0;then
+	kill $PID
 	$DOCKER exec $IMAGE_NAME cat "/var/log/radius/radacct/127.0.0.1/$FILE"
 	echo "Interim update showed no data!"
 	stop
@@ -97,6 +107,7 @@ $DOCKER exec $IMAGE_NAME cat "/var/log/radius/radacct/127.0.0.1/$FILE" >out$TMP
 
 DISC=`cat out$TMP|grep "Acct-Status-Type = Start"|tail -1`
 if test -z "$DISC";then
+	kill $PID
 	cat out$TMP
 	echo "No connect status was detected!"
 	stop

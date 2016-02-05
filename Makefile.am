@@ -1,4 +1,5 @@
-EXTRA_DIST = LICENSE
+AUTOMAKE_OPTIONS = foreign
+EXTRA_DIST = LICENSE README.md
 
 SUBDIRS = gl
 if NEED_LIBOPTS
@@ -31,8 +32,12 @@ ChangeLog:
 
 dist-hook: ChangeLog
 	mv ChangeLog $(distdir)
-	touch ChangeLog
 	$(AUTOGEN) --version
+	@echo "*****************************************************************"
+	@echo "Checking whether included libopts matches the system's. If the"
+	@echo "check fails upgrade the included libopts."
+	@echo "*****************************************************************"
+	test "$(SKIP_LIBOPTS_CHECK)" = "1" || test "`autoopts-config libsrc|cut -d '-' -f 2|sed 's/.tar.gz//'`" = "`cat $(srcdir)/libopts/autoopts/options.h |grep OPTIONS_VERSION_STRING|cut -d '"' -f 2|sed 's/:/./g'`"
 	cd $(distdir)/src/ && for i in ocserv-args.def ocpasswd-args.def;do \
 		$(AUTOGEN) $$i; \
 	done

@@ -79,7 +79,7 @@ static const char login_msg_user[] =
 #define LOGIN_MSG_PASSWORD \
     "<input type=\"password\" name=\"password\" label=\""DEFAULT_PASSWD_LABEL"\" />\n"
 #define LOGIN_MSG_PASSWORD_CTR \
-    "<input type=\"password\" name=\"password\" label=\"Password%d:\" />\n"
+    "<input type=\"password\" name=\"secondary_password\" label=\"Password%d:\" />\n"
 
 #define OCV3_LOGIN_MSG_START \
     "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" \
@@ -625,6 +625,19 @@ static int recv_cookie_auth_reply(worker_st * ws)
 				ws->config->network.ipv6_prefix = msg->ipv6_prefix;
 			}
 
+			if (msg->has_ipv6_subnet_prefix) {
+				ws->config->network.ipv6_subnet_prefix = msg->ipv6_subnet_prefix;
+			}
+
+			if (msg->has_dpd)
+				ws->config->dpd = msg->dpd;
+
+			if (msg->has_keepalive)
+				ws->config->keepalive = msg->keepalive;
+
+			if (msg->has_mobile_dpd)
+				ws->config->mobile_dpd = msg->mobile_dpd;
+
 			if (msg->has_rx_per_sec)
 				ws->config->rx_per_sec = msg->rx_per_sec;
 
@@ -1060,9 +1073,13 @@ int match_password_in_reply(worker_st * ws, char *body, unsigned body_length,
 	if (memmem(body, body_length, "<?xml", 5) != 0) {
 		xml = 1;
 
-		/* body should contain <password?>test</password?> */
+		/* body should contain <password?>test</password?> or <xxx_password>test</xxx_password> */
 		*value =
 		    strcasestr(body, "<password");
+		if (*value == NULL)
+			*value =
+			    strcasestr(body, "_password>");
+
 		if (*value == NULL) {
 			oclog(ws, LOG_HTTP_DEBUG,
 			      "cannot find password in client XML message");
@@ -1080,8 +1097,7 @@ int match_password_in_reply(worker_st * ws, char *body, unsigned body_length,
 		*value = p;
 		len = 0;
 		while (*p != 0) {
-			if (*p == '<'
-			    && (strncasecmp(p, "</password", sizeof("</password")-1) == 0)) {
+			if (*p == '<' && *(p+1) == '/') {
 				break;
 			}
 			p++;

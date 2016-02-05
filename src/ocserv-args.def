@@ -87,12 +87,14 @@ An example configuration file follows.
 #  This enabled PAM authentication of the user. The gid-min option is used 
 # by auto-select-group option, in order to select the minimum valid group ID.
 #
-# plain[passwd=/etc/ocserv/ocpasswd]
+# plain[passwd=/etc/ocserv/ocpasswd,otp=/etc/ocserv/users.otp]
 #  The plain option requires specifying a password file which contains
 # entries of the following format.
 # "username:groupname1,groupname2:encoded-password"
 # One entry must be listed per line, and 'ocpasswd' should be used
-# to generate password entries.
+# to generate password entries. The 'otp' suboption allows to specify
+# an oath password file to be used for one time passwords; the format of
+# the file is described in https://code.google.com/p/mod-authn-otp/wiki/UsersFile
 #
 # radius[config=/etc/radiusclient/radiusclient.conf,groupconfig=true,nas-identifier=name]:
 #  The radius option requires specifying freeradius-client configuration
@@ -130,14 +132,15 @@ An example configuration file follows.
 #enable-auth = "gssapi[keytab=/etc/key.tab,require-local-user-map=true,tgt-freshness-time=900]"
 
 # Accounting methods available:
-# pam: can only be combined with PAM authentication method, it provides
-#      a session opened using PAM.
-#
 # radius: can be combined with any authentication method, it provides
 #      radius accounting to available users (see also stats-report-time).
 #
+# pam: can be combined with any authentication method, it provides
+#      a validation of the connecting user's name using PAM. It is
+#      superfluous to use this method when authentication is already
+#      PAM.
+#
 # Only one accounting method can be specified.
-#acct = "pam"
 #acct = "radius[config=/etc/radiusclient/radiusclient.conf]"
 
 # Use listen-host to limit to specific IPs or to the IPs of a provided 
@@ -275,7 +278,9 @@ mobile-dpd = 1800
 try-mtu-discovery = false
 
 # The revocation list of the certificates issued by the 'ca-cert' above.
-# See the manual to generate an empty CRL initially.
+# See the manual to generate an empty CRL initially. The CRL will be reloaded
+# periodically when ocserv detects a change in the file. To force a reload use
+# SIGHUP.
 #crl = /path/to/crl.pem
 
 # If you have a certificate from a CA that provides an OCSP
@@ -380,6 +385,13 @@ ban-reset-time = 300
 # between different networks.
 cookie-timeout = 300
 
+# Cookie rekey time (in seconds)
+# The time after which the key used to encrypt cookies will be
+# refreshed. After this time the previous key will also be valid
+# for verification. It is recommended not to modify the default
+# value.
+cookie-rekey-time = 14400
+
 # If this is enabled (not recommended) the cookies will stay
 # valid even after a user manually disconnects, and until they
 # expire. This may improve roaming with some broken clients.
@@ -408,11 +420,17 @@ rekey-method = ssl
 # Script to call when a client connects and obtains an IP.
 # The following parameters are passed on the environment.
 # REASON, USERNAME, GROUPNAME, HOSTNAME (the hostname selected by client), 
-# DEVICE, IP_REAL (the real IP of the client), IP_LOCAL (the local IP
+# DEVICE, IP_REAL (the real IP of the client), IP_REAL_LOCAL (the local
+# interface IP the client connected), IP_LOCAL (the local IP
 # in the P-t-P connection), IP_REMOTE (the VPN IP of the client),
 # IPV6_LOCAL (the IPv6 local address if there are both IPv4 and IPv6
 # assigned), IPV6_REMOTE (the IPv6 remote address), IPV6_PREFIX, and
 # ID (a unique numeric ID); REASON may be "connect" or "disconnect".
+# In addition the following variables OCSERV_ROUTES (the applied routes for this
+# client), OCSERV_NO_ROUTES, OCSERV_DNS (the DNS servers for this client),
+# will contain a space separated list of routes or DNS servers. A version
+# of these variables with the 4 or 6 suffix will contain only the IPv4 or
+# IPv6 values.
 
 # The disconnect script will receive the additional values: STATS_BYTES_IN,
 # STATS_BYTES_OUT, STATS_DURATION that contain a 64-bit counter of the bytes 
@@ -463,6 +481,9 @@ default-domain = example.com
 # these network values should contain a network with at least a single
 # address that will remain under the full control of ocserv (that is
 # to be able to assign the local part of the tun device address).
+# Note that, you could use addresses from a subnet of your LAN network if you
+# enable proxy arp in the LAN interface (see http://infradead.org/ocserv/recipes-ocserv-pseudo-bridge.html);
+# in that case it is recommended to set ping-leases to true.
 ipv4-network = 192.168.1.0
 ipv4-netmask = 255.255.255.0
 
@@ -470,7 +491,18 @@ ipv4-netmask = 255.255.255.0
 #ipv4-network = 192.168.1.0/24
 
 # The IPv6 subnet that leases will be given from.
-#ipv6-network = fda9:4efe:7e3b:03ea::/64
+ipv6-network = fda9:4efe:7e3b:03ea::/48
+
+# Specify the size of the network to provide to clients. It is
+# generally recommended to provide clients with a /64 network in
+# IPv6, but any subnet may be specified. To provide clients only
+# with a single IP use the prefix 128.
+#ipv6-subnet-prefix = 128
+#ipv6-subnet-prefix = 64
+
+# Whether to tunnel all DNS queries via the VPN. This is the default
+# when a default route is set.
+#tunnel-all-dns = true
 
 # The advertized DNS server. Use multiple lines for
 # multiple servers.
@@ -522,6 +554,18 @@ route = 192.168.0.0/255.255.0.0
 
 no-route = 192.168.5.0/255.255.255.0
 
+# If set, the script /usr/bin/ocserv-fw will be called to restrict
+# the user to its allowed routes and prevent him from accessing
+# any other routes. In case of defaultroute, the no-routes are restricted.
+# All the routes applied by ocserv can be reverted using /usr/bin/ocserv-fw
+# --removeall. This option can be set globally or in the per-user configuration.
+#restrict-user-to-routes = true
+
+# When set to true, all client's iroutes are made visible to all
+# connecting clients except for the ones offering them. This option
+# only makes sense if config-per-user is set.
+#expose-iroutes = true
+
 # Groups that a client is allowed to select from.
 # A client may belong in multiple groups, and in certain use-cases
 # it is needed to switch between them. For these cases the client can
@@ -544,13 +588,17 @@ no-route = 192.168.5.0/255.255.255.0
 # The options allowed in the configuration files are dns, nbns,
 #  ipv?-network, ipv4-netmask, rx/tx-per-sec, iroute, route, no-route,
 #  explicit-ipv4, explicit-ipv6, net-priority, deny-roaming, no-udp, 
-#  user-profile, cgroup, stats-report-time, and session-timeout.
+#  keepalive, dpd, mobile-dpd, max-same-clients, tunnel-all-dns,
+#  restrict-user-to-routes, user-profile, cgroup, stats-report-time,
+#  and session-timeout.
 #
 # Note that the 'iroute' option allows to add routes on the server
 # based on a user or group. The syntax depends on the input accepted
 # by the commands route-add-cmd and route-del-cmd (see below). The no-udp
 # is a boolean option (e.g., no-udp = true), and will prevent a UDP session
-# for that specific user or group.
+# for that specific user or group. Note also, that, any DNS or NBNS servers
+# present will overwrite the global ones, while any routes or no-routes set
+# will be appended to the default set.
 #
 # Also explicit addresses, are only allowed when they are odd. In that
 # case the next even address will be used as the remote address (in PtP).
@@ -564,10 +612,10 @@ no-route = 192.168.5.0/255.255.255.0
 #default-group-config = /etc/ocserv/defaults/group.conf
 
 # The system command to use to setup a route. %{R} will be replaced with the
-# route/mask and %{D} with the (tun) device.
+# route/mask, %{RI} with the route in CIDR format, and %{D} with the (tun) device.
 #
-# The following example is from linux systems. %R should be something
-# like 192.168.2.0/24 (the argument of iroute).
+# The following example is from linux systems. %{R} should be something
+# like 192.168.2.0/255.255.255.0 and %{RI} 192.168.2.0/24 (the argument of iroute).
 
 #route-add-cmd = "ip route add %{R} dev %{D}"
 #route-del-cmd = "ip route delete %{R} dev %{D}"
@@ -642,7 +690,7 @@ doc-section = {
   ds-format = 'texi';
   ds-text   = <<-_EOT_
 This a standalone server that reads a configuration file (see below for more details),
-and waits for client connections.
+and waits for client connections. Log messages are redirected to daemon facility.
 
 The server maintains two connections/channels with the client. The main VPN 
 channel is established over TCP, HTTP and TLS. This is the control channel as well 
@@ -822,7 +870,7 @@ $ certtool --generate-crl --load-ca-privkey ca-key.pem \
 	--template crl.tmpl --outfile crl.pem
 @end example
 After that you may want to notify ocserv of the new CRL by using
-the HUP signal.
+the HUP signal, or wait for it to reload it.
 
 When there are no revoked certificates an empty revocation list
 should be generated as follows.
@@ -859,7 +907,7 @@ doc-section = {
   ds-type = 'NETWORKING CONSIDERATIONS';
   ds-format = 'texi';
   ds-text   = <<-_EOT_
-In certain setups, where a firewall may be blocking ICMP responses, it is setting the
+In certain setups, where a firewall may be blocking ICMP responses, setting the
 MSS of TCP connections to MTU will eliminate the "black hole" connection issues.
 See http://lartc.org/howto/lartc.cookbook.mtu-mss.html for instructions
 to enable it on a Linux system.

@@ -29,11 +29,12 @@
 #include <autoopts/options.h>
 #include <limits.h>
 #include <common.h>
+#include <ip-util.h>
 #include <c-strcase.h>
 #include <c-ctype.h>
 #include <auth/pam.h>
-#include <auth/radius.h>
 #include <acct/pam.h>
+#include <auth/radius.h>
 #include <acct/radius.h>
 #include <auth/plain.h>
 #include <auth/gssapi.h>
@@ -43,6 +44,7 @@
 
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <dirent.h>
 #include <netdb.h>
 
 #include <vpn.h>
@@ -56,7 +58,7 @@
 #define DEFAULT_CFG_FILE "/etc/ocserv/ocserv.conf"
 
 static char pid_file[_POSIX_PATH_MAX] = "";
-static const char* cfg_file = DEFAULT_CFG_FILE;
+static char cfg_file[_POSIX_PATH_MAX] = DEFAULT_CFG_FILE;
 
 struct cfg_options {
 	const char* name;
@@ -68,6 +70,7 @@ struct cfg_options {
 static struct cfg_options available_options[] = {
 	{ .name = "auth", .type = OPTION_MULTI_LINE, .mandatory = 1 },
 	{ .name = "enable-auth", .type = OPTION_MULTI_LINE, .mandatory = 0 },
+	{ .name = "expose-iroutes", .type = OPTION_BOOLEAN, .mandatory = 0 },
 	{ .name = "route", .type = OPTION_MULTI_LINE, .mandatory = 0 },
 	{ .name = "no-route", .type = OPTION_MULTI_LINE, .mandatory = 0 },
 	{ .name = "select-group", .type = OPTION_MULTI_LINE, .mandatory = 0 },
@@ -114,6 +117,7 @@ static struct cfg_options available_options[] = {
 	{ .name = "occtl-socket-file", .type = OPTION_STRING, .mandatory = 0 },
 	{ .name = "banner", .type = OPTION_STRING, .mandatory = 0 },
 	{ .name = "use-seccomp", .type = OPTION_BOOLEAN, .mandatory = 0 },
+	{ .name = "tunnel-all-dns", .type = OPTION_BOOLEAN, .mandatory = 0 },
 	{ .name = "isolate-workers", .type = OPTION_BOOLEAN, .mandatory = 0 },
 	{ .name = "predictable-ips", .type = OPTION_BOOLEAN, .mandatory = 0 },
 	{ .name = "session-control", .type = OPTION_BOOLEAN, .mandatory = 0 },
@@ -128,6 +132,7 @@ static struct cfg_options available_options[] = {
 	{ .name = "persistent-cookies", .type = OPTION_BOOLEAN, .mandatory = 0 },
 	{ .name = "use-occtl", .type = OPTION_BOOLEAN, .mandatory = 0 },
 	{ .name = "try-mtu-discovery", .type = OPTION_BOOLEAN, .mandatory = 0 },
+	{ .name = "restrict-user-to-routes", .type = OPTION_BOOLEAN, .mandatory = 0 },
 	{ .name = "ping-leases", .type = OPTION_BOOLEAN, .mandatory = 0 },
 	{ .name = "tls-priorities", .type = OPTION_STRING, .mandatory = 0 },
 	{ .name = "chroot-dir", .type = OPTION_STRING, .mandatory = 0 },
@@ -135,6 +140,7 @@ static struct cfg_options available_options[] = {
 	{ .name = "net-priority", .type = OPTION_STRING, .mandatory = 0 },
 	{ .name = "output-buffer", .type = OPTION_NUMERIC, .mandatory = 0 },
 	{ .name = "cookie-timeout", .type = OPTION_NUMERIC, .mandatory = 0 },
+	{ .name = "cookie-rekey-time", .type = OPTION_NUMERIC, .mandatory = 0 },
 	{ .name = "session-timeout", .type = OPTION_NUMERIC, .mandatory = 0 },
 	{ .name = "stats-report-time", .type = OPTION_NUMERIC, .mandatory = 0 },
 	{ .name = "rekey-time", .type = OPTION_NUMERIC, .mandatory = 0 },
@@ -167,6 +173,7 @@ static struct cfg_options available_options[] = {
 
 	{ .name = "ipv6-network", .type = OPTION_STRING, .mandatory = 0 },
 	{ .name = "ipv6-prefix", .type = OPTION_NUMERIC, .mandatory = 0 },
+	{ .name = "ipv6-subnet-prefix", .type = OPTION_NUMERIC, .mandatory = 0 },
 	{ .name = "route-add-cmd", .type = OPTION_STRING, .mandatory = 0 },
 	{ .name = "route-del-cmd", .type = OPTION_STRING, .mandatory = 0 },
 	{ .name = "config-per-user", .type = OPTION_STRING, .mandatory = 0 },
@@ -234,9 +241,12 @@ unsigned j;
 
 #define PREAD_STRING(pool, name, s_name) { \
 	val = get_option(name, &mand); \
-	if (val != NULL && val->valType == OPARG_TYPE_STRING) \
-		s_name = talloc_strdup(pool, val->v.strVal); \
-	else if (mand != 0) { \
+	if (val != NULL && val->valType == OPARG_TYPE_STRING) { \
+		unsigned len = strlen(val->v.strVal); \
+		while(c_isspace(val->v.strVal[len-1])) \
+			len--; \
+		s_name = talloc_strndup(pool, val->v.strVal, len); \
+	} else if (mand != 0) { \
 		fprintf(stderr, "Configuration option %s is mandatory.\n", name); \
 		exit(1); \
 	}}
@@ -461,11 +471,11 @@ typedef struct acct_types_st {
 
 static acct_types_st avail_acct_types[] =
 {
-#ifdef HAVE_PAM
-	{NAME("pam"), &pam_acct_funcs, NULL},
-#endif
 #ifdef HAVE_RADIUS
 	{NAME("radius"), &radius_acct_funcs, radius_get_brackets_string},
+#endif
+#ifdef HAVE_PAM
+	{NAME("pam"), &pam_acct_funcs, NULL},
 #endif
 };
 
@@ -477,6 +487,9 @@ static void figure_acct_funcs(struct perm_cfg_st *config, const char *acct)
 	/* Set the accounting method */
 	for (i=0;i<sizeof(avail_acct_types)/sizeof(avail_acct_types[0]);i++) {
 		if (c_strncasecmp(acct, avail_acct_types[i].name, avail_acct_types[i].name_size) == 0) {
+			if (avail_acct_types[i].mod == NULL)
+				continue;
+
 			if (avail_acct_types[i].get_brackets_string)
 				config->acct.additional = avail_acct_types[i].get_brackets_string(config, acct+avail_acct_types[i].name_size);
 
@@ -564,6 +577,61 @@ static void parse_kkdcp(struct cfg_st *config, char **urlfw, unsigned urlfw_size
 
 }
 #endif
+
+
+static void append_iroutes_from_file(struct cfg_st *config, const char *file)
+{
+	tOptionValue const * pov;
+	const tOptionValue* val;
+	int ret;
+	unsigned j;
+
+	pov = configFileLoad(file);
+	if (pov == NULL)
+		return;
+
+	val = optionGetValue(pov, NULL);
+	if (val == NULL)
+		goto exit;
+
+	ret = add_multi_line_val(config, "iroute", &config->known_iroutes,
+				 &config->known_iroutes_size, pov, val);
+	if (ret < 0) {
+		fprintf(stderr, "Error loading iroute from %s\n", file);
+	}
+
+	for (j=0;j<config->known_iroutes_size;j++) {
+		if (ip_route_sanity_check(config->known_iroutes, &config->known_iroutes[j]) != 0)
+			exit(1);
+	}
+
+
+ exit:
+	optionUnloadNested(pov);
+	return;
+}
+
+static void load_iroutes(struct cfg_st *config)
+{
+	DIR *dir;
+	struct dirent *r;
+	char path[_POSIX_PATH_MAX];
+
+	if (config->per_user_dir == NULL)
+		return;
+
+	dir = opendir(config->per_user_dir);
+	if (dir != NULL) {
+		do {
+			r = readdir(dir);
+			if (r != NULL && r->d_type == DT_REG) {
+				snprintf(path, sizeof(path), "%s/%s", config->per_user_dir, r->d_name);
+				append_iroutes_from_file(config, path);
+			}
+		} while(r != NULL);
+		closedir(dir);
+	}
+}
 
 static void parse_cfg_file(void *pool, const char* file, struct perm_cfg_st *perm_config, unsigned reload)
 {
@@ -688,6 +756,8 @@ size_t urlfw_size = 0;
 	}
 #endif
 
+	READ_TF("tunnel-all-dns", config->tunnel_all_dns, 0);
+
 	READ_NUMERIC("keepalive", config->keepalive);
 	READ_NUMERIC("dpd", config->dpd);
 	if (config->dpd == 0)
@@ -765,6 +835,7 @@ size_t urlfw_size = 0;
 
 	READ_TF("try-mtu-discovery", config->try_mtu, 0);
 	READ_TF("ping-leases", config->ping_leases, 0);
+	READ_TF("restrict-user-to-routes", config->restrict_user_to_routes, 0);
 
 	READ_STRING("tls-priorities", config->priorities);
 
@@ -805,6 +876,10 @@ size_t urlfw_size = 0;
 	if (config->cookie_timeout == 0)
 		config->cookie_timeout = DEFAULT_COOKIE_RECON_TIMEOUT;
 	READ_TF("persistent-cookies", config->persistent_cookies, 0);
+
+	READ_NUMERIC("cookie-rekey-time", config->cookie_rekey_time);
+	if (config->cookie_rekey_time == 0)
+		config->cookie_rekey_time = DEFAULT_COOKIE_REKEY_TIME;
 
 	READ_NUMERIC("session-timeout", config->session_timeout);
 
@@ -847,11 +922,22 @@ size_t urlfw_size = 0;
 	if (prefix4 == 0) {
 		READ_STRING("ipv4-netmask", config->network.ipv4_netmask);
 	} else {
-		config->network.ipv4_netmask = ipv4_prefix_to_mask(config, prefix4);
+		config->network.ipv4_netmask = ipv4_prefix_to_strmask(config, prefix4);
 	}
 
 	READ_STRING("ipv6-network", config->network.ipv6);
+	/* read subnet prefix */
+	READ_NUMERIC("ipv6-subnet-prefix", prefix);
+	if (prefix > 0) {
+		config->network.ipv6_subnet_prefix = prefix;
 
+		if (valid_ipv6_prefix(prefix) == 0) {
+			fprintf(stderr, "invalid IPv6 subnet prefix: %u\n", prefix);
+			exit(1);
+		}
+	}
+
+	/* read net prefix */
 	prefix = extract_prefix(config->network.ipv6);
 	if (prefix == 0) {
 		READ_NUMERIC("ipv6-prefix", prefix);
@@ -866,11 +952,22 @@ size_t urlfw_size = 0;
 		}
 	}
 
+	if (config->network.ipv6_subnet_prefix == 0) {
+		config->network.ipv6_subnet_prefix = 128;
+	} else if (config->network.ipv6_prefix >= config->network.ipv6_subnet_prefix) {
+		fprintf(stderr, "The subnet prefix (%u) cannot be smaller or equal to network's (%u)\n", 
+				config->network.ipv6_subnet_prefix, config->network.ipv6_prefix);
+		exit(1);
+	}
+
 	READ_MULTI_LINE("custom-header", config->custom_header, config->custom_header_size);
 	READ_MULTI_LINE("split-dns", config->split_dns, config->split_dns_size);
 
 	READ_MULTI_LINE("route", config->network.routes, config->network.routes_size);
 	for (j=0;j<config->network.routes_size;j++) {
+		if (ip_route_sanity_check(config->network.routes, &config->network.routes[j]) != 0)
+			exit(1);
+
 		if (strcmp(config->network.routes[j], "0.0.0.0/0") == 0 ||
 		    strcmp(config->network.routes[j], "default") == 0) {
 		    	/* set default route */
@@ -882,6 +979,10 @@ size_t urlfw_size = 0;
 	}
 
 	READ_MULTI_LINE("no-route", config->network.no_routes, config->network.no_routes_size);
+	for (j=0;j<config->network.no_routes_size;j++) {
+		if (ip_route_sanity_check(config->network.no_routes, &config->network.no_routes[j]) != 0)
+			exit(1);
+	}
 
 	READ_STRING("default-select-group", config->default_select_group);
 	READ_TF("auto-select-group", auto_select_group, 0);
@@ -920,6 +1021,13 @@ size_t urlfw_size = 0;
 	READ_STRING("route-del-cmd", config->route_del_cmd);
 	READ_STRING("config-per-user", config->per_user_dir);
 	READ_STRING("config-per-group", config->per_group_dir);
+
+	if (config->per_user_dir) {
+		READ_TF("expose-iroutes", i, 0);
+		if (i != 0) {
+			load_iroutes(config);
+		}
+	}
 
 	READ_STRING("default-user-config", config->default_user_conf);
 	READ_STRING("default-group-config", config->default_group_conf);
@@ -1041,7 +1149,7 @@ int cmd_parser (void *pool, int argc, char **argv, struct perm_cfg_st** config)
 		(*config)->config->debug = OPT_VALUE_DEBUG;
 
 	if (HAVE_OPT(CONFIG)) {
-		cfg_file = OPT_ARG(CONFIG);
+		strlcpy(cfg_file, OPT_ARG(CONFIG), sizeof(cfg_file));
 	} else if (access(cfg_file, R_OK) != 0) {
 		fprintf(stderr, "%s -c [config]\nUse %s --help for more information.\n", argv[0], argv[0]);
 		exit(1);
@@ -1134,6 +1242,9 @@ void print_version(tOptions *opts, tOptDesc *desc)
 #endif
 #ifdef HAVE_LIBWRAP
 	fprintf(stderr, "tcp-wrappers, ");
+#endif
+#ifdef HAVE_LIBOATH
+	fprintf(stderr, "oath, ");
 #endif
 #ifdef HAVE_RADIUS
 	fprintf(stderr, "radius, ");

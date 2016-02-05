@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2013-2015 Nikos Mavrogiannopoulos
+ * Copyright (C) 2015 Red Hat, Inc.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -28,8 +29,6 @@
 /* for recvmsg */
 #include <netinet/in.h>
 #include <netinet/ip.h>
-/* for inet_ntop */
-#include <arpa/inet.h>
 
 #include "common.h"
 
@@ -86,6 +85,8 @@ static char tmp[32];
 		return "sm: ban IP";
 	case SM_CMD_AUTH_BAN_IP_REPLY:
 		return "sm: ban IP reply";
+	case SM_CMD_REFRESH_COOKIE_KEY:
+		return "sm: refresh cookie key";
 	default:
 		snprintf(tmp, sizeof(tmp), "unknown (%u)", _cmd);
 		return tmp;
@@ -253,55 +254,6 @@ fd_set set;
 	} while (ret == -1 && errno == EINTR);
 
 	return ret;
-}
-
-int ip_cmp(const struct sockaddr_storage *s1, const struct sockaddr_storage *s2)
-{
-	if (((struct sockaddr*)s1)->sa_family == AF_INET) {
-		return memcmp(SA_IN_P(s1), SA_IN_P(s2), sizeof(struct in_addr));
-	} else { /* inet6 */
-		return memcmp(SA_IN6_P(s1), SA_IN6_P(s2), sizeof(struct in6_addr));
-	}
-}
-
-/* returns an allocated string with the mask to apply for the prefix
- */
-char* ipv4_prefix_to_mask(void *pool, unsigned prefix)
-{
-	struct in_addr in;
-	char str[MAX_IP_STR];
-
-	if (prefix == 0 || prefix > 32)
-		return NULL;
-
-	in.s_addr = ntohl(((uint32_t)0xFFFFFFFF) << (32 - prefix));
-	if (inet_ntop(AF_INET, &in, str, sizeof(str)) == NULL)
-		return NULL;
-
-	return talloc_strdup(pool, str);
-}
-
-char* ipv6_prefix_to_mask(char buf[MAX_IP_STR], unsigned prefix)
-{
-	struct in6_addr in6;
-	int i, j;
-
-	if (prefix == 0 || prefix > 128)
-		return NULL;
-
-	memset(&in6, 0x0, sizeof(in6));
-	for (i = prefix, j = 0; i > 0; i -= 8, j++) {
-		if (i >= 8) {
-			in6.s6_addr[j] = 0xff;
-		} else {
-			in6.s6_addr[j] = (unsigned long)(0xffU << ( 8 - i ));
-		}
-	}
-
-	if (inet_ntop(AF_INET6, &in6, buf, MAX_IP_STR) == NULL)
-		return NULL;
-
-	return buf;
 }
 
 /* Sends message + socketfd */

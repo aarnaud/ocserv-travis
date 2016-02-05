@@ -1,5 +1,5 @@
 AC_PREREQ(2.61)
-AC_INIT([ocserv], [0.10.7], [nmav@gnutls.org])
+AC_INIT([ocserv], [0.10.11], [nmav@gnutls.org])
 PKG_PROG_PKG_CONFIG
 AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_MACRO_DIR([gl/m4])
@@ -13,14 +13,15 @@ gl_EARLY
 
 AM_PROG_AR
 AM_PROG_CC_C_O
+AC_PROG_SED
 if [ test "$GCC" = "yes" ];then
 	CFLAGS="$CFLAGS -Wall"
 fi
-AC_PATH_PROG(CTAGS, ctags, /bin/true)
-AC_PATH_PROG(CSCOPE, cscope, /bin/true)
-AC_CHECK_PROG([AUTOGEN], [autogen], [autogen], [/bin/true])
+AC_PATH_PROG(CTAGS, ctags, [:])
+AC_PATH_PROG(CSCOPE, cscope, [:])
+AC_CHECK_PROG([AUTOGEN], [autogen], [autogen], [:])
 
-if test x"$AUTOGEN" = "x/bin/true"; then
+if test x"$AUTOGEN" = "x:"; then
 	AC_MSG_WARN([[
 ***
 *** autogen not found. Will not link against libopts.
@@ -141,6 +142,19 @@ AC_LIB_HAVE_LINKFLAGS(readline,, [
       have_readline=editline
     fi
   fi
+
+have_liboath=no
+AC_ARG_WITH(liboath,
+  AS_HELP_STRING([--without-liboath], [do not include OTP support]),
+  test_for_liboath=$withval,
+  test_for_liboath=yes)
+
+if test x$test_for_liboath = xyes;then
+  PKG_CHECK_MODULES([LIBOATH], [liboath], [
+AC_DEFINE([HAVE_LIBOATH], 1, [Enable the liboath library])
+have_liboath=yes],
+[have_liboath=no])
+fi
 
 have_glibc=no
 AC_LIB_HAVE_LINKFLAGS(c,, [
@@ -300,10 +314,14 @@ if [ test "$anyconnect_enabled" = "yes" ];then
 	AC_DEFINE([ANYCONNECT_CLIENT_COMPAT], [], [Enable Anyconnect compatibility])
 fi
 
+pager_set=0
 AC_ARG_WITH(pager,
-  AS_HELP_STRING([--with-pager=PAGER], [set a specific pager for occtl]),
-    occtl_pager=$withval)
-if [ test -z "$occtl_pager" ];then
+  AS_HELP_STRING([--with-pager=PAGER], [set a specific pager for occtl; use "" for no pager]),
+    occtl_pager=$withval
+    pager_set=1
+)
+
+if [ test $pager_set = 0 ];then
 	AC_DEFINE_UNQUOTED([OCCTL_PAGER], ["less"], [The default pager for occtl])
 else
 	AC_DEFINE_UNQUOTED([OCCTL_PAGER], ["$occtl_pager"], [The default pager for occtl])
@@ -441,7 +459,7 @@ if test "$NEED_LIBOPTS_DIR" = "true";then
 			cp -f $i $nam
 		fi
 	done
-	AC_SUBST([AUTOGEN], [/bin/true])
+	AC_SUBST([AUTOGEN], [:])
 	enable_local_libopts=yes
 else
 	enable_local_libopts=no
@@ -452,6 +470,7 @@ AC_CONFIG_FILES([
 	Makefile
 	src/version.inc
 	src/Makefile
+	src/ccan/Makefile
 	src/pcl/Makefile
 	doc/Makefile
 	gl/Makefile
@@ -481,6 +500,7 @@ Summary of build options:
   LZ4 compression:      ${enable_lz4}
   readline:             ${have_readline}
   libnl3:               ${have_libnl3}
+  liboath:              ${have_liboath}
   glibc (sha2crypt):    ${have_glibc}
   local talloc:         ${with_local_talloc}
   local protobuf-c:     ${with_local_protobuf_c}

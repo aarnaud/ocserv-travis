@@ -30,6 +30,7 @@
 #include <autoopts/options.h>
 #include <limits.h>
 #include <common.h>
+#include <ip-util.h>
 #include <c-strcase.h>
 
 #include <vpn.h>
@@ -44,6 +45,8 @@ struct cfg_options {
 
 static struct cfg_options available_options[] = {
 	{ .name = "no-udp", .type = OPTION_BOOLEAN },
+	{ .name = "restrict-user-to-routes", .type = OPTION_BOOLEAN },
+	{ .name = "tunnel-all-dns", .type = OPTION_BOOLEAN },
 	{ .name = "deny-roaming", .type = OPTION_BOOLEAN },
 	{ .name = "route", .type = OPTION_MULTI_LINE },
 	{ .name = "no-route", .type = OPTION_MULTI_LINE },
@@ -58,14 +61,19 @@ static struct cfg_options available_options[] = {
 	{ .name = "ipv6-network", .type = OPTION_STRING },
 	{ .name = "ipv4-netmask", .type = OPTION_STRING },
 	{ .name = "ipv6-prefix", .type = OPTION_NUMERIC },
+	{ .name = "ipv6-subnet-prefix", .type = OPTION_NUMERIC },
 	{ .name = "explicit-ipv4", .type = OPTION_STRING },
 	{ .name = "explicit-ipv6", .type = OPTION_STRING },
 	{ .name = "rx-data-per-sec", .type = OPTION_NUMERIC },
 	{ .name = "tx-data-per-sec", .type = OPTION_NUMERIC },
 	{ .name = "net-priority", .type = OPTION_STRING },
+	{ .name = "dpd", .type = OPTION_NUMERIC },
+	{ .name = "mobile-dpd", .type = OPTION_NUMERIC },
+	{ .name = "keepalive", .type = OPTION_NUMERIC },
 	{ .name = "cgroup", .type = OPTION_STRING },
 	{ .name = "user-profile", .type = OPTION_STRING },
 	{ .name = "session-timeout", .type = OPTION_NUMERIC},
+	{ .name = "max-same-clients", .type = OPTION_NUMERIC},
 	{ .name = "stats-report-time", .type = OPTION_NUMERIC}
 };
 
@@ -150,6 +158,8 @@ int parse_group_cfg_file(struct cfg_st *global_config,
 tOptionValue const * pov;
 const tOptionValue* val, *prev;
 unsigned prefix = 0;
+int ret;
+unsigned j;
 
 	pov = configFileLoad(file);
 	if (pov == NULL) {
@@ -172,11 +182,34 @@ unsigned prefix = 0;
 	} while((val = optionNextValue(pov, prev)) != NULL);
 
 	READ_TF("no-udp", msg->no_udp, msg->has_no_udp);
+	READ_TF("restrict-user-to-routes", msg->restrict_user_to_routes, msg->has_restrict_user_to_routes);
+	READ_TF("tunnel_all_dns", msg->tunnel_all_dns, msg->has_tunnel_all_dns);
 	READ_TF("deny-roaming", msg->deny_roaming, msg->has_deny_roaming);
 
 	READ_RAW_MULTI_LINE("route", msg->routes, msg->n_routes);
 	READ_RAW_MULTI_LINE("no-route", msg->no_routes, msg->n_no_routes);
 	READ_RAW_MULTI_LINE("iroute", msg->iroutes, msg->n_iroutes);
+
+	for (j=0;j<msg->n_routes;j++) {
+		if (ip_route_sanity_check(msg->routes, &msg->routes[j]) != 0) {
+			ret = ERR_READ_CONFIG;
+			goto fail;
+		}
+	}
+
+	for (j=0;j<msg->n_iroutes;j++) {
+		if (ip_route_sanity_check(msg->iroutes, &msg->iroutes[j]) != 0) {
+			ret = ERR_READ_CONFIG;
+			goto fail;
+		}
+	}
+
+	for (j=0;j<msg->n_no_routes;j++) {
+		if (ip_route_sanity_check(msg->no_routes, &msg->no_routes[j]) != 0) {
+			ret = ERR_READ_CONFIG;
+			goto fail;
+		}
+	}
 
 	READ_RAW_MULTI_LINE("dns", msg->dns, msg->n_dns);
 	if (msg->n_dns == 0) {
@@ -199,6 +232,8 @@ unsigned prefix = 0;
 	READ_RAW_STRING("explicit-ipv4", msg->explicit_ipv4);
 	READ_RAW_STRING("explicit-ipv6", msg->explicit_ipv6);
 
+	READ_RAW_NUMERIC("ipv6-subnet-prefix", msg->ipv6_subnet_prefix, msg->has_ipv6_subnet_prefix);
+
 	msg->ipv6_prefix = extract_prefix(msg->ipv6_net);
 	if (msg->ipv6_prefix == 0) {
 		READ_RAW_NUMERIC("ipv6-prefix", msg->ipv6_prefix, msg->has_ipv6_prefix);
@@ -219,6 +254,11 @@ unsigned prefix = 0;
 
 	READ_RAW_NUMERIC("stats-report-time", msg->interim_update_secs, msg->has_interim_update_secs);
 	READ_RAW_NUMERIC("session-timeout", msg->session_timeout_secs, msg->has_session_timeout_secs);
+
+	READ_RAW_NUMERIC("dpd", msg->dpd, msg->has_dpd);
+	READ_RAW_NUMERIC("mobile-dpd", msg->mobile_dpd, msg->has_mobile_dpd);
+	READ_RAW_NUMERIC("keepalive", msg->keepalive, msg->has_keepalive);
+	READ_RAW_NUMERIC("max-same-clients", msg->max_same_clients, msg->has_max_same_clients);
 	
 	/* net-priority will contain the actual priority + 1,
 	 * to allow having zero as uninitialized. */
@@ -226,9 +266,11 @@ unsigned prefix = 0;
 
 	READ_RAW_STRING("user-profile", msg->xml_config_file);
 
+	ret = 0;
+ fail:
 	optionUnloadNested(pov);
 	
-	return 0;
+	return ret;
 }
 
 static int read_sup_config_file(struct cfg_st *global_config,

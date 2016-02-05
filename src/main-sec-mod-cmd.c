@@ -60,6 +60,7 @@ int handle_sec_mod_commands(main_server_st * s)
 	void *pool = talloc_new(s);
 	PROTOBUF_ALLOCATOR(pa, pool);
 	BanIpMsg *tmsg = NULL;
+	SecRefreshCookieKey *rmsg = NULL;
 
 	if (pool == NULL)
 		return -1;
@@ -116,6 +117,29 @@ int handle_sec_mod_commands(main_server_st * s)
 	}
 
 	switch (cmd) {
+	case SM_CMD_REFRESH_COOKIE_KEY:
+		rmsg = sec_refresh_cookie_key__unpack(&pa, raw_len, raw);
+		if (rmsg == NULL) {
+			mslog(s, NULL, LOG_ERR, "error unpacking sec-mod data");
+			ret = ERR_BAD_COMMAND;
+			goto cleanup;
+		}
+
+		if (rmsg->key.len != sizeof(s->cookie_key)) {
+			mslog(s, NULL, LOG_ERR, "received corrupt cookie key (%u bytes) from sec-mod", (unsigned)rmsg->key.len);
+			ret = ERR_BAD_COMMAND;
+			goto cleanup;
+		}
+
+		memcpy(s->prev_cookie_key, s->cookie_key, sizeof(s->cookie_key));
+		s->prev_cookie_key_active = 1;
+
+		memcpy(s->cookie_key, rmsg->key.data, sizeof(s->cookie_key));
+		safe_memset(rmsg->key.data, 0, rmsg->key.len);
+
+		mslog(s, NULL, LOG_INFO, "refreshed cookie key");
+		break;
+
 	case SM_CMD_AUTH_BAN_IP:{
 			BanIpReplyMsg reply = BAN_IP_REPLY_MSG__INIT;
 
@@ -125,7 +149,7 @@ int handle_sec_mod_commands(main_server_st * s)
 				ret = ERR_BAD_COMMAND;
 				goto cleanup;
 			}
-			ret = add_ip_to_ban_list(s, tmsg->ip, tmsg->score);
+			ret = add_str_ip_to_ban_list(s, tmsg->ip, tmsg->score);
 			if (ret < 0) {
 				reply.reply =
 				    AUTH__REP__FAILED;
@@ -175,7 +199,7 @@ int session_open(main_server_st * s, struct proc_st *proc, const uint8_t *cookie
 	int ret, e;
 	SecAuthSessionMsg ireq = SEC_AUTH_SESSION_MSG__INIT;
 	SecAuthSessionReplyMsg *msg = NULL;
-	unsigned i;
+	unsigned i, j, append;
 	PROTOBUF_ALLOCATOR(pa, proc);
 	char str_ipv4[MAX_IP_STR];
 	char str_ipv6[MAX_IP_STR];
@@ -241,6 +265,26 @@ int session_open(main_server_st * s, struct proc_st *proc, const uint8_t *cookie
 	if (msg->has_no_udp)
 		proc->config.no_udp = msg->no_udp;
 
+	if (msg->has_restrict_user_to_routes)
+		proc->config.restrict_user_to_routes = msg->restrict_user_to_routes;
+	else
+		proc->config.restrict_user_to_routes = s->config->restrict_user_to_routes;
+
+	if (msg->has_max_same_clients)
+		proc->config.max_same_clients = msg->max_same_clients;
+
+	if (msg->has_dpd)
+		proc->config.dpd = msg->dpd;
+
+	if (msg->has_tunnel_all_dns)
+		proc->config.tunnel_all_dns = msg->tunnel_all_dns;
+
+	if (msg->has_keepalive)
+		proc->config.keepalive = msg->keepalive;
+
+	if (msg->has_mobile_dpd)
+		proc->config.mobile_dpd = msg->mobile_dpd;
+
 	if (msg->has_deny_roaming)
 		proc->config.deny_roaming = msg->deny_roaming;
 
@@ -265,6 +309,15 @@ int session_open(main_server_st * s, struct proc_st *proc, const uint8_t *cookie
 		proc->config.ipv6_network = talloc_strdup(proc, msg->ipv6_net);
 	}
 
+	if (msg->has_ipv6_subnet_prefix) {
+		if (msg->ipv6_subnet_prefix != proc->config.ipv6_subnet_prefix) {
+			mslog(s, proc, LOG_WARNING, "currently a subnet prefix (%u) cannot be different than the default (%u)",
+			      msg->ipv6_subnet_prefix, proc->config.ipv6_prefix);
+		} else {
+			proc->config.ipv6_subnet_prefix = msg->ipv6_subnet_prefix;
+		}
+	}
+
 	if (msg->cgroup) {
 		proc->config.cgroup = talloc_strdup(proc, msg->cgroup);
 	}
@@ -281,12 +334,29 @@ int session_open(main_server_st * s, struct proc_st *proc, const uint8_t *cookie
 		proc->config.explicit_ipv6 = talloc_strdup(proc, msg->explicit_ipv6);
 	}
 
-	if (msg->n_routes > 0) {
-		proc->config.routes = talloc_size(proc, sizeof(char*)*msg->n_routes);
+	/* Append any custom routes for this user */
+	if (msg->n_routes > 0 || s->config->known_iroutes_size > 0) {
+		proc->config.routes = talloc_size(proc, sizeof(char*)*(msg->n_routes+s->config->known_iroutes_size));
 		for (i=0;i<msg->n_routes;i++) {
 			proc->config.routes[i] = talloc_strdup(proc, msg->routes[i]);
 		}
 		proc->config.routes_size = msg->n_routes;
+	}
+
+	/* Append any iroutes that are known and don't match the client's */
+	for (i=0;i<s->config->known_iroutes_size;i++) {
+		append = 1;
+		for (j=0;j<msg->n_iroutes;j++) {
+			if (strcmp(msg->iroutes[j], s->config->known_iroutes[i]) == 0) {
+				append = 0;
+				break;
+			}
+		}
+
+		if (append) {
+			proc->config.routes[proc->config.routes_size] = talloc_strdup(proc, s->config->known_iroutes[i]);
+			proc->config.routes_size++;
+		}
 	}
 
 	if (msg->n_no_routes > 0) {

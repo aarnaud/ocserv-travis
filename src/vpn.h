@@ -176,6 +176,7 @@ typedef enum {
 	SM_CMD_AUTH_BAN_IP,
 	SM_CMD_AUTH_BAN_IP_REPLY,
 	SM_CMD_AUTH_CLI_STATS,
+	SM_CMD_REFRESH_COOKIE_KEY,
 
 	MAX_SM_MAIN_CMD,
 } cmd_request_t;
@@ -202,6 +203,7 @@ struct group_cfg_st {
 	char *ipv4_network;
 	char *ipv6_network;
 	unsigned ipv6_prefix;
+	unsigned ipv6_subnet_prefix;
 	char *ipv4_netmask;
 
 	char *explicit_ipv4;
@@ -214,6 +216,12 @@ struct group_cfg_st {
 	size_t rx_per_sec;
 	size_t tx_per_sec;
 
+	unsigned max_same_clients;
+	unsigned tunnel_all_dns;
+	unsigned dpd;
+	unsigned keepalive;
+	unsigned mobile_dpd;
+
 	/* the number of secs to send interim updates. If set, it overrides
 	 * stats-report-time. */
 	unsigned interim_update_secs;
@@ -222,6 +230,7 @@ struct group_cfg_st {
 	unsigned deny_roaming; /* whether the user is allowed to re-use cookies from another IP */
 	unsigned net_priority;
 	unsigned no_udp; /* whether to disable UDP for this user */
+	unsigned restrict_user_to_routes;
 };
 
 struct vpn_st {
@@ -236,6 +245,7 @@ struct vpn_st {
 	char *ipv6;
 	char *ipv6_local; /* local IPv6 address */
 	unsigned int mtu;
+	unsigned int ipv6_subnet_prefix; /* ipv6 subnet prefix to assign */
 
 	char **routes;
 	size_t routes_size;
@@ -318,9 +328,10 @@ struct cfg_st {
 	char **split_dns;
 	size_t split_dns_size;;
 
-
+	unsigned restrict_user_to_routes; /* whether the firewall script will be run for the user */
 	unsigned deny_roaming; /* whether a cookie is restricted to a single IP */
 	time_t cookie_timeout;	/* in seconds */
+	time_t cookie_rekey_time;	/* in seconds */
 	time_t session_timeout;	/* in seconds */
 	unsigned persistent_cookies; /* whether cookies stay valid after disconnect */
 
@@ -348,6 +359,7 @@ struct cfg_st {
 	unsigned max_clients;
 	unsigned max_same_clients;
 	unsigned use_utmp;
+	unsigned tunnel_all_dns;
 	unsigned use_dbus; /* whether the D-BUS service is registered */
 	unsigned use_occtl; /* whether support for the occtl tool will be enabled */
 
@@ -389,6 +401,11 @@ struct cfg_st {
 	char *default_user_conf;
 
 	bool gssapi_no_local_user_map;
+
+	/* known iroutes - only sent to the users who are not registering them 
+	 */
+	char **known_iroutes;
+	size_t known_iroutes_size;
 
 	/* the tun network */
 	struct vpn_st network;
@@ -456,19 +473,6 @@ char *human_addr2(const struct sockaddr *sa, socklen_t salen,
 
 #define human_addr(x, y, z, w) human_addr2(x, y, z, w, 1)
 
-/* Helper casts */
-#define SA_IN_P(p) (&((struct sockaddr_in *)(p))->sin_addr)
-#define SA_IN_U8_P(p) ((uint8_t*)(&((struct sockaddr_in *)(p))->sin_addr))
-#define SA_IN6_P(p) (&((struct sockaddr_in6 *)(p))->sin6_addr)
-#define SA_IN6_U8_P(p) ((uint8_t*)(&((struct sockaddr_in6 *)(p))->sin6_addr))
-
-#define SA_IN_PORT(p) (((struct sockaddr_in *)(p))->sin_port)
-#define SA_IN6_PORT(p) (((struct sockaddr_in6 *)(p))->sin6_port)
-
-#define SA_IN_P_GENERIC(addr, size) ((size==sizeof(struct sockaddr_in))?SA_IN_U8_P(addr):SA_IN6_U8_P(addr))
-#define SA_IN_P_TYPE(addr, type) ((type==AF_INET)?SA_IN_U8_P(addr):SA_IN6_U8_P(addr))
-#define SA_IN_SIZE(size) ((size==sizeof(struct sockaddr_in))?sizeof(struct in_addr):sizeof(struct in6_addr))
-
 /* macros */
 #define TOS_PACK(x) (x<<4)
 #define TOS_UNPACK(x) (x>>4)
@@ -476,5 +480,7 @@ char *human_addr2(const struct sockaddr *sa, socklen_t salen,
 
 /* Helper structures */
 enum option_types { OPTION_NUMERIC, OPTION_STRING, OPTION_BOOLEAN, OPTION_MULTI_LINE };
+
+#include <ip-util.h>
 
 #endif

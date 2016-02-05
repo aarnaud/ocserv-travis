@@ -605,6 +605,8 @@ LIBLZ4_CFLAGS = @LIBLZ4_CFLAGS@
 LIBLZ4_LIBS = @LIBLZ4_LIBS@
 LIBNL3_CFLAGS = @LIBNL3_CFLAGS@
 LIBNL3_LIBS = @LIBNL3_LIBS@
+LIBOATH_CFLAGS = @LIBOATH_CFLAGS@
+LIBOATH_LIBS = @LIBOATH_LIBS@
 LIBOBJS = @LIBOBJS@
 LIBOPTS_CFLAGS = @LIBOPTS_CFLAGS@
 LIBOPTS_DIR = @LIBOPTS_DIR@
@@ -873,6 +875,7 @@ pdfdir = @pdfdir@
 prefix = @prefix@
 program_transform_name = @program_transform_name@
 psdir = @psdir@
+runstatedir = @runstatedir@
 sbindir = @sbindir@
 sharedstatedir = @sharedstatedir@
 srcdir = @srcdir@
@@ -883,8 +886,8 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 EXTRA_DIST = design.dia sample.config scripts/ocserv-script sample.passwd \
 	systemd/socket-activated/ocserv.service  systemd/standalone/ocserv.service \
-	systemd/socket-activated/ocserv.socket README.radius \
-	profile.xml
+	systemd/socket-activated/ocserv.socket README-radius.md \
+	profile.xml sample.otp
 
 dist_man_MANS = ocserv.8 ocpasswd.8 occtl.8
 all: all-am
@@ -1122,17 +1125,17 @@ uninstall-man: uninstall-man8
 
 
 ocserv.8: ../src/ocserv-args.def
-	-sed 's/@subheading \(.*\)/@*\n@var{\1}\n@*/' $< > "$<".tmp && \
+	-$(SED) 's/@subheading \(.*\)/@*\n@var{\1}\n@*/' $< > "$<".tmp && \
 	@AUTOGEN@ -L../src -DMAN_SECTION=8 -Tagman-cmd.tpl "$<".tmp && \
 	rm -f "$<".tmp
 
 occtl.8: ../src/occtl-args.def
-	-sed 's/@subheading \(.*\)/@*\n@var{\1}\n@*/' $< > "$<".tmp && \
+	-$(SED) 's/@subheading \(.*\)/@*\n@var{\1}\n@*/' $< > "$<".tmp && \
 	@AUTOGEN@ -L../src -DMAN_SECTION=8 -Tagman-cmd.tpl "$<".tmp && \
 	rm -f "$<".tmp
 
 ocpasswd.8: ../src/ocpasswd-args.def
-	-sed 's/@subheading \(.*\)/@*\n@var{\1}\n@*/' $< > "$<".tmp && \
+	-$(SED) 's/@subheading \(.*\)/@*\n@var{\1}\n@*/' $< > "$<".tmp && \
 	@AUTOGEN@ -L../src -DMAN_SECTION=8 -Tagman-cmd.tpl "$<".tmp && \
 	rm -f "$<".tmp
 

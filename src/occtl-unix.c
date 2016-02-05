@@ -359,9 +359,8 @@ int handle_unban_ip_cmd(struct unix_ctx *ctx, const char *arg, cmd_params_st *pa
 	BoolMsg *rep;
 	unsigned status;
 	UnbanReq req = UNBAN_REQ__INIT;
-	char txt[MAX_IP_STR];
 	int af;
-	struct sockaddr_storage st;
+	unsigned char tmp[16];
 	PROTOBUF_ALLOCATOR(pa, ctx);
 
 	if (arg == NULL || need_help(arg)) {
@@ -378,12 +377,16 @@ int handle_unban_ip_cmd(struct unix_ctx *ctx, const char *arg, cmd_params_st *pa
 		af = AF_INET;
 	}
 
-	ret = inet_pton(af, arg, &st);
+	ret = inet_pton(af, arg, tmp);
 	if (ret == 1) {
-		inet_ntop(af, &st, txt, sizeof(txt));
-		req.ip = txt;
+		req.ip.data = tmp;
+		if (af == AF_INET)
+			req.ip.len = 4;
+		else
+			req.ip.len = 16;
 	} else {
-		req.ip = (char*)arg;
+		fprintf(stderr, "Cannot parse IP: %s", arg);
+		return 1;
 	}
 
 	ret = send_cmd(ctx, CTL_CMD_UNBAN_IP, &req, 
@@ -592,7 +595,7 @@ int handle_list_users_cmd(struct unix_ctx *ctx, const char *arg, cmd_params_st *
 				dtls_ciphersuite += 16;
 			fprintf(out, "%s %14s %9s\n", tmpbuf, dtls_ciphersuite, rep->user[i]->status);
 		} else {
-			fprintf(out, "%s %14s %9s\n", tmpbuf, "(no dtls)", rep->user[i]->status);
+			fprintf(out, "%s %14s %9s\n", tmpbuf, "(no-dtls)", rep->user[i]->status);
 		}
 
 		entries_add(ctx, username, strlen(username), rep->user[i]->id);
@@ -628,6 +631,8 @@ int handle_list_banned_cmd(struct unix_ctx *ctx, const char *arg, cmd_params_st 
 	struct tm *tm;
 	time_t t;
 	PROTOBUF_ALLOCATOR(pa, ctx);
+	char txt_ip[MAX_IP_STR];
+	const char *tmp_str;
 
 	init_reply(&raw);
 
@@ -647,9 +652,15 @@ int handle_list_banned_cmd(struct unix_ctx *ctx, const char *arg, cmd_params_st 
 	print_array_block(out, params);
 
 	for (i=0;i<rep->n_info;i++) {
-		if (rep->info[i]->ip == NULL)
+		if (rep->info[i]->ip.len <= 4)
 			continue;
 
+		if (rep->info[i]->ip.len == 16)
+			tmp_str = inet_ntop(AF_INET6, rep->info[i]->ip.data, txt_ip, sizeof(txt_ip));
+		else
+			tmp_str = inet_ntop(AF_INET, rep->info[i]->ip.data, txt_ip, sizeof(txt_ip));
+		if (tmp_str == NULL)
+			strlcpy(txt_ip, "(unknown)", sizeof(txt_ip));
 
 		/* add header */
 		if (points == 0) {
@@ -670,12 +681,12 @@ int handle_list_banned_cmd(struct unix_ctx *ctx, const char *arg, cmd_params_st 
 			print_time_ival7(tmpbuf, t, time(0));
 
 			if (HAVE_JSON(params)) {
-				print_single_value(out, params, "IP", rep->info[i]->ip, 1);
+				print_single_value(out, params, "IP", txt_ip, 1);
 				print_single_value_ex(out, params, "Since", str_since, tmpbuf, 1);
 				print_single_value_int(out, params, "Score", rep->info[i]->score, 0);
 			} else {
 				fprintf(out, "%14s %14u %30s (%s)\n",
-					rep->info[i]->ip, (unsigned)rep->info[i]->score, str_since, tmpbuf);
+					txt_ip, (unsigned)rep->info[i]->score, str_since, tmpbuf);
 			}
 		} else {
 			if (i == 0 && NO_JSON(params)) {
@@ -685,17 +696,17 @@ int handle_list_banned_cmd(struct unix_ctx *ctx, const char *arg, cmd_params_st 
 			print_start_block(out, params);
 
 			if (HAVE_JSON(params)) {
-				print_single_value(out, params, "IP", rep->info[i]->ip, 1);
+				print_single_value(out, params, "IP", txt_ip, 1);
 				print_single_value_int(out, params, "Score", rep->info[i]->score, 0);
 			} else {
 				fprintf(out, "%14s %14u\n",
-					rep->info[i]->ip, (unsigned)rep->info[i]->score);
+					txt_ip, (unsigned)rep->info[i]->score);
 			}
 		}
 
 		print_end_block(out, params, i<(rep->n_info-1)?1:0);
 
-		ip_entries_add(ctx, rep->info[i]->ip, strlen(rep->info[i]->ip));
+		ip_entries_add(ctx, txt_ip, strlen(txt_ip));
 	}
 
 	print_end_array_block(out, params);
@@ -742,6 +753,7 @@ int common_info_cmd(UserListRep * args, FILE *out, cmd_params_st *params)
 	char *groupname = "";
 	char str_since[64];
 	char tmpbuf[MAX_TMPSTR_SIZE];
+	char tmpbuf2[MAX_TMPSTR_SIZE];
 	struct tm *tm;
 	time_t t;
 	unsigned at_least_one = 0;
@@ -779,7 +791,12 @@ int common_info_cmd(UserListRep * args, FILE *out, cmd_params_st *params)
 			groupname = NO_GROUP;
 
 		print_pair_value(out, params, "Username", username, "Groupname", groupname, 1);
-		print_pair_value(out, params, "State", args->user[i]->status, "Remote IP", args->user[i]->ip, 1);
+		print_single_value(out, params, "State", args->user[i]->status, 1);
+		if (args->user[i]->has_mtu != 0)
+			print_pair_value(out, params, "Device", args->user[i]->tun, "MTU", int2str(tmpbuf, args->user[i]->mtu), 1);
+		else
+			print_single_value(out, params, "Device", args->user[i]->tun, 1);
+		print_pair_value(out, params, "Remote IP", args->user[i]->ip, "Local Device IP", args->user[i]->local_dev_ip, 1);
 
 		if (args->user[i]->local_ip != NULL && args->user[i]->local_ip[0] != 0 &&
 		    args->user[i]->remote_ip != NULL && args->user[i]->remote_ip[0] != 0) {
@@ -789,11 +806,6 @@ int common_info_cmd(UserListRep * args, FILE *out, cmd_params_st *params)
 		    args->user[i]->remote_ip6 != NULL && args->user[i]->remote_ip6[0] != 0) {
 			print_pair_value(out, params, "IPv6", args->user[i]->local_ip6, "P-t-P IPv6", args->user[i]->remote_ip6, 1);
 		}
-
-		if (args->user[i]->has_mtu != 0)
-			print_pair_value(out, params, "Device", args->user[i]->tun, "MTU", int2str(tmpbuf, args->user[i]->mtu), 1);
-		else
-			print_single_value(out, params, "Device", args->user[i]->tun, 1);
 
 		print_single_value(out, params, "User-Agent", args->user[i]->user_agent, 1);
 
@@ -818,6 +830,8 @@ int common_info_cmd(UserListRep * args, FILE *out, cmd_params_st *params)
 
 		print_iface_stats(args->user[i]->tun, args->user[i]->conn_time, out, params, 1);
 
+		print_pair_value(out, params, "DPD", int2str(tmpbuf, args->user[i]->dpd), "KeepAlive", int2str(tmpbuf2, args->user[i]->keepalive), 1);
+
 		print_single_value(out, params, "Hostname", args->user[i]->hostname, 1);
 
 		print_time_ival7(tmpbuf, time(0), t);
@@ -835,6 +849,9 @@ int common_info_cmd(UserListRep * args, FILE *out, cmd_params_st *params)
 		if (print_list_entries(out, params, "NBNS", args->user[i]->nbns, args->user[i]->n_nbns, 1) < 0)
 			goto error_parse;
 
+		if (print_list_entries(out, params, "Split-DNS-Domains", args->user[i]->domains, args->user[i]->n_domains, 1) < 0)
+			goto error_parse;
+
 		if ((r = print_list_entries(out, params, "Routes", args->user[i]->routes, args->user[i]->n_routes, 1)) < 0)
 			goto error_parse;
 		if (r == 0) {
@@ -844,8 +861,10 @@ int common_info_cmd(UserListRep * args, FILE *out, cmd_params_st *params)
 		if ((r = print_list_entries(out, params, "No-routes", args->user[i]->no_routes, args->user[i]->n_no_routes, 1)) < 0)
 			goto error_parse;
 
-		if (print_list_entries(out, params, "iRoutes", args->user[i]->iroutes, args->user[i]->n_iroutes, 0) < 0)
+		if (print_list_entries(out, params, "iRoutes", args->user[i]->iroutes, args->user[i]->n_iroutes, 1) < 0)
 			goto error_parse;
+
+		print_single_value(out, params, "Restricted to routes", args->user[i]->restrict_to_routes?"True":"False", 0);
 
 		print_end_block(out, params, i<(args->n_user-1)?1:0);
 

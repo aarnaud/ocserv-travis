@@ -29,6 +29,7 @@
 #include <autoopts/options.h>
 #include <limits.h>
 #include <common.h>
+#include <ip-util.h>
 #include <c-strcase.h>
 
 #ifdef HAVE_RADIUS
@@ -73,6 +74,10 @@ static int get_sup_config(struct cfg_st *cfg, client_entry_st *entry,
 		}
 	}
 
+	for (i=0;i<msg->n_routes;i++) {
+		ip_route_sanity_check(msg->routes, &msg->routes[i]);
+	}
+
 	if (pctx->ipv4_dns1[0] != 0)
 		dns++;
 	if (pctx->ipv4_dns2[0] != 0)
@@ -107,9 +112,9 @@ static int get_sup_config(struct cfg_st *cfg, client_entry_st *entry,
 		msg->ipv6_net = talloc_strdup(pool, pctx->ipv6_net);
 	}
 
-	if (pctx->ipv6_prefix != 0) {
-		msg->ipv6_prefix = pctx->ipv6_prefix;
-		msg->has_ipv6_prefix = 1;
+	if (pctx->ipv6_subnet_prefix != 0) {
+		msg->ipv6_subnet_prefix = pctx->ipv6_subnet_prefix;
+		msg->has_ipv6_subnet_prefix = 1;
 	}
 
 	return 0;
