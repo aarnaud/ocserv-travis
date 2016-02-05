@@ -1,3 +1,19 @@
+ocserv (0.10.11-1) unstable; urgency=medium
+
+  * New upstream bug fix release
+  * d/rules:
+    - Disable parallel building
+    - Make use of dh-systemd
+  * d/control:
+    - Use libsystemd-dev (Closes: #813377)
+    - Add libkrb5-dev and liboath-dev to B-D
+    - std-ver: 3,9.6 -> 3.9.7, no change
+    - Add VCS-* fields
+    - Better tune arch list
+  * Update example configuration, ship as default now
+
+ -- Aron Xu <aron@debian.org>  Sat, 06 Feb 2016 03:22:56 +0800
+
 ocserv (0.10.10-1) unstable; urgency=medium
 
   * New upstream release
