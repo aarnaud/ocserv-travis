@@ -1,6 +1,7 @@
-ocserv (0.10.10-1) UNRELEASED; urgency=medium
+ocserv (0.10.10-1) unstable; urgency=medium
 
   * New upstream release
+  * Add dbus to Depends (Closes: #807571)
 
  -- Aron Xu <aron@debian.org>  Tue, 15 Dec 2015 16:36:00 +0800
 
