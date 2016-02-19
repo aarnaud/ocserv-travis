@@ -1,3 +1,9 @@
+ocserv (0.10.11-2) unstable; urgency=medium
+
+  * Use radcli for Radius support (Closes: #813690)
+
+ -- Aron Xu <aron@debian.org>  Fri, 19 Feb 2016 09:18:55 +0800
+
 ocserv (0.10.11-1) unstable; urgency=medium
 
   * New upstream bug fix release
