@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2013 Nikos Mavrogiannopoulos
+ * Copyright (C) 2015 Red Hat, Inc.
  *
  * Author: Nikos Mavrogiannopoulos
  *
@@ -31,6 +32,7 @@
 #include <common.h>
 #include <sys/un.h>
 #include <sys/uio.h>
+#include <ev.h>
 
 #if defined(__FreeBSD__) || defined(__OpenBSD__)
 # include <limits.h>
@@ -42,17 +44,15 @@
 extern int saved_argc;
 extern char **saved_argv;
 
-extern sigset_t sig_default_set;
-int cmd_parser (void *pool, int argc, char **argv, struct perm_cfg_st** config);
-void reload_cfg_file(void *pool, struct perm_cfg_st* config);
-void clear_cfg(struct perm_cfg_st* config);
-void write_pid_file(void);
-void remove_pid_file(void);
+extern struct ev_loop *loop;
+extern ev_timer maintainance_watcher;
 
-/* set to 1 to start cleaning up cookies, sessions etc. */
-extern unsigned int need_maintenance;
+#define MAIN_MAINTAINANCE_TIME (900)
+
+int cmd_parser (void *pool, int argc, char **argv, struct perm_cfg_st** config);
 
 struct listener_st {
+	ev_io io;
 	struct list_node list;
 	int fd;
 	sock_type_t sock_type;
@@ -69,6 +69,9 @@ struct listen_list_st {
 };
 
 struct script_wait_st {
+	/* must be first so that this structure can behave as ev_child */
+	struct ev_child ev_child;
+
 	struct list_node list;
 
 	pid_t pid;
@@ -76,17 +79,13 @@ struct script_wait_st {
 	struct proc_st* proc;
 };
 
-enum {
-	PS_AUTH_INACTIVE, /* no comm with worker */
-	PS_AUTH_FAILED, /* no tried authenticated but failed */
-	PS_AUTH_INIT, /* worker has sent an auth init msg */
-	PS_AUTH_CONT, /* worker has sent an auth cont msg */
-	PS_AUTH_COMPLETED /* successful authentication */
-};
-
 /* Each worker process maps to a unique proc_st structure.
  */
 typedef struct proc_st {
+	/* This is first so this structure can behave as an ev_io */
+	struct ev_io io;
+	struct ev_child ev_child;
+
 	struct list_node list;
 	int fd; /* the command file descriptor */
 	pid_t pid;
@@ -105,7 +104,7 @@ typedef struct proc_st {
 	struct sockaddr_storage our_addr; /* our address */
 	socklen_t our_addr_len;
 
-	/* The SID present in the cookie. Used for session control only */
+	/* The SID which acts as a cookie */
 	uint8_t sid[SID_SIZE];
 	unsigned active_sid;
 
@@ -136,15 +135,18 @@ typedef struct proc_st {
 	uint8_t ipv4_seed[4];
 
 	unsigned status; /* PS_AUTH_ */
-	unsigned resume_reqs; /* the number of requests received */
 
 	/* these are filled in after the worker process dies, using the
 	 * Cli stats message. */
 	uint64_t bytes_in;
 	uint64_t bytes_out;
+	uint32_t discon_reason; /* filled on session close */
 	
 	unsigned applied_iroutes; /* whether the iroutes in the config have been successfully applied */
-	struct group_cfg_st config; /* custom user/group config */
+
+	/* The following we rely on talloc for deallocation */
+	GroupCfgSt *config; /* custom user/group config */
+	int *config_usage_count; /* points to s->config->usage_count */
 } proc_st;
 
 struct ip_lease_db_st {
@@ -173,16 +175,10 @@ typedef struct main_server_st {
 	
 	struct ip_lease_db_st ip_leases;
 
-	tls_sess_db_st tls_db;
 	struct htable *ban_db;
 
 	tls_st *creds;
 	
-	uint8_t cookie_key[COOKIE_KEY_SIZE];
-	/* when we rotate keys, key the previous one active for verification */
-	uint8_t prev_cookie_key[COOKIE_KEY_SIZE];
-	unsigned prev_cookie_key_active;
-
 	struct listen_list_st listen_list;
 	struct proc_list_st proc_list;
 	struct script_list_st script_list;
@@ -200,41 +196,34 @@ typedef struct main_server_st {
 	/* updated on the cli_stats_msg from sec-mod. 
 	 * Holds the number of entries in secmod list of users */
 	unsigned secmod_client_entries;
+	unsigned tlsdb_entries;
 	time_t start_time;
 
 	void * auth_extra;
 
-#ifdef HAVE_DBUS
-	void * ctl_ctx;
-#else
+	/* This one is on worker pool */
+	struct worker_st *ws;
+
+	int top_fd;
 	int ctl_fd;
-#endif
+
 	int sec_mod_fd; /* messages are sent and received async */
 	int sec_mod_fd_sync; /* messages are send in a sync order (ping-pong). Only main sends. */
 	void *main_pool; /* talloc main pool */
+
+	/* used as temporary buffer (currently by forward_udp_to_owner) */
+	uint8_t msg_buffer[MAX_MSG_SIZE];
 } main_server_st;
 
 void clear_lists(main_server_st *s);
 
-int handle_commands(main_server_st *s, struct proc_st* cur);
+int handle_worker_commands(main_server_st *s, struct proc_st* cur);
 int handle_sec_mod_commands(main_server_st *s);
 
 int user_connected(main_server_st *s, struct proc_st* cur);
 void user_disconnected(main_server_st *s, struct proc_st* cur);
 
-void expire_tls_sessions(main_server_st *s);
-
 int send_udp_fd(main_server_st* s, struct proc_st * proc, int fd);
-
-int handle_resume_delete_req(main_server_st* s, struct proc_st * proc,
-  			   const SessionResumeFetchMsg * req);
-
-int handle_resume_fetch_req(main_server_st* s, struct proc_st * proc,
-  			   const SessionResumeFetchMsg * req, 
-  			   SessionResumeReplyMsg* rep);
-
-int handle_resume_store_req(main_server_st* s, struct proc_st *proc,
-  			   const SessionResumeStoreReqMsg *);
 
 int session_open(main_server_st * s, struct proc_st *proc, const uint8_t *cookie, unsigned cookie_size);
 int session_close(main_server_st * s, struct proc_st *proc);
@@ -292,6 +281,16 @@ struct proc_st *new_proc(main_server_st * s, pid_t pid, int cmd_fd,
 
 void remove_proc(main_server_st* s, struct proc_st *proc, unsigned flags);
 void proc_to_zombie(main_server_st* s, struct proc_st *proc);
+
+inline static void terminate_proc(main_server_st *s, proc_st *proc)
+{
+	/* if it has an IP, send a signal so that we cleanup
+	 * and get stats properly */
+	if (proc->pid != -1 && proc->pid != 0)
+                kill(proc->pid, SIGTERM);
+	else
+		remove_proc(s, proc, RPROC_KILL);
+}
 
 void put_into_cgroup(main_server_st * s, const char* cgroup, pid_t pid);
 

@@ -27,9 +27,6 @@
 /* nls support in libopts */
 #undef ENABLE_NLS
 
-/* Define this to 1 if F_DUPFD behavior does not match POSIX */
-#undef FCNTL_DUPFD_BUGGY
-
 /* fopen(3) accepts a 'b' in the mode flag */
 #undef FOPEN_BINARY_FLAG
 
@@ -47,21 +44,13 @@
    whether the gnulib module fscanf shall be considered present. */
 #undef GNULIB_FSCANF
 
+/* Define to 1 if printf and friends should be labeled with attribute
+   "__gnu_printf__" instead of "__printf__" */
+#undef GNULIB_PRINTF_ATTRIBUTE_FLAVOR_GNU
+
 /* Define to a C preprocessor expression that evaluates to 1 or 0, depending
    whether the gnulib module scanf shall be considered present. */
 #undef GNULIB_SCANF
-
-/* Define to 1 when the gnulib module cloexec should be tested. */
-#undef GNULIB_TEST_CLOEXEC
-
-/* Define to 1 when the gnulib module close should be tested. */
-#undef GNULIB_TEST_CLOSE
-
-/* Define to 1 when the gnulib module dup2 should be tested. */
-#undef GNULIB_TEST_DUP2
-
-/* Define to 1 when the gnulib module fcntl should be tested. */
-#undef GNULIB_TEST_FCNTL
 
 /* Define to 1 when the gnulib module fseek should be tested. */
 #undef GNULIB_TEST_FSEEK
@@ -74,9 +63,6 @@
 
 /* Define to 1 when the gnulib module getdelim should be tested. */
 #undef GNULIB_TEST_GETDELIM
-
-/* Define to 1 when the gnulib module getdtablesize should be tested. */
-#undef GNULIB_TEST_GETDTABLESIZE
 
 /* Define to 1 when the gnulib module getline should be tested. */
 #undef GNULIB_TEST_GETLINE
@@ -116,6 +102,9 @@
 
 /* Define to 1 if you have the `clock_gettime' function. */
 #undef HAVE_CLOCK_GETTIME
+
+/* Enable testing with cwrap */
+#undef HAVE_CWRAP
 
 /* Define to 1 if you have the declaration of `fflush_unlocked', and to 0 if
    you don't. */
@@ -186,17 +175,11 @@
 /* Define to 1 if you don't have `vprintf' but do have `_doprnt.' */
 #undef HAVE_DOPRNT
 
-/* Define to 1 if you have the 'dup2' function. */
-#undef HAVE_DUP2
-
 /* Define to 1 if you have the <errno.h> header file. */
 #undef HAVE_ERRNO_H
 
 /* Define to 1 if you have the `fchmod' function. */
 #undef HAVE_FCHMOD
-
-/* Define to 1 if you have the `fcntl' function. */
-#undef HAVE_FCNTL
 
 /* Define to 1 if you have the <fcntl.h> header file. */
 #undef HAVE_FCNTL_H
@@ -224,9 +207,6 @@
 
 /* Define to 1 if you have the `getdelim' function. */
 #undef HAVE_GETDELIM
-
-/* Define to 1 if you have the `getdtablesize' function. */
-#undef HAVE_GETDTABLESIZE
 
 /* Define to 1 if you have the `getpass' function. */
 #undef HAVE_GETPASS
@@ -263,6 +243,9 @@
 
 /* Define if you have the libcrypt library. */
 #undef HAVE_LIBCRYPT
+
+/* Define if you have the libev library. */
+#undef HAVE_LIBEV
 
 /* Define to 1 if you have the `gen' library (-lgen). */
 #undef HAVE_LIBGEN
@@ -389,6 +372,9 @@
 /* Define to 1 if you have the `posix_memalign' function. */
 #undef HAVE_POSIX_MEMALIGN
 
+/* Define to 1 if you have the `ppoll' function. */
+#undef HAVE_PPOLL
+
 /* Define to 1 if you have the `pselect' function. */
 #undef HAVE_PSELECT
 
@@ -443,9 +429,6 @@
 
 /* Define to 1 if fchownat is declared even after undefining macros. */
 #undef HAVE_RAW_DECL_FCHOWNAT
-
-/* Define to 1 if fcntl is declared even after undefining macros. */
-#undef HAVE_RAW_DECL_FCNTL
 
 /* Define to 1 if fdatasync is declared even after undefining macros. */
 #undef HAVE_RAW_DECL_FDATASYNC
@@ -599,9 +582,6 @@
 
 /* Define to 1 if mkstemps is declared even after undefining macros. */
 #undef HAVE_RAW_DECL_MKSTEMPS
-
-/* Define to 1 if openat is declared even after undefining macros. */
-#undef HAVE_RAW_DECL_OPENAT
 
 /* Define to 1 if pclose is declared even after undefining macros. */
 #undef HAVE_RAW_DECL_PCLOSE
@@ -795,9 +775,6 @@
 /* Define to 1 if you have the <runetype.h> header file. */
 #undef HAVE_RUNETYPE_H
 
-/* Define to 1 if you have the `setdtablesize' function. */
-#undef HAVE_SETDTABLESIZE
-
 /* Define to 1 if you have the `setjmp' function. */
 #undef HAVE_SETJMP
 
@@ -896,9 +873,6 @@
 
 /* Define to 1 if you have the `swapcontext' function. */
 #undef HAVE_SWAPCONTEXT
-
-/* Define to 1 if you have the `symlink' function. */
-#undef HAVE_SYMLINK
 
 /* Define to 1 if you have the <sysexits.h> header file. */
 #undef HAVE_SYSEXITS_H
@@ -1025,12 +999,6 @@
 /* Define to 1 if `fork' works. */
 #undef HAVE_WORKING_FORK
 
-/* Define to 1 if O_NOATIME works. */
-#undef HAVE_WORKING_O_NOATIME
-
-/* Define to 1 if O_NOFOLLOW works. */
-#undef HAVE_WORKING_O_NOFOLLOW
-
 /* Define to 1 if `vfork' works. */
 #undef HAVE_WORKING_VFORK
 
@@ -1060,6 +1028,9 @@
 
 /* Define to a substitute value for mmap()'s MAP_ANONYMOUS flag. */
 #undef MAP_ANONYMOUS
+
+/* nettle uses the pre-3.x base64 API */
+#undef NETTLE_OLD_BASE64_API
 
 /* Define this if optional arguments are disallowed */
 #undef NO_OPTIONAL_OPT_ARGS
@@ -1141,6 +1112,10 @@
 /* Enable GNU extensions on systems that have them.  */
 #ifndef _GNU_SOURCE
 # undef _GNU_SOURCE
+#endif
+/* Use GNU style printf and scanf.  */
+#ifndef __USE_MINGW_ANSI_STDIO
+# undef __USE_MINGW_ANSI_STDIO
 #endif
 /* Enable threading extensions on Solaris.  */
 #ifndef _POSIX_PTHREAD_SEMANTICS
@@ -1300,17 +1275,19 @@
 # define _GL_EXTERN_INLINE static _GL_UNUSED
 #endif
 
-#if 4 < __GNUC__ + (6 <= __GNUC_MINOR__)
+/* In GCC 4.6 (inclusive) to 5.1 (exclusive),
+   suppress bogus "no previous prototype for 'FOO'"
+   and "no previous declaration for 'FOO'" diagnostics,
+   when FOO is an inline function in the header; see
+   <https://gcc.gnu.org/bugzilla/show_bug.cgi?id=54113> and
+   <https://gcc.gnu.org/bugzilla/show_bug.cgi?id=63877>.  */
+#if __GNUC__ == 4 && 6 <= __GNUC_MINOR__
 # if defined __GNUC_STDC_INLINE__ && __GNUC_STDC_INLINE__
 #  define _GL_INLINE_HEADER_CONST_PRAGMA
 # else
 #  define _GL_INLINE_HEADER_CONST_PRAGMA \
      _Pragma ("GCC diagnostic ignored \"-Wsuggest-attribute=const\"")
 # endif
-  /* Suppress GCC's bogus "no previous prototype for 'FOO'"
-     and "no previous declaration for 'FOO'"  diagnostics,
-     when FOO is an inline function in the header; see
-     <http://gcc.gnu.org/bugzilla/show_bug.cgi?id=54113>.  */
 # define _GL_INLINE_HEADER_BEGIN \
     _Pragma ("GCC diagnostic push") \
     _Pragma ("GCC diagnostic ignored \"-Wmissing-prototypes\"") \

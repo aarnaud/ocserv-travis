@@ -1,6 +1,6 @@
 /*
- * Copyright (C) 2013, 2014, 2015 Nikos Mavrogiannopoulos
- * Copyright (C) 2015 Red Hat, Inc.
+ * Copyright (C) 2013-2016 Nikos Mavrogiannopoulos
+ * Copyright (C) 2015, 2016 Red Hat, Inc.
  *
  * This file is part of ocserv.
  *
@@ -45,6 +45,8 @@
 #include <c-strcase.h>
 #include <c-ctype.h>
 #include <worker-bandwidth.h>
+#include <signal.h>
+#include <poll.h>
 
 #if defined(__linux__) &&!defined(IPV6_PATHMTU)
 # define IPV6_PATHMTU 61
@@ -52,21 +54,15 @@
 
 #include <vpn.h>
 #include "ipc.pb-c.h"
-#include <cookies.h>
 #include <worker.h>
 #include <tlslib.h>
 
 #include <http_parser.h>
 
-#if GNUTLS_VERSION_NUMBER >= 0x030305
-# define ZERO_COPY
-#endif
-
 #define MIN_MTU(ws) (((ws)->vinfo.ipv6!=NULL)?1281:257)
 
 #define PERIODIC_CHECK_TIME 30
 #define MIN_STATS_INTERVAL 10
-#define SOCKET_TIMEO_SECS 10
 
 /* The number of DPD packets a client skips before he's kicked */
 #define DPD_TRIES 2
@@ -87,8 +83,6 @@ static int parse_cstp_data(struct worker_st *ws, uint8_t * buf, size_t buf_size,
 			   time_t);
 static int parse_dtls_data(struct worker_st *ws, uint8_t * buf, size_t buf_size,
 			   time_t);
-void exit_worker(worker_st * ws);
-static void exit_worker_reason(worker_st * ws, unsigned reason);
 static int connect_handler(worker_st * ws);
 static void session_info_send(worker_st * ws);
 
@@ -105,6 +99,26 @@ static void handle_term(int signo)
 	terminate = 1;
 	terminate_reason = REASON_SERVER_DISCONNECT;
 	alarm(2);		/* force exit by SIGALRM */
+}
+
+/* we override that function to force gnutls use poll()
+ */
+static
+int tls_pull_timeout(gnutls_transport_ptr_t ptr, unsigned int ms)
+{
+	int ret;
+	int fd = (long)ptr;
+	struct pollfd pfd;
+
+	pfd.fd = fd;
+	pfd.events = POLLIN;
+	pfd.revents = 0;
+
+	ret = poll(&pfd, 1, ms);
+	if (ret <= 0)
+		return ret;
+
+	return ret;
 }
 
 inline static ssize_t dtls_pull_buffer_non_empty(gnutls_transport_ptr_t ptr)
@@ -137,28 +151,20 @@ ssize_t dtls_pull(gnutls_transport_ptr_t ptr, void *data, size_t size)
 static
 int dtls_pull_timeout(gnutls_transport_ptr_t ptr, unsigned int ms)
 {
-	fd_set rfds;
-	struct timeval tv;
 	int ret;
 	dtls_transport_ptr *p = ptr;
 	int fd = p->fd;
+	struct pollfd pfd;
 
 	if (dtls_pull_buffer_non_empty(ptr)) {
 		return 1;
 	}
 
-	FD_ZERO(&rfds);
-	FD_SET(fd, &rfds);
+	pfd.fd = fd;
+	pfd.events = POLLIN;
+	pfd.revents = 0;
 
-	tv.tv_sec = 0;
-	tv.tv_usec = ms * 1000;
-
-	while (tv.tv_usec >= 1000000) {
-		tv.tv_usec -= 1000000;
-		tv.tv_sec++;
-	}
-
-	ret = select(fd + 1, &rfds, NULL, NULL, &tv);
+	ret = poll(&pfd, 1, ms);
 	if (ret <= 0)
 		return ret;
 
@@ -210,7 +216,8 @@ static int setup_dtls_connection(struct worker_st *ws)
 	ret = gnutls_session_set_premaster(session, GNUTLS_SERVER,
 					   ws->req.
 					   selected_ciphersuite->gnutls_version,
-					   GNUTLS_KX_RSA,
+					   ws->req.
+					   selected_ciphersuite->gnutls_kx,
 					   ws->req.
 					   selected_ciphersuite->gnutls_cipher,
 					   ws->req.
@@ -330,7 +337,7 @@ void send_stats_to_secmod(worker_st * ws, time_t now, unsigned discon_reason)
 		msg.ipv4 = ws->vinfo.ipv4;
 		msg.ipv6 = ws->vinfo.ipv6;
 
-		ret = send_msg_to_secmod(ws, sd, SM_CMD_CLI_STATS, &msg,
+		ret = send_msg_to_secmod(ws, sd, CMD_SEC_CLI_STATS, &msg,
 				 (pack_size_func)cli_stats_msg__get_packed_size,
 				 (pack_func) cli_stats_msg__pack);
 		close(sd);
@@ -355,7 +362,7 @@ void exit_worker(worker_st * ws)
 	exit_worker_reason(ws, REASON_ANY);
 }
 
-static void exit_worker_reason(worker_st * ws, unsigned reason)
+void exit_worker_reason(worker_st * ws, unsigned reason)
 {
 	/* send statistics to parent */
 	if (ws->auth_state == S_AUTH_COMPLETE) {
@@ -387,7 +394,6 @@ static void exit_worker_reason(worker_st * ws, unsigned reason)
  */
 void vpn_server(struct worker_st *ws)
 {
-	unsigned char buf[2048];
 	int ret;
 	ssize_t nparsed, nrecvd;
 	gnutls_session_t session = NULL;
@@ -409,7 +415,7 @@ void vpn_server(struct worker_st *ws)
 
 	/* do not allow this process to be traced. That
 	 * prevents worker processes tracing each other. */
-	if (ws->config->debug == 0)
+	if (ws->perm_config->debug == 0)
 		pr_set_undumpable("worker");
 	if (ws->config->isolate != 0) {
 		ret = disable_system_calls(ws);
@@ -418,7 +424,7 @@ void vpn_server(struct worker_st *ws)
 			      "could not disable system calls, kernel might not support seccomp");
 		}
 	}
-	ws->session_start_time = ws->last_stats_msg = time(0);
+	ws->session_start_time = time(0);
 
 	if (ws->remote_addr_len == sizeof(struct sockaddr_in))
 		ws->proto = AF_INET;
@@ -454,16 +460,18 @@ void vpn_server(struct worker_st *ws)
 
 		gnutls_transport_set_ptr(session,
 				 (gnutls_transport_ptr_t) (long)ws->conn_fd);
+
 		set_resume_db_funcs(session);
 		gnutls_session_set_ptr(session, ws);
 		gnutls_db_set_ptr(session, ws);
 		gnutls_db_set_cache_expiration(session, TLS_SESSION_EXPIRATION_TIME(ws->config));
 
 		gnutls_handshake_set_timeout(session, GNUTLS_DEFAULT_HANDSHAKE_TIMEOUT);
+		gnutls_transport_set_pull_timeout_function(session, tls_pull_timeout);
 		do {
 			ret = gnutls_handshake(session);
 		} while (ret < 0 && gnutls_error_is_fatal(ret) == 0);
-		GNUTLS_S_FATAL_ERR(session, ret);
+		GNUTLS_FATAL_ERR(ret);
 
 		oclog(ws, LOG_DEBUG, "TLS handshake completed");
 	} else {
@@ -505,7 +513,7 @@ void vpn_server(struct worker_st *ws)
 	http_req_reset(ws);
 	/* parse as we go */
 	do {
-		nrecvd = cstp_recv(ws, buf, sizeof(buf));
+		nrecvd = cstp_recv(ws, ws->buffer, sizeof(ws->buffer));
 		if (nrecvd <= 0) {
 			if (nrecvd == 0)
 				goto finish;
@@ -516,7 +524,7 @@ void vpn_server(struct worker_st *ws)
 		}
 
 		nparsed =
-		    http_parser_execute(&parser, &settings, (void *)buf,
+		    http_parser_execute(&parser, &settings, (void *)ws->buffer,
 					nrecvd);
 		if (nparsed == 0) {
 			oclog(ws, LOG_INFO, "error parsing HTTP request");
@@ -529,7 +537,7 @@ void vpn_server(struct worker_st *ws)
 		fn = http_get_url_handler(ws->req.url);
 		if (fn == NULL) {
 			oclog(ws, LOG_HTTP_DEBUG, "unexpected URL %s", ws->req.url);
-			cstp_puts(ws, "HTTP/1.1 404 Not found\r\n\r\n");
+			response_404(ws, parser.http_minor);
 			goto finish;
 		}
 		ret = fn(ws, parser.http_minor);
@@ -541,11 +549,17 @@ void vpn_server(struct worker_st *ws)
 		/* continue reading */
 		oclog(ws, LOG_HTTP_DEBUG, "HTTP POST %s", ws->req.url);
 		while (ws->req.message_complete == 0) {
-			nrecvd = cstp_recv(ws, buf, sizeof(buf));
-			FATAL_ERR(ws, nrecvd);
+			nrecvd = cstp_recv(ws, ws->buffer, sizeof(ws->buffer));
+			CSTP_FATAL_ERR(ws, nrecvd);
+
+			if (nrecvd == 0) {
+				oclog(ws, LOG_HTTP_DEBUG,
+				      "EOF while receiving HTTP POST request");
+				exit_worker(ws);
+			}
 
 			nparsed =
-			    http_parser_execute(&parser, &settings, (void *)buf,
+			    http_parser_execute(&parser, &settings, (void *)ws->buffer,
 						nrecvd);
 			if (nparsed == 0) {
 				oclog(ws, LOG_HTTP_DEBUG,
@@ -558,7 +572,7 @@ void vpn_server(struct worker_st *ws)
 		if (fn == NULL) {
 			oclog(ws, LOG_HTTP_DEBUG, "unexpected POST URL %s",
 			      ws->req.url);
-			cstp_puts(ws, "HTTP/1.1 404 Not found\r\n\r\n");
+			response_404(ws, parser.http_minor);
 			goto finish;
 		}
 
@@ -577,8 +591,7 @@ void vpn_server(struct worker_st *ws)
 	} else {
 		oclog(ws, LOG_HTTP_DEBUG, "unexpected HTTP method %s",
 		      http_method_str(parser.method));
-		cstp_printf(ws, "HTTP/1.%u 404 Nah, go away\r\n\r\n",
-			   parser.http_minor);
+		response_404(ws, parser.http_minor);
 	}
 
  finish:
@@ -618,6 +631,10 @@ void session_info_send(worker_st * ws)
 
 	if (ws->req.user_agent[0] != 0) {
 		msg.user_agent = ws->req.user_agent;
+	}
+
+	if (ws->req.hostname[0] != 0) {
+		msg.hostname = ws->req.hostname;
 	}
 
 	if (ws->config->listen_proxy_proto) {
@@ -774,6 +791,12 @@ int periodic_check(worker_st * ws, unsigned mtu_overhead, struct timespec *tnow,
 	if (now - ws->last_periodic_check < periodic_check_time)
 		return 0;
 
+	/* we set an alarm at each periodic check to prevent any
+	 * freezes in the worker due to an unexpected block (due to worker
+	 * bug or kernel bug). In that case the worker will be killed due
+	 * the the alarm instead of hanging. */
+	alarm(1800);
+
 	if (ws->config->idle_timeout > 0) {
 		if (now - ws->last_nc_msg > ws->config->idle_timeout) {
 			oclog(ws, LOG_ERR,
@@ -785,8 +808,8 @@ int periodic_check(worker_st * ws, unsigned mtu_overhead, struct timespec *tnow,
 		}
 	}
 
-	if (ws->config->session_timeout > 0) {
-		if (now - ws->session_start_time > ws->config->session_timeout) {
+	if (ws->user_config->session_timeout_secs > 0) {
+		if (now - ws->session_start_time > ws->user_config->session_timeout_secs) {
 			oclog(ws, LOG_ERR,
 			      "session timeout reached for process (%d secs)",
 			      (int)(now - ws->session_start_time));
@@ -796,8 +819,8 @@ int periodic_check(worker_st * ws, unsigned mtu_overhead, struct timespec *tnow,
 		}
 	}
 
-	if (ws->config->stats_report_time > 0 &&
-	    now - ws->last_stats_msg >= ws->config->stats_report_time &&
+	if (ws->user_config->interim_update_secs > 0 &&
+	    now - ws->last_stats_msg >= ws->user_config->interim_update_secs &&
 	    ws->sid_set) {
 		send_stats_to_secmod(ws, now, 0);
 	}
@@ -811,7 +834,7 @@ int periodic_check(worker_st * ws, unsigned mtu_overhead, struct timespec *tnow,
 
 		ws->buffer[0] = AC_PKT_DPD_OUT;
 		ret = dtls_send(ws, ws->buffer, 1);
-		GNUTLS_FATAL_ERR_CMD(ret, exit_worker_reason(ws, REASON_ERROR));
+		DTLS_FATAL_ERR_CMD(ret, exit_worker_reason(ws, REASON_ERROR));
 
 		if (now - ws->last_msg_udp > DPD_MAX_TRIES * dpd) {
 			oclog(ws, LOG_ERR,
@@ -833,7 +856,7 @@ int periodic_check(worker_st * ws, unsigned mtu_overhead, struct timespec *tnow,
 		ws->buffer[7] = 0;
 
 		ret = cstp_send(ws, ws->buffer, 8);
-		FATAL_ERR_CMD(ws, ret, exit_worker_reason(ws, REASON_ERROR));
+		CSTP_FATAL_ERR_CMD(ws, ret, exit_worker_reason(ws, REASON_ERROR));
 
 		if (now - ws->last_msg_tcp > DPD_MAX_TRIES * dpd) {
 			oclog(ws, LOG_ERR,
@@ -886,7 +909,7 @@ static void set_net_priority(worker_st * ws, int fd, int priority)
 
 #ifdef SO_PRIORITY
 	if (priority != 0 && priority <= 7) {
-		t = ws->config->net_priority - 1;
+		t = ws->user_config->net_priority - 1;
 		ret = setsockopt(fd, SOL_SOCKET, SO_PRIORITY, &t, sizeof(t));
 		if (ret == -1)
 			oclog(ws, LOG_DEBUG,
@@ -904,9 +927,7 @@ static int dtls_mainloop(worker_st * ws, struct timespec *tnow)
 {
 	int ret;
 	gnutls_datum_t data;
-#ifdef ZERO_COPY
-	gnutls_packet_t packet = NULL;
-#endif
+	void *packet = NULL;
 
 	switch (ws->udp_state) {
 	case UP_ACTIVE:
@@ -922,23 +943,11 @@ static int dtls_mainloop(worker_st * ws, struct timespec *tnow)
 		}
 #endif
 
-#ifdef ZERO_COPY
-		ret = gnutls_record_recv_packet(ws->dtls_session, &packet);
-		if (ret > 0) {
-			gnutls_packet_get(packet, &data, NULL);
-		} else {
-			data.size = 0;
-		}
-#else
-		ret =
-		    gnutls_record_recv(ws->dtls_session, ws->buffer, ws->buffer_size);
-		data.data = ws->buffer;
-		data.size = ret;
-#endif
+		ret = dtls_recv_packet(ws, &data, &packet);
 		oclog(ws, LOG_TRANSFER_DEBUG,
 		      "received %d byte(s) (DTLS)", ret);
 
-		GNUTLS_FATAL_ERR_CMD(ret, exit_worker_reason(ws, REASON_ERROR));
+		DTLS_FATAL_ERR_CMD(ret, exit_worker_reason(ws, REASON_ERROR));
 
 		if (ret == GNUTLS_E_REHANDSHAKE) {
 
@@ -962,7 +971,7 @@ static int dtls_mainloop(worker_st * ws, struct timespec *tnow)
 			} while (ret == GNUTLS_E_AGAIN
 				 || ret == GNUTLS_E_INTERRUPTED);
 
-			GNUTLS_FATAL_ERR_CMD(ret, exit_worker_reason(ws, REASON_ERROR));
+			DTLS_FATAL_ERR_CMD(ret, exit_worker_reason(ws, REASON_ERROR));
 			oclog(ws, LOG_DEBUG, "DTLS rehandshake completed");
 
 			ws->last_dtls_rehandshake = tnow->tv_sec;
@@ -1051,10 +1060,7 @@ static int dtls_mainloop(worker_st * ws, struct timespec *tnow)
 
 	ret = 0;
  cleanup:
-#ifdef ZERO_COPY
- 	if (packet)
-	 	gnutls_packet_deinit(packet);
-#endif
+ 	packet_deinit(packet);
 	return ret;
 }
 
@@ -1062,25 +1068,10 @@ static int tls_mainloop(struct worker_st *ws, struct timespec *tnow)
 {
 	int ret;
 	gnutls_datum_t data;
-#ifdef ZERO_COPY
-	gnutls_packet_t packet = NULL;
+	void *packet = NULL;
 
-	if (ws->session != NULL) {
-		ret = gnutls_record_recv_packet(ws->session, &packet);
-		if (ret > 0) {
-			gnutls_packet_get(packet, &data, NULL);
-		}
-	} else {
-		ret = recv(ws->conn_fd, ws->buffer, ws->buffer_size, 0);
-		data.data = ws->buffer;
-		data.size = ret;
-	}
-#else
-	ret = cstp_recv_nb(ws, ws->buffer, ws->buffer_size);
-	data.data = ws->buffer;
-	data.size = ret;
-#endif
-	FATAL_ERR_CMD(ws, ret, exit_worker_reason(ws, REASON_ERROR));
+	ret = cstp_recv_packet(ws, &data, &packet);
+	CSTP_FATAL_ERR_CMD(ws, ret, exit_worker_reason(ws, REASON_ERROR));
 
 	if (ret == 0) {		/* disconnect */
 		oclog(ws, LOG_DEBUG, "client disconnected");
@@ -1120,7 +1111,7 @@ static int tls_mainloop(struct worker_st *ws, struct timespec *tnow)
 		do {
 			ret = gnutls_handshake(ws->session);
 		} while (ret < 0 && gnutls_error_is_fatal(ret) == 0);
-		GNUTLS_FATAL_ERR_CMD(ret, exit_worker_reason(ws, REASON_ERROR));
+		DTLS_FATAL_ERR_CMD(ret, exit_worker_reason(ws, REASON_ERROR));
 
 		ws->last_tls_rehandshake = tnow->tv_sec;
 		oclog(ws, LOG_INFO, "TLS rehandshake completed");
@@ -1128,10 +1119,7 @@ static int tls_mainloop(struct worker_st *ws, struct timespec *tnow)
 
 	ret = 0;
  cleanup:
-#ifdef ZERO_COPY
- 	if (packet)
-	 	gnutls_packet_deinit(packet);
-#endif
+ 	packet_deinit(packet);
 	return ret;
 }
 
@@ -1211,7 +1199,7 @@ static int tun_mainloop(struct worker_st *ws, struct timespec *tnow)
 
 			dtls_to_send.data[7] = dtls_type;
 			ret = dtls_send(ws, dtls_to_send.data + 7, dtls_to_send.size + 1);
-			GNUTLS_FATAL_ERR_CMD(ret, exit_worker_reason(ws, REASON_ERROR));
+			DTLS_FATAL_ERR_CMD(ret, exit_worker_reason(ws, REASON_ERROR));
 
 			if (ret == GNUTLS_E_LARGE_PACKET) {
 				mtu_not_ok(ws);
@@ -1238,7 +1226,7 @@ static int tun_mainloop(struct worker_st *ws, struct timespec *tnow)
 			ws->tun_bytes_out += cstp_to_send.size;
 
 			ret = cstp_send(ws, cstp_to_send.data, cstp_to_send.size + 8);
-			FATAL_ERR_CMD(ws, ret, exit_worker_reason(ws, REASON_ERROR));
+			CSTP_FATAL_ERR_CMD(ws, ret, exit_worker_reason(ws, REASON_ERROR));
 		}
 		ws->last_nc_msg = tnow->tv_sec;
 	}
@@ -1314,15 +1302,15 @@ static int send_routes(worker_st *ws, struct http_req_st *req,
 }
 
 /* Enforces a socket timeout. That is because, although we
- * use select() to see whether a call to recv() would block,
+ * use poll() to see whether a call to recv() would block,
  * there are certain cases in Linux where recv() blocks even
- * though select() notified of data */
+ * though poll() notified of data */
 static void set_socket_timeout(worker_st * ws, int fd)
 {
 	struct timeval tval;
 	int ret;
 
-	tval.tv_sec = SOCKET_TIMEO_SECS;
+	tval.tv_sec = DEFAULT_SOCKET_TIMEOUT;
 	tval.tv_usec = 0;
 	ret =
 	    setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &tval,
@@ -1347,14 +1335,13 @@ static void set_socket_timeout(worker_st * ws, int fd)
 static int connect_handler(worker_st * ws)
 {
 	struct http_req_st *req = &ws->req;
-	fd_set rfds;
+	struct pollfd pfd[4];
+	unsigned pfd_size;
 	int e, max, ret, t;
 	char *p;
 	unsigned rnd;
-#ifdef HAVE_PSELECT
+#ifdef HAVE_PPOLL
 	struct timespec tv;
-#else
-	struct timeval tv;
 #endif
 	unsigned tls_pending, dtls_pending = 0, i;
 	struct timespec tnow;
@@ -1370,37 +1357,11 @@ static int connect_handler(worker_st * ws)
 
 	ws->buffer_size = sizeof(ws->buffer);
 
-	/* we must be in S_AUTH_COOKIE state */
-	if (ws->auth_state != S_AUTH_COOKIE || ws->cookie_set == 0) {
-		oclog(ws, LOG_WARNING, "no cookie found");
-		cstp_puts(ws,
-			 "HTTP/1.1 503 Service Unavailable\r\n\r\n");
-		cstp_fatal_close(ws, GNUTLS_A_ACCESS_DENIED);
-		exit_worker(ws);
-	}
-
-	/* we have authenticated against sec-mod, we need to complete
-	 * our authentication by forwarding our cookie to main. */
-	ret = auth_cookie(ws, ws->cookie, ws->cookie_size);
-	if (ret < 0) {
-		oclog(ws, LOG_WARNING, "failed cookie authentication attempt");
-		if (ret == ERR_AUTH_FAIL) {
-			cstp_puts(ws,
-				 "HTTP/1.1 401 Unauthorized\r\n\r\n");
-			cstp_puts(ws,
-				 "X-Reason: Cookie is not acceptable\r\n\r\n");
-		} else {
-			cstp_puts(ws,
-				 "HTTP/1.1 503 Service Unavailable\r\n\r\n");
-		}
-		cstp_fatal_close(ws, GNUTLS_A_ACCESS_DENIED);
-		exit_worker(ws);
-	}
-	ws->auth_state = S_AUTH_COMPLETE;
+	cookie_authenticate_or_exit(ws);
 
 	if (strcmp(req->url, "/CSCOSSLC/tunnel") != 0) {
 		oclog(ws, LOG_INFO, "bad connect request: '%s'\n", req->url);
-		cstp_puts(ws, "HTTP/1.1 404 Nah, go away\r\n\r\n");
+		response_404(ws, 1);
 		cstp_fatal_close(ws, GNUTLS_A_ACCESS_DENIED);
 		exit_worker(ws);
 	}
@@ -1424,7 +1385,7 @@ static int connect_handler(worker_st * ws)
 		return -1;
 	}
 
-	FUZZ(ws->config->stats_report_time, 5, rnd);
+	FUZZ(ws->user_config->interim_update_secs, 5, rnd);
 	FUZZ(ws->config->rekey_time, 30, rnd);
 
 	/* Connected. Turn of the alarm */
@@ -1443,15 +1404,15 @@ static int connect_handler(worker_st * ws)
 	SEND_ERR(ret);
 
 	if (req->is_mobile) {
-		ws->config->dpd = ws->config->mobile_dpd;
+		ws->user_config->dpd = ws->user_config->mobile_dpd;
 		ws->config->idle_timeout = ws->config->mobile_idle_timeout;
 	}
 
-	oclog(ws, LOG_INFO, "suggesting DPD of %d secs", ws->config->dpd);
-	if (ws->config->dpd > 0) {
+	oclog(ws, LOG_INFO, "suggesting DPD of %d secs", ws->user_config->dpd);
+	if (ws->user_config->dpd > 0) {
 		ret =
 		    cstp_printf(ws, "X-CSTP-DPD: %u\r\n",
-			       ws->config->dpd);
+			       ws->user_config->dpd);
 		SEND_ERR(ret);
 	}
 
@@ -1471,8 +1432,8 @@ static int connect_handler(worker_st * ws)
 	}
 
 	/* calculate base MTU */
-	if (ws->config->default_mtu > 0) {
-		ws->vinfo.mtu = ws->config->default_mtu;
+	if (ws->user_config->mtu > 0) {
+		ws->vinfo.mtu = ws->user_config->mtu;
 	}
 
 	if (req->base_mtu > 0) {
@@ -1529,21 +1490,21 @@ static int connect_handler(worker_st * ws)
 			       ws->vinfo.ipv4);
 		SEND_ERR(ret);
 
-		if (ws->vinfo.ipv4_netmask) {
+		if (ws->user_config->ipv4_netmask) {
 			ret =
 			    cstp_printf(ws, "X-CSTP-Netmask: %s\r\n",
-				       ws->vinfo.ipv4_netmask);
+				       ws->user_config->ipv4_netmask);
 			SEND_ERR(ret);
 		}
 	}
 
-	if (ws->vinfo.ipv6 && req->no_ipv6 == 0 && ws->vinfo.ipv6_prefix != 0) {
-		oclog(ws, LOG_INFO, "sending IPv6 %s/%u", ws->vinfo.ipv6, ws->vinfo.ipv6_prefix);
-		if (ws->full_ipv6 && ws->vinfo.ipv6_prefix) {
+	if (ws->vinfo.ipv6 && req->no_ipv6 == 0 && ws->user_config->ipv6_prefix != 0) {
+		oclog(ws, LOG_INFO, "sending IPv6 %s/%u", ws->vinfo.ipv6, ws->user_config->ipv6_prefix);
+		if (ws->full_ipv6 && ws->user_config->ipv6_prefix) {
 			ret =
 			    cstp_printf(ws,
 				       "X-CSTP-Address-IP6: %s/%u\r\n",
-				       ws->vinfo.ipv6, ws->vinfo.ipv6_prefix);
+				       ws->vinfo.ipv6, ws->user_config->ipv6_prefix);
 			SEND_ERR(ret);
 		} else {
 			const char *net;
@@ -1553,13 +1514,13 @@ static int connect_handler(worker_st * ws)
 				       ws->vinfo.ipv6);
 			SEND_ERR(ret);
 
-			net = ws->vinfo.ipv6_network;
+			net = ws->user_config->ipv6_net;
 			if (net == NULL)
 				net = ws->vinfo.ipv6;
 
 			ret =
 			    cstp_printf(ws, "X-CSTP-Netmask: %s/%u\r\n",
-				        net, ws->vinfo.ipv6_prefix);
+				        net, ws->user_config->ipv6_prefix);
 			SEND_ERR(ret);
 		}
 	}
@@ -1570,8 +1531,8 @@ static int connect_handler(worker_st * ws)
 	if (ws->full_ipv6 == 0 || req->user_agent_type != AGENT_OPENCONNECT)
 		req->no_ipv6 = 1;
 
-	for (i = 0; i < ws->vinfo.dns_size; i++) {
-		if (strchr(ws->vinfo.dns[i], ':') != 0)
+	for (i = 0; i < ws->user_config->n_dns; i++) {
+		if (strchr(ws->user_config->dns[i], ':') != 0)
 			ip6 = 1;
 		else
 			ip6 = 0;
@@ -1581,15 +1542,15 @@ static int connect_handler(worker_st * ws)
 		if (req->no_ipv4 != 0 && ip6 == 0)
 			continue;
 
-		oclog(ws, LOG_INFO, "adding DNS %s", ws->vinfo.dns[i]);
+		oclog(ws, LOG_INFO, "adding DNS %s", ws->user_config->dns[i]);
 		ret =
 		    cstp_printf(ws, "X-CSTP-DNS: %s\r\n",
-			       ws->vinfo.dns[i]);
+			       ws->user_config->dns[i]);
 		SEND_ERR(ret);
 	}
 
-	for (i = 0; i < ws->vinfo.nbns_size; i++) {
-		if (strchr(ws->vinfo.nbns[i], ':') != 0)
+	for (i = 0; i < ws->user_config->n_nbns; i++) {
+		if (strchr(ws->user_config->nbns[i], ':') != 0)
 			ip6 = 1;
 		else
 			ip6 = 0;
@@ -1599,10 +1560,10 @@ static int connect_handler(worker_st * ws)
 		if (req->no_ipv4 != 0 && ip6 == 0)
 			continue;
 
-		oclog(ws, LOG_INFO, "adding NBNS %s", ws->vinfo.nbns[i]);
+		oclog(ws, LOG_INFO, "adding NBNS %s", ws->user_config->nbns[i]);
 		ret =
 		    cstp_printf(ws, "X-CSTP-NBNS: %s\r\n",
-			       ws->vinfo.nbns[i]);
+			       ws->user_config->nbns[i]);
 		SEND_ERR(ret);
 	}
 
@@ -1626,10 +1587,7 @@ static int connect_handler(worker_st * ws)
 	}
 
 	if (ws->default_route == 0) {
-		ret = send_routes(ws, req, ws->vinfo.routes, ws->vinfo.routes_size, 1);
-		SEND_ERR(ret);
-
-		ret = send_routes(ws, req, ws->routes, ws->routes_size, 1);
+		ret = send_routes(ws, req, ws->user_config->routes, ws->user_config->n_routes, 1);
 		SEND_ERR(ret);
 
 	} else {
@@ -1644,15 +1602,12 @@ static int connect_handler(worker_st * ws)
 	}
 	SEND_ERR(ret);
 
-	ret = send_routes(ws, req, ws->vinfo.no_routes, ws->vinfo.no_routes_size, 0);
-	SEND_ERR(ret);
-
-	ret = send_routes(ws, req, ws->no_routes, ws->no_routes_size, 0);
+	ret = send_routes(ws, req, ws->user_config->no_routes, ws->user_config->n_no_routes, 0);
 	SEND_ERR(ret);
 
 	ret =
 	    cstp_printf(ws, "X-CSTP-Keepalive: %u\r\n",
-		       ws->config->keepalive);
+		       ws->user_config->keepalive);
 	SEND_ERR(ret);
 
 	if (ws->config->idle_timeout > 0) {
@@ -1745,7 +1700,7 @@ static int connect_handler(worker_st * ws)
 
 	set_socket_timeout(ws, ws->conn_fd);
 	set_non_block(ws->conn_fd);
-	set_net_priority(ws, ws->conn_fd, ws->config->net_priority);
+	set_net_priority(ws, ws->conn_fd, ws->user_config->net_priority);
 
 	if (ws->udp_state != UP_DISABLED) {
 
@@ -1759,10 +1714,10 @@ static int connect_handler(worker_st * ws)
 			       ws->buffer);
 		SEND_ERR(ret);
 
-		if (ws->config->dpd > 0) {
+		if (ws->user_config->dpd > 0) {
 			ret =
 			    cstp_printf(ws, "X-DTLS-DPD: %u\r\n",
-				       ws->config->dpd);
+				       ws->user_config->dpd);
 			SEND_ERR(ret);
 		}
 
@@ -1788,7 +1743,7 @@ static int connect_handler(worker_st * ws)
 
 		ret =
 		    cstp_printf(ws, "X-DTLS-Keepalive: %u\r\n",
-			       ws->config->keepalive);
+			       ws->user_config->keepalive);
 		SEND_ERR(ret);
 
 		oclog(ws, LOG_INFO, "DTLS ciphersuite: %s",
@@ -1840,7 +1795,7 @@ static int connect_handler(worker_st * ws)
 				      t);
 		}
 
-		set_net_priority(ws, ws->dtls_tptr.fd, ws->config->net_priority);
+		set_net_priority(ws, ws->dtls_tptr.fd, ws->user_config->net_priority);
 		set_socket_timeout(ws, ws->dtls_tptr.fd);
 	}
 
@@ -1891,15 +1846,13 @@ static int connect_handler(worker_st * ws)
 	gettime(&tnow);
 	ws->last_msg_tcp = ws->last_msg_udp = ws->last_nc_msg = tnow.tv_sec;
 
-	bandwidth_init(&ws->b_rx, ws->config->rx_per_sec);
-	bandwidth_init(&ws->b_tx, ws->config->tx_per_sec);
+	bandwidth_init(&ws->b_rx, ws->user_config->rx_per_sec);
+	bandwidth_init(&ws->b_tx, ws->user_config->tx_per_sec);
 
 	sigprocmask(SIG_BLOCK, &blockset, NULL);
 
 	/* worker main loop  */
 	for (;;) {
-		FD_ZERO(&rfds);
-
 		if (terminate != 0) {
  terminate:
 			ws->buffer[0] = 'S';
@@ -1931,28 +1884,36 @@ static int connect_handler(worker_st * ws)
 			dtls_pending = 0;
 		}
 
+		pfd[0].revents = 0;
+		pfd[1].revents = 0;
+		pfd[2].revents = 0;
+		pfd[3].revents = 0;
+
 		if (tls_pending == 0 && dtls_pending == 0) {
-			FD_SET(ws->conn_fd, &rfds);
-			FD_SET(ws->cmd_fd, &rfds);
-			FD_SET(ws->tun_fd, &rfds);
-			max = MAX(ws->cmd_fd, ws->conn_fd);
-			max = MAX(max, ws->tun_fd);
+			pfd[0].fd = ws->conn_fd;
+			pfd[0].events = POLLIN;
+
+			pfd[1].fd = ws->cmd_fd;
+			pfd[1].events = POLLIN;
+
+			pfd[2].fd = ws->tun_fd;
+			pfd[2].events = POLLIN;
+
+			pfd_size = 3;
 
 			if (ws->udp_state > UP_WAIT_FD) {
-				FD_SET(ws->dtls_tptr.fd, &rfds);
-				max = MAX(max, ws->dtls_tptr.fd);
+				pfd[3].fd = ws->dtls_tptr.fd;
+				pfd[3].events = POLLIN;
+				pfd_size++;
 			}
 
-#ifdef HAVE_PSELECT
+#ifdef HAVE_PPOLL
 			tv.tv_nsec = 0;
 			tv.tv_sec = 10;
-			ret =
-			    pselect(max + 1, &rfds, NULL, NULL, &tv, &emptyset);
+			ret = ppoll(pfd, pfd_size, &tv, &emptyset);
 #else
-			tv.tv_usec = 0;
-			tv.tv_sec = 10;
 			sigprocmask(SIG_UNBLOCK, &blockset, NULL);
-			ret = select(max + 1, &rfds, NULL, NULL, &tv);
+			ret = poll(pfd, pfd_size, 10*1000);
 			sigprocmask(SIG_BLOCK, &blockset, NULL);
 #endif
 			if (ret == -1) {
@@ -1966,13 +1927,13 @@ static int connect_handler(worker_st * ws)
 
 		if (periodic_check
 		    (ws, ws->proto_overhead + ws->crypto_overhead, &tnow,
-		     ws->config->dpd) < 0) {
+		     ws->user_config->dpd) < 0) {
 			terminate_reason = REASON_ERROR;
 			goto exit;
 		}
 
 		/* send pending data from tun device */
-		if (FD_ISSET(ws->tun_fd, &rfds)) {
+		if (pfd[2].revents & (POLLIN|POLLHUP)) {
 			ret = tun_mainloop(ws, &tnow);
 			if (ret < 0) {
 				terminate_reason = REASON_ERROR;
@@ -1981,7 +1942,7 @@ static int connect_handler(worker_st * ws)
 		}
 
 		/* read pending data from TCP channel */
-		if (FD_ISSET(ws->conn_fd, &rfds) || tls_pending != 0) {
+		if ((pfd[0].revents & (POLLIN|POLLHUP)) || tls_pending != 0) {
 			ret = tls_mainloop(ws, &tnow);
 			if (ret < 0) {
 				terminate_reason = REASON_ERROR;
@@ -1991,7 +1952,7 @@ static int connect_handler(worker_st * ws)
 
 		/* read data from UDP channel */
 		if (ws->udp_state > UP_WAIT_FD &&
-		    (FD_ISSET(ws->dtls_tptr.fd, &rfds) || dtls_pending != 0)) {
+		    ((pfd[3].revents & (POLLIN|POLLHUP)) || dtls_pending != 0)) {
 
 			ret = dtls_mainloop(ws, &tnow);
 			if (ret < 0) {
@@ -2001,8 +1962,8 @@ static int connect_handler(worker_st * ws)
 		}
 
 		/* read commands from command fd */
-		if (FD_ISSET(ws->cmd_fd, &rfds)) {
-			ret = handle_worker_commands(ws);
+		if (pfd[1].revents & (POLLIN|POLLHUP)) {
+			ret = handle_commands_from_main(ws);
 			if (ret == ERR_NO_CMD_FD) {
 				terminate_reason = REASON_ERROR;
 				goto terminate;

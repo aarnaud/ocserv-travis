@@ -21,18 +21,14 @@
 #ifndef SEC_MOD_H
 # define SEC_MOD_H
 
-#include <cookies.h>
 #include <gnutls/abstract.h>
 #include <ccan/htable/htable.h>
-#include <base64.h>
+#include <nettle/base64.h>
+#include <tlslib.h>
 
-#define SESSION_STR "(session: %.5s)"
+#define SESSION_STR "(session: %.6s)"
 
 typedef struct sec_mod_st {
-	gnutls_datum_t dcookie_key; /* the key to generate cookies */
-	uint8_t cookie_key[COOKIE_KEY_SIZE];
-	time_t cookie_key_last_update;
-
 	struct cfg_st *config;
 	struct perm_cfg_st *perm_config;
 	gnutls_privkey_t *key;
@@ -40,6 +36,8 @@ typedef struct sec_mod_st {
 	struct htable *client_db;
 	int cmd_fd;
 	int cmd_fd_sync;
+
+	tls_sess_db_st tls_db;
 
 	struct config_mod_st *config_module;
 } sec_mod_st;
@@ -50,16 +48,28 @@ typedef struct stats_st {
 	time_t uptime;
 } stats_st;
 
-typedef struct common_auth_info_st {
+typedef struct common_auth_init_st {
+	const char *username;
+	const char *ip;
+	const char *our_ip;
+	const char *user_agent;
+	unsigned id;
+} common_auth_init_st;
+
+typedef struct common_acct_info_st {
 	char username[MAX_USERNAME_SIZE*2];
 	char groupname[MAX_GROUPNAME_SIZE]; /* the owner's group */
-	char psid[BASE64_LENGTH(SID_SIZE) + 1]; /* printable */
+	char psid[BASE64_ENCODE_RAW_LENGTH(SID_SIZE) + 1]; /* printable */
 	char remote_ip[MAX_IP_STR];
+	char user_agent[MAX_AGENT_NAME];
 	char our_ip[MAX_IP_STR];
 	char ipv4[MAX_IP_STR];
 	char ipv6[MAX_IP_STR];
 	unsigned id;
-} common_auth_info_st;
+} common_acct_info_st;
+
+#define IS_CLIENT_ENTRY_EXPIRED_FULL(sec, e, now, clean) (e->time != -1 && (now - e->time) > (sec->config->cookie_timeout + (clean?AUTH_SLACK_TIME:0)) && e->in_use == 0)
+#define IS_CLIENT_ENTRY_EXPIRED(sec, e, now) IS_CLIENT_ENTRY_EXPIRED_FULL(sec, e, now, 0)
 
 typedef struct client_entry_st {
 	/* A unique session identifier used to distinguish sessions
@@ -82,10 +92,6 @@ typedef struct client_entry_st {
 
 	unsigned status; /* PS_AUTH_ */
 
-	char hostname[MAX_HOSTNAME_SIZE]; /* the requested hostname */
-	uint8_t *cookie; /* the cookie associated with the session */
-	unsigned cookie_size;
-
 	uint8_t dtls_session_id[GNUTLS_MAX_SESSION_ID];
 
 	/* The time this client entry was last modified (created or closed) */
@@ -95,7 +101,7 @@ typedef struct client_entry_st {
 	unsigned auth_type;
 	unsigned discon_reason; /* reason for disconnection */
 
-	struct common_auth_info_st auth_info;
+	struct common_acct_info_st acct_info;
 
 	/* the module this entry is using */
 	const struct auth_mod_st *module;
@@ -112,7 +118,7 @@ void cleanup_client_entries(sec_mod_st *sec);
 
 #ifdef __GNUC__
 # define seclog(sec, prio, fmt, ...) \
-	if (prio != LOG_DEBUG || sec->config->debug >= 3) { \
+	if (prio != LOG_DEBUG || sec->perm_config->debug >= 3) { \
 		syslog(prio, "sec-mod: "fmt, ##__VA_ARGS__); \
 	}
 #else
@@ -127,14 +133,16 @@ void  seclog_hex(const struct sec_mod_st* sec, int priority,
 
 void sec_auth_init(sec_mod_st *sec, struct perm_cfg_st *config);
 
+void handle_secm_list_cookies_reply(void *pool, int fd, sec_mod_st *sec);
 void handle_sec_auth_ban_ip_reply(sec_mod_st *sec, const BanIpReplyMsg *msg);
 int handle_sec_auth_init(int cfd, sec_mod_st *sec, const SecAuthInitMsg * req, pid_t pid);
 int handle_sec_auth_cont(int cfd, sec_mod_st *sec, const SecAuthContMsg * req);
-int handle_sec_auth_session_cmd(sec_mod_st *sec, int fd, const SecAuthSessionMsg *req, unsigned cmd);
+int handle_secm_session_open_cmd(sec_mod_st *sec, int fd, const SecmSessionOpenMsg *req);
+int handle_secm_session_close_cmd(sec_mod_st *sec, int fd, const SecmSessionCloseMsg *req);
 int handle_sec_auth_stats_cmd(sec_mod_st * sec, const CliStatsMsg * req);
 void sec_auth_user_deinit(sec_mod_st * sec, client_entry_st * e);
 
 void sec_mod_server(void *main_pool, struct perm_cfg_st *config, const char *socket_file,
-		    uint8_t cookie_key[COOKIE_KEY_SIZE], int cmd_fd, int cmd_fd_sync);
+		    int cmd_fd, int cmd_fd_sync);
 
 #endif

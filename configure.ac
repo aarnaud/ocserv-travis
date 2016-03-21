@@ -1,5 +1,5 @@
 AC_PREREQ(2.61)
-AC_INIT([ocserv], [0.10.11], [nmav@gnutls.org])
+AC_INIT([ocserv], [0.11.1], [nmav@gnutls.org])
 PKG_PROG_PKG_CONFIG
 AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_MACRO_DIR([gl/m4])
@@ -15,7 +15,7 @@ AM_PROG_AR
 AM_PROG_CC_C_O
 AC_PROG_SED
 if [ test "$GCC" = "yes" ];then
-	CFLAGS="$CFLAGS -Wall"
+	CFLAGS="$CFLAGS -Wall -Wno-strict-aliasing"
 fi
 AC_PATH_PROG(CTAGS, ctags, [:])
 AC_PATH_PROG(CSCOPE, cscope, [:])
@@ -44,10 +44,16 @@ AC_CHECK_MEMBERS([struct iphdr.ihl], [],
 AC_CHECK_SIZEOF([unsigned long])
 AC_C_BIGENDIAN
 
+PKG_CHECK_MODULES([LIBNETTLE], [nettle >= 2.7])
 PKG_CHECK_MODULES([LIBGNUTLS], [gnutls >= 3.1.10])
 AC_CHECK_LIB(gnutls, gnutls_pkcs11_reinit, [
 AC_DEFINE([HAVE_PKCS11], [], [PKCS11 detected in gnutls])
 ])
+
+if ! $PKG_CONFIG --atleast-version=3.0 nettle; then
+	AC_DEFINE([NETTLE_OLD_BASE64_API], [1],
+		  [nettle uses the pre-3.x base64 API])
+fi
 
 AC_ARG_WITH(protobuf,
   AS_HELP_STRING([--without-protobuf], [use the included protobuf library]),
@@ -72,13 +78,16 @@ with_local_protobuf_c=no
 )
 fi
 
-if test "$with_local_protobuf_c" != no;then
-  FLAGS='-Iprotobuf'
-  AC_SUBST([LIBPROTOBUF_C_CFLAGS], [$FLAGS])
-fi
-
 AM_CONDITIONAL(LOCAL_PROTOBUF_C, test "x$with_local_protobuf_c" != xno)
 
+AC_LIB_HAVE_LINKFLAGS(ev,, [#include <ev.h>], [ev_run(0,0);])
+if test x$ac_cv_libev = xyes; then
+	AC_SUBST([LIBEV_LIBS], [$LIBEV])
+else
+	AC_MSG_ERROR([[***
+*** libev4 was not found.
+***]])
+fi
 
 AC_ARG_WITH(local-talloc,
   AS_HELP_STRING([--with-local-talloc], [use the included talloc library]),
@@ -102,10 +111,7 @@ with_local_talloc=no,
 )
 fi
 
-if test "$with_local_talloc" != no;then
-FLAGS='-Iccan/talloc/ -Iccan/typedef_cb/ -Iccan/compiler/'
-AC_SUBST([LIBTALLOC_CFLAGS], [$FLAGS])
-else
+if test "$with_local_talloc" = no;then
 AC_DEFINE(HAVE_LIBTALLOC, 1, [have libtalloc])
 fi
 
@@ -194,6 +200,23 @@ AC_LINK_IFELSE([AC_LANG_PROGRAM([
 LIBS="$oldlibs"
 fi
 
+AC_ARG_WITH(all-tests,
+  AS_HELP_STRING([--with-all-tests], [do not include tests which require code in the server]),
+  all_tests=$withval,
+  all_tests=no)
+
+if test "$all_tests" != no;then
+PKG_CHECK_MODULES([CWRAP], [uid_wrapper, socket_wrapper], have_cwrap=yes, have_cwrap=no)
+else
+have_cwrap=no
+fi
+
+if test "$have_cwrap" != no;then
+	AC_DEFINE([HAVE_CWRAP], 1, [Enable testing with cwrap])
+fi
+
+AM_CONDITIONAL(HAVE_CWRAP, test "x$have_cwrap" != xno)
+
 AC_ARG_WITH(radius,
   AS_HELP_STRING([--without-radius], [do not include Radius support]),
   test_for_radius=$withval,
@@ -202,7 +225,7 @@ AC_ARG_WITH(radius,
 radius_enabled=no
 
 if test "$test_for_radius" = yes;then
-	PKG_CHECK_MODULES([RADCLI], [radcli >= 1.2.1], radius_enabled=radcli, radius_enabled=no)
+	PKG_CHECK_MODULES([RADCLI], [radcli >= 1.2.5], radius_enabled=radcli, radius_enabled=no)
 
 	if test "$radius_enabled" = no;then
 		LIBS="$oldlibs -lfreeradius-client"
@@ -271,7 +294,7 @@ AC_CHECK_MEMBER([struct sockaddr.sa_len],
 
 AC_CHECK_HEADERS([net/if_tun.h linux/if_tun.h netinet/in_systm.h], [], [], [])
 
-AC_CHECK_FUNCS([setproctitle vasprintf clock_gettime isatty pselect getpeereid sigaltstack])
+AC_CHECK_FUNCS([setproctitle vasprintf clock_gettime isatty pselect ppoll getpeereid sigaltstack])
 AC_CHECK_FUNCS([strlcpy posix_memalign malloc_trim strsep])
 
 if [ test -z "$LIBWRAP" ];then
@@ -453,9 +476,9 @@ AM_CONDITIONAL(PCL, test "$with_local_pcl" = no)
 LIBOPTS_CHECK([libopts])
 if test "$NEED_LIBOPTS_DIR" = "true";then
 	dnl create libopts-generated files
-	for i in ${srcdir}/src/*-args.c.bak ${srcdir}/src/*-args.h.bak; do
+	for i in ${srcdir}/src/*args.c.bak ${srcdir}/src/*args.h.bak ${srcdir}/src/occtl/*args.c.bak ${srcdir}/src/occtl/*args.h.bak; do
 		nam=`echo $i|sed 's/.bak//g'`
-		if [ test -f $i ];then
+		if test -f "$i";then
 			cp -f $i $nam
 		fi
 	done
@@ -470,8 +493,12 @@ AC_CONFIG_FILES([
 	Makefile
 	src/version.inc
 	src/Makefile
+	src/occtl/Makefile
+	src/ocpasswd/Makefile
 	src/ccan/Makefile
+	src/common/Makefile
 	src/pcl/Makefile
+	src/protobuf/Makefile
 	doc/Makefile
 	gl/Makefile
 	tests/docker-ocserv/Makefile
@@ -487,6 +514,7 @@ Summary of build options:
   Install prefix:       ${prefix}
   Compiler:             ${CC}
   CFlags:               ${CFLAGS}
+  CWrap testing:        ${have_cwrap}
   
   PAM auth backend:     ${pam_enabled}
   Radius auth backend:  ${radius_enabled}

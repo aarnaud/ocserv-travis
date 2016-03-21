@@ -1,6 +1,623 @@
-2016-01-08  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+2016-03-19  Nikos Mavrogiannopoulos <nmav@gnutls.org>
 
 	* NEWS, configure.ac: bumped version
+
+2016-03-13  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/common/common.c, src/main-sec-mod-cmd.c,
+	src/main-worker-cmd.c, src/worker-auth.c: reduced logging verbosity
+	in certain common failures
+
+2016-03-08  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* src/ocserv-args.def: doc: mention the ip_address option
+
+2016-03-07  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* src/occtl/unix.c: occtl: correctly print last modified field
+
+2016-03-07  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* src/worker-misc.c, src/worker-vpn.c, src/worker.h: worker:
+	improved exit reason reporting for server disconnects
+
+2016-03-07  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* src/common/common.c, src/main-ctl-unix.c, src/main-worker-cmd.c,
+	src/occtl/unix.c, src/sec-mod.c, src/worker-misc.c: Improved error
+	message propagation due to new combined APIs This amends 8892eb19343be110cb38ff783620b252a6f0a409
+
+2016-03-07  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* src/sec-mod-auth.c, src/sec-mod-cookies.c, src/sec-mod-db.c,
+	src/sec-mod.h: sec-mod: do not export expired entries to cookies
+	list op Also combined macro to determine expired entries.
+
+2016-03-06  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* .gitignore: more files to ignore
+
+2016-03-06  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/occtl/occtl.c, src/occtl/occtl.h, src/occtl/unix.c: occtl:
+	split show cookies to all and valid
+
+2016-03-06  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/ctl.proto, src/ipc.proto, src/main-ctl-unix.c,
+	src/occtl/unix.c, src/sec-mod-cookies.c: ipc: pass the connection
+	status as integer Conversion to textual form now happens at the client (occtl) instead
+	of the main server.
+
+2016-03-06  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/common/common.c, src/common/common.h, src/main-ctl-unix.c,
+	src/main-sec-mod-cmd.c, src/main-worker-cmd.c, src/main.h,
+	src/occtl/unix.c, src/sec-mod-auth.c, src/sec-mod-cookies.c,
+	src/sec-mod.c, src/tlslib.c, src/vpn.h, src/worker-auth.c,
+	src/worker-misc.c, src/worker-resume.c, src/worker-vpn.c,
+	src/worker.h: use a single format for all messages simplifying
+	server That patch also combines all the message generation or receiving
+	functions for to allow easier modifications to the format.
+
+2016-03-06  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* NEWS: doc update
+
+2016-03-06  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/Makefile.am, src/common/common.c, src/common/common.h,
+	src/ipc.proto, src/main-ctl-unix.c, src/main-sec-mod-cmd.c,
+	src/main.h, src/occtl/Makefile.am, src/occtl/ctl.h,
+	src/occtl/hex.c, src/occtl/hex.h, src/occtl/occtl.c,
+	src/occtl/occtl.h, src/occtl/unix.c, src/sec-mod-auth.c,
+	src/sec-mod-cookies.c, src/sec-mod.c, src/sec-mod.h, src/vpn.h: 
+	Added occtl command to display cookies This allows to display and examine valid cookies from occtl.
+
+2016-03-05  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* tests/docker-ocserv/haproxy-proxyproto.cfg: tests: fixed
+	proxyproto test on debian
+
+2016-03-05  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* doc/sample.config, src/ocserv-args.def: doc: eliminated references
+	to HOSTNAME It was never available in the up/down scripts.
+
+2016-03-05  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* NEWS: doc update
+
+2016-03-05  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* tests/docker-ocserv/Dockerfile-debian-tcp: tests: updated debian
+	docker file
+
+2016-03-05  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* doc/design.md, src/common/common.c, src/ipc.proto,
+	src/main-auth.c, src/main-sec-mod-cmd.c, src/sec-mod-auth.c,
+	src/sec-mod-sup-config.h, src/sec-mod.c, src/sec-mod.h,
+	src/sup-config/file.c, src/sup-config/radius.c, src/tlslib.c,
+	src/vpn.h, src/worker-auth.c, src/worker-vpn.c: use more consistent
+	naming in internal messages
+
+2016-03-05  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/log.c, src/vpn.h, src/worker-auth.c, src/worker-http.c: 
+	worker: don't log the SID in normal debugging levels
+
+2016-03-05  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/worker-http.c: worker: censor the DTLS master secret header as
+	well
+
+2016-03-04  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* src/ipc.proto, src/main-worker-cmd.c, src/worker-vpn.c: worker:
+	pass received hostname to user via SESSION_INFO msg
+
+2016-03-04  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* src/ipc.proto, src/main-sec-mod-cmd.c, src/sec-mod-auth.c,
+	src/sec-mod.h, src/worker-auth.c: Eliminated hostname handling in
+	sec-mod This value never reached sec-mod as it is only get known after
+	session is initiated by the client (i.e., after auth_rep message is
+	received).
+
+2016-03-04  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* src/main-proc.c, src/main-sec-mod-cmd.c: main: overwrite the SID
+	after removing a proc struct and on received packets That's because it is a sensitive value that can be used to resume
+	existing sessions. I should have used the fork+exec model in main.
+
+2016-03-02  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* src/main-sec-mod-cmd.c: run_sec_mod: close unused sync fd
+
+2016-02-29  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* NEWS: doc update [ci skip]
+
+2016-02-27  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/worker-privs.c: worker-privs: added getpid to the list of
+	allowed syscalls
+
+2016-02-23  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* NEWS: doc update [ci skip]
+
+2016-02-15  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/ipc.proto, src/main.c, src/main.h, src/worker-misc.c,
+	src/worker.h: worker: replaced the timeout-based session forwarding
+	with a validity checking That checks whether the first packet received in the new session is
+	valid and if true, accept the new fd. This avoids the mess with
+	validity detection based on timeouts.
+
+2016-02-23  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* NEWS: doc update [ci skip]
+
+2016-02-21  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/vpn.h: Increased the SID (cookie) size to 256-bits
+
+2016-02-21  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* tests/Makefile.am, tests/test-cookie-rotation,
+	tests/test-cookie-rotation.config: tests: removed cookie key
+	rotation check It is no longer applicable.
+
+2016-02-21  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* doc/design.md, doc/sample.config, src/Makefile.am,
+	src/common/common.c, src/config.c, src/cookies.c, src/cookies.h,
+	src/ipc.proto, src/main-auth.c, src/main-proc.c,
+	src/main-sec-mod-cmd.c, src/main-user.c, src/main-worker-cmd.c,
+	src/main.c, src/main.h, src/ocserv-args.def, src/sec-mod-auth.c,
+	src/sec-mod-sup-config.c, src/sec-mod.c, src/sec-mod.h, src/vpn.h,
+	src/worker-auth.c, src/worker-http-handlers.c, src/worker-http.c,
+	src/worker-misc.c, src/worker-resume.c, src/worker-vpn.c,
+	src/worker.h: Simplified cookie handling This change set eliminates the need for cryptographically
+	authenticated cookies and relies on sec-module providing accurate
+	information on the SID provided by the client.
+
+2016-02-21  Bj�rn Ketelaars <bjorn.ketelaars@hydroxide.nl>
+
+	* src/common/system.c: strerror was declared implicit. Pull in
+	header
+
+2016-02-21  Bj�rn Ketelaars <bjorn.ketelaars@hydroxide.nl>
+
+	* src/tun.c: remove unused variables
+
+2016-02-23  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* NEWS: doc update
+
+2016-02-23  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* tests/Makefile.am, tests/test-user-config,
+	tests/user-cert-testipnet.pem, tests/user-config/testipnet: tests:
+	check the ipv4-network directive from user config
+
+2016-02-23  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* src/sup-config/file.c: sup-config/file: Addressed issue with
+	ipv4-network not reading prefix That is the syntax now accepts options such as: "ipv4-network =
+	x.x.x.x/y". Reported by Frank Rosquin.
+
+2016-02-23  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* tests/Makefile.am: tests: allow compilation with included protobuf
+
+2016-02-22  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* src/common.mk, src/ocpasswd/Makefile.am: Allow compilation with
+	local libopts
+
+2016-02-22  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* configure.ac, src/Makefile.am, src/common/Makefile.am,
+	src/occtl/Makefile.am: allow compilation with included protobuf
+
+2016-02-21  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/main-proc.c: main: fixed issue with disconnection reason
+	logging It was logged before it was made known.
+
+2016-02-21  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/main.c, src/proc-search.c, src/proc-search.h: Renamed
+	proc_search_ip() to proc_search_single_ip() This better reflects the purpose of the function and will prevent
+	misuse.
+
+2016-02-21  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/common/common.c: overwrite the memory of every packed message
+
+2016-02-21  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* NEWS: doc update
+
+2016-02-21  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* doc/sample.config, src/cookies.h, src/ocserv-args.def: increased
+	the default cookie rekey time to 3 days
+
+2016-02-20  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* NEWS: doc update
+
+2016-02-20  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/occtl/unix.c: occtl: fixed compilation issue in OpenBSD Reported by Björn Ketelaars.
+
+2016-02-20  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/tun.c: tun: fixed compilation issue in OpenBSD Reported by Björn Ketelaars.
+
+2016-02-19  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* NEWS: released 0.11.0
+
+2016-02-19  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* configure.ac: bumped version
+
+2016-02-19  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* configure.ac: configure: depend on radcli 1.2.5 Previous versions have a bug which caused crashes under certain
+	circumstances.
+
+2016-02-19  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* tests/Makefile.am: tests: allow compilation without http-parser
+	lib
+
+2016-02-19  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* tests/Makefile.am, tests/human_addr.c: tests: added check for
+	human_addr() output
+
+2016-02-19  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* src/ip-util.c, src/ip-util.h, src/log.c, src/vpn.h: moved
+	human_addr2() to ip-util.c
+
+2016-02-18  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* NEWS: doc update
+
+2016-02-18  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* src/tlslib.c: tlslib: don't use GNUTLS_X509_CRT_LIST_SORT; it is
+	buggy
+
+2016-02-14  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* tests/docker-ocserv/Dockerfile-debian-proxyproto,
+	tests/docker-ocserv/Dockerfile-debian-radius,
+	tests/docker-ocserv/Dockerfile-debian-radius-config,
+	tests/docker-ocserv/Dockerfile-debian-tcp,
+	tests/docker-ocserv/Dockerfile-debian-unix: tests: reference debian
+	testing by name
+
+2016-02-13  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* doc/sample.config, src/ocserv-args.def: config: increased the
+	default auth-timeout value to 4mins This provides slow users more time to enter their username,
+	password.
+
+2016-02-10  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* src/common/Makefile.am, src/occtl/Makefile.am: Allow compilation
+	without http-parser library
+
+2016-02-08  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* doc/sample.config, src/ocserv-args.def: config: put kkdcp options
+	into brackets That is not necessary for the existing examples, but may be in
+	future ones, as they may contain characters that libopts doesn't
+	like.
+
+2016-02-03  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* NEWS: released 0.11.0rc1
+
+2016-01-28  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* tests/radius-test-config: tests: increase timeout for radius
+	accounting report
+
+2016-01-28  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* NEWS: doc update
+
+2016-01-28  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* configure.ac: bumped version to rc1
+
+2016-01-28  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* src/common/common.c, src/common/common.h, src/main-ctl-unix.c,
+	src/main-sec-mod-cmd.c, src/main.h, src/occtl/unix.c,
+	src/sec-mod-auth.c, src/sec-mod.c, src/tlslib.c, src/worker-auth.c,
+	src/worker-resume.c, src/worker-vpn.c, src/worker.h: Use 32-bit
+	length variable for transferring between occtl and ocserv This allows to handle the transfer of long data between ocserv and
+	occtl.  Reported by Liviu.  Resolves #29
+
+2016-01-27  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* configure.ac, src/common/common.c, src/icmp-ping.c,
+	src/main-ctl-unix.c, src/worker-privs.c, src/worker-vpn.c: replaced
+	select() calls will poll() calls This allows to handle descriptors more than the maximum limit
+	allowed by select(), and thus handle more clients than 1024.
+
+2016-01-27  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* src/log.c: human_addr2: Avoid the usage of getnameinfo and use the
+	simpler inet_ntop This simplifies the function.
+
+2016-01-27  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* src/common/common.c, src/worker-misc.c: Added sanity checks to
+	CMSG_DATA() access
+
+2016-01-27  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* src/main-ban.c: main: fixed IP unbanning
+
+2016-01-27  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* src/occtl/unix.c: occtl: corrected the printing of IPv4 IP ban
+	points
+
+2016-01-27  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* src/main.c: main: don't exit on setrlimit() failures Exiting would prevent operation under valgrind.
+
+2016-01-27  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* src/main-ctl-unix.c: main: don't attempt to access client
+	configuration if not already set This prevents crash introduced by
+	cefd77b6336fd358f1d3c4c8731a28ac6b91d5b0
+
+2016-01-27  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* src/ip-lease.c: ip-lease: do not attempt to calculate more than
+	FIXED_IPS predictable IPs per user That allows to have an unlimited number of connections per user.
+
+2016-01-27  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* src/main-proc.c: Immediately terminate on session_close() error This is not a recoverable error.
+
+2016-01-27  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* src/main.c: main: terminate sec-mod after every worker process has
+	been sent a signal That is to reduce any possible timeouts caused by a defunc sec-mod
+	on termination.
+
+2016-01-27  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* src/sec-mod.c: sec-mod: ensure keys are always initialized to NULL Addresses crash due to b6df22c8c300b4aa7f2c678bce2b4dd7b55e1779
+
+2016-01-27  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* tests/Makefile.am, tests/test-sighup-key-change,
+	tests/test-sighup-key-change.config: tests: fixed
+	test-sighup-key-change to be able to cope with diffent build dir
+
+2016-01-27  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* NEWS: doc update
+
+2016-01-27  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* src/main.c: main: destroy the event loop on fork This reduces memory used by worker processes.
+
+2016-01-27  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* src/main.c, src/main.h, src/script-list.h: main: ensure we call
+	ev_child_stop() on child cleanup handlers
+
+2016-01-26  Kevin Cernekee <cernekee@gmail.com>
+
+	* src/worker-http-handlers.c, src/worker-vpn.c, src/worker.h: Return
+	HTML error message on 404 Currently ocserv's 404 errors show up as a blank page in most web
+	browsers.  Add a simple HTML error page.
+
+2016-01-26  Kevin Cernekee <cernekee@gmail.com>
+
+	* src/worker-http-handlers.c: Use helper functions to send common
+	HTTP headers/responses Factor out duplicated code in the AnyConnect compatibility handlers.
+
+2016-01-26  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* NEWS: doc update
+
+2016-01-26  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* tests/Makefile.am, tests/test-sighup-key-change: tests: added
+	check for certificate update on reload
+
+2016-01-25  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* doc/sample.config, src/main.c, src/ocserv-args.def,
+	src/sec-mod.c, src/tlslib.c, src/tlslib.h: Reload the certificates
+	and private keys on SIGHUP Until now this part of the configuration was static, but there is
+	the need to reload certificates and keys, e.g., on renewal.
+
+2016-01-25  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* src/main.h: main.h: corrected typo in comment
+
+2016-01-25  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* doc/sample.config, src/ocserv-args.def: doc: document that
+	ocserv-fw requiring options are available in Linux systems only
+
+2016-01-24  Kevin Cernekee <cernekee@gmail.com>
+
+	* src/main-user.c: Add default case for 'restrict-user-to-ports'
+	switch This fixes a compiler warning:       CC       main-user.o     main-user.c: In function ‘call_script’:     main-user.c:215:7: warning: ‘ret’ may be used uninitialized
+	        in this function [-Wmaybe-uninitialized] if (ret < 0) {            ^     main-user.c:66:6: note: ‘ret’ was declared here       int ret;           ^ It's not really necessary because proto gets checked when the option
+	is parsed, but gcc doesn't know that.
+
+2016-01-21  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* README.md: README.md: moved radius to main dependencies
+
+2016-01-21  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* src/occtl/occtl.c: occtl: updated copyright text
+
+2016-01-20  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* doc/sample.config, src/ocserv-args.def: doc: added more info on
+	isolate-workers
+
+2016-01-20  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* TODO: TODO: removed already handled issue
+
+2016-01-19  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* src/tlslib.c, src/tlslib.h, src/worker-vpn.c: tlslib: abstracted
+	the recv_packet functions
+
+2016-01-19  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* src/tlslib.c, src/tlslib.h, src/worker-vpn.c: tls_recv ->
+	cstp_recv
+
+2016-01-19  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* src/worker-vpn.c: worker: use DEFAULT_SOCKET_TIMEOUT and remove
+	SOCKET_TIMEO_SECS
+
+2016-01-19  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* src/worker-proxyproto.c: proxyproto: use force_read_timeout() to
+	ensure reconstruction of packets
+
+2016-01-19  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* src/tlslib.c, src/tlslib.h, src/worker-vpn.c: cleaned up the fatal
+	error checking in TLS/DTLS sessions
+
+2016-01-19  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* tests/radius-test-config: tests: fixed issues in
+	radius-test-config
+
+2016-01-19  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* tests/docker-ocserv/Dockerfile-fedora-radius,
+	tests/docker-ocserv/Dockerfile-fedora-radius-config,
+	tests/radius-test: tests: enhanced the radius checks to test for
+	Connect-Info presence
+
+2016-01-19  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* src/config.c, src/main.c, src/ocserv-args.def: ocserv: added the
+	--test-config command line option This allows to test a configuration file for being valid without
+	starting the server.
+
+2016-01-19  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/worker-vpn.c: worker: handle EOF during HTTP header parsing
+
+2016-01-19  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/tlslib.c: tls_recv() will retry on EINTR
+
+2016-01-18  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* src/acct/radius.c, src/sec-mod-auth.c, src/sec-mod-db.c,
+	src/sec-mod.h, src/sup-config/file.c: radius: send user agent
+	information as Connect-Info on accounting start Relates #26
+
+2016-01-15  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* NEWS: doc update
+
+2016-01-18  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* tests/docker-ocserv/Dockerfile-debian-radius,
+	tests/docker-ocserv/Dockerfile-debian-radius-config,
+	tests/docker-ocserv/Makefile.am,
+	tests/docker-ocserv/radiusclient-debian.conf: tests: updated radius
+	tests for Debian
+
+2016-01-17  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/auth/radius.c, src/worker-auth.c: radius: more careful checks
+	around the user_agent access
+
+2016-01-17  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* doc/README-radius.md: README.radius: added Connect-Info attribute
+
+2016-01-16  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* NEWS: NEWS: doc update [ci skip]
+
+2016-01-16  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/acct/pam.c, src/acct/radius.c, src/auth/gssapi.c,
+	src/auth/pam.c, src/auth/plain.c, src/auth/radius.c,
+	src/auth/radius.h, src/ipc.proto, src/sec-mod-acct.h,
+	src/sec-mod-auth.c, src/sec-mod-auth.h, src/sec-mod.h,
+	src/worker-auth.c, src/worker.h: radius: send user agent information
+	as Connect-Info That allows the radius server to store information on particular
+	client. Resolves #26
+
+2016-01-14  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/worker-vpn.c: send_stats_to_secmod() is called as soon as
+	possible This allows us to send the client assigned IP to radius server as
+	soon as it is available, rather than waiting a full interim_update
+	cycle.
+
+2016-01-13  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* src/worker-http.c, src/worker-vpn.c, src/worker.h: Updated support
+	for chacha20-poly1305 It was modified to support the PSK variant of the algorithm because
+	draft-ietf-tls-chacha20-poly1305-03 doesn't define an RSA variant.
+	It was tested to interoperate with openconnect/gnutls.
+
+2016-01-11  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* src/worker-vpn.c: worker: Prevent any frozen worker processes by
+	killing them on inactivity That is, introduced an alarm() call at the worker periodic check,
+	which will only get triggered if a very long timeout has occurred
+	without the loop being completed.
+
+2016-01-11  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* src/Makefile.am, src/main-auth.c, src/main-misc.c,
+	src/main-worker-cmd.c: main: introduced main-worker-cmd.c
+
+2016-01-11  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* src/main-misc.c, src/main-sec-mod-cmd.c: moved run_sec_mod() to
+	main-sec-mod-cmd.c
+
+2016-01-11  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* src/Makefile.am, src/main-misc.c, src/main-proc.c: moved proc
+	creation and deinitialization at main-proc.c
+
+2016-01-08  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* NEWS, configure.ac: released 0.11.0rc0
+
+2016-01-07  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* src/worker-vpn.c: worker: use the state buffer for HTTP requests
 
 2016-01-06  Nikos Mavrogiannopoulos <nmav@gnutls.org>
 
@@ -12,15 +629,160 @@
 
 2016-01-05  Nikos Mavrogiannopoulos <nmav@gnutls.org>
 
+	* src/config.c: don't attempt to open per_user_dir if it is NULL Nor attempt to close a NULL handle. This addresses a crash in
+	certain libc's.
+
+2016-01-02  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/tlslib.c, src/tlslib.h, src/worker-vpn.c: When receiving from
+	unix socket attempt to reconstruct the CSTP packets That is because it may happen that the sender sends a complete
+	packet into multiple chunks. Resolves #22
+
+2016-01-01  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/main-misc.c: set_tun_mtu: print the mtu size on failed
+	assignment
+
+2015-12-31  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* doc/README-radius.md: README-radius: added more text for
+	Framed-Route format
+
+2015-12-23  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/main-ban.c, src/main-ban.h: correctly print the IP of
+	addresses added to ban list
+
+2015-12-22  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* README.md: README.md: added radcli dependency
+
+2015-12-22  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* tests/docker-ocserv/Dockerfile-debian-proxyproto,
+	tests/docker-ocserv/Dockerfile-debian-radius,
+	tests/docker-ocserv/Dockerfile-debian-radius-config,
+	tests/docker-ocserv/Dockerfile-debian-tcp,
+	tests/docker-ocserv/Dockerfile-debian-unix: tests: use libradcli4 in
+	debian builds
+
+2015-12-21  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/worker-auth.c, src/worker-http-handlers.c, src/worker-http.c,
+	src/worker-vpn.c, src/worker.h: Prior to sending profile files,
+	perform cookie authentication That allows to read the per-user config file, and prevent a null
+	pointer dereference. Reported by Yick Xie.
+
+2015-12-20  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/worker-auth.c: improved logged messages for certificate auth
+
+2015-12-18  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* src/log.c, src/vpn.h, src/worker-http.c: Don't print any cookie
+	data unless debug level is set to be over 8 That prevents adding into debugging logs sensitive data which can be
+	used to resume sessions.
+
+2015-12-08  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* src/main.c: When max-clients is set adjust the file descriptor
+	limits accordingly This also increases the default number of descriptors to 4k.
+
+2015-12-08  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* doc/sample.config, src/ocserv-args.def: doc update
+
+2015-12-08  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
 	* NEWS: doc update
 
-2016-01-05  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+2015-12-08  Nikos Mavrogiannopoulos <nmav@redhat.com>
 
-	* src/config.c: don't attempt to open per_user_dir if it is NULL This addresses a crash in certain libc's.
+	* src/ctl.proto, src/main-ctl-unix.c, src/occtl/occtl.h,
+	src/occtl/print.c, src/occtl/unix.c, src/vpn.h: occtl: print the
+	restricted ports for the client
 
-2015-12-06  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+2015-12-08  Nikos Mavrogiannopoulos <nmav@redhat.com>
 
-	* NEWS: doc update
+	* src/Makefile.am, src/common/Makefile.am, src/common/ctl.proto,
+	src/ctl.proto, src/occtl/Makefile.am: protocol buffers generated
+	sources for ctl were moved to libipc
+
+2015-12-07  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/Makefile.am, src/ipc.proto, src/main-ctl-unix.c,
+	src/main-misc.c, src/main-resume.c, src/main-sec-mod-cmd.c,
+	src/main.c, src/main.h, src/sec-mod-auth.c, src/sec-mod-resume.c,
+	src/sec-mod-resume.h, src/sec-mod.c, src/sec-mod.h,
+	src/worker-resume.c: TLS session resumption database was moved to
+	sec-mod This reduces the number of sensitive data available to main process.
+	Resolves #21
+
+2015-12-07  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/sec-mod.c: doc update
+
+2015-12-07  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* tests/otp-test, tests/pam-noauth-test, tests/pam-test,
+	tests/proxyproto-unix-test, tests/radius-test, tests/unix-test: 
+	tests: kill politely openconnect in all docker tests
+
+2015-12-07  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* tests/proxyproto-test: tests: proxyproto-test: kill openconnect
+	more politely and give it few seconds before checking output
+
+2015-12-07  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* tests/firewall-neg-test, tests/firewall-test, tests/full-test,
+	tests/proxyproto-test, tests/proxyproto-unix-test,
+	tests/reload-info-test: tests: use consistent name for PID file
+
+2015-12-07  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* src/ocserv-fw: ocserv-fw: removed unneeded variable
+
+2015-12-07  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* tests/docker-ocserv/ocserv-fw-neg.conf,
+	tests/docker-ocserv/ocserv-reload.conf, tests/firewall-neg-test: 
+	tests: corrected routes in ocserv-fw-neg and ocserv-reload tests Also simplified the ocserv-fw-neg test by not checking whether the
+	follow up script was run. This is part of the -fw test.
+
+2015-12-07  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* src/occtl/occtl.c, src/occtl/occtl.h, src/occtl/unix.c: occtl:
+	added command 'show iroutes' This command will list all iroutes currently available.  Resolves
+	#20
+
+2015-12-07  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* src/ocserv-fw: ocserv-fw: added license
+
+2015-12-07  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* tests/Makefile.am, tests/docker-ocserv/Dockerfile-fedora-fw,
+	tests/docker-ocserv/Dockerfile-fedora-fw-neg,
+	tests/docker-ocserv/Makefile.am,
+	tests/docker-ocserv/ocserv-fw-neg.conf, tests/firewall-neg-test: 
+	tests: added check for restrict-user-to-ports negation options
+
+2015-12-07  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* doc/sample.config, src/config-ports.c, src/ipc.proto,
+	src/main-user.c, src/ocserv-args.def, src/ocserv-fw,
+	tests/port-parsing.c: Enhanced configuration option
+	'restrict-user-to-ports' This enhancement allows to negate the rules and allow the user
+	connecting to all ports except the specified.
+
+2015-12-07  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* tests/Makefile.am, tests/docker-ocserv/Dockerfile-fedora-reload,
+	tests/docker-ocserv/Makefile.am,
+	tests/docker-ocserv/ocserv-reload.conf, tests/reload-info-test: 
+	tests: added check for proper operation after SIGHUP This test checks whether we can retrieve user information even after
+	a SIGHUP (the time where the old config is invalidated).
 
 2015-12-06  Nikos Mavrogiannopoulos <nmav@gnutls.org>
 
@@ -29,21 +791,123 @@
 
 2015-12-06  Nikos Mavrogiannopoulos <nmav@gnutls.org>
 
-	* src/occtl-unix.c: occtl: use dash for no-dtls message to make it
+	* src/occtl/unix.c: occtl: use dash for no-dtls message to make it
 	more consistent with other output
+
+2015-11-14  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* configure.ac: configure: don't issue warnings that make
+	compilation with libev impossible
+
+2015-11-13  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* NEWS: doc update
+
+2015-11-13  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* src/common/common.c, src/common/common.h, src/common/ctl.proto,
+	src/main-ctl-unix.c, src/main-ctl.h, src/main-misc.c,
+	src/main-sec-mod-cmd.c, src/main-user.c, src/main.c, src/main.h,
+	src/occtl/ctl.h, src/occtl/occtl.c, src/occtl/occtl.h,
+	src/occtl/unix.c, src/sec-mod-auth.c: Added occtl command 'show
+	events', as well as the corresponding command in main This allows the main process to handle a single listener which will
+	get all information about new and disconnecting users.
+
+2015-11-13  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* src/main-ctl-unix.c, src/main-misc.c, src/main.c, src/main.h,
+	src/worker-misc.c, src/worker-vpn.c, src/worker.h: main: allow
+	multiple clients in control channel (occtl)
+
+2015-11-10  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* NEWS, README.md, configure.ac, src/Makefile.am,
+	src/main-ctl-unix.c, src/main-ctl.h, src/main-misc.c,
+	src/main-resume.c, src/main.c, src/main.h, src/script-list.h,
+	tests/docker-kerberos/Dockerfile-fedora-client,
+	tests/docker-kerberos/Dockerfile-fedora-kerberos,
+	tests/docker-ocserv/Dockerfile-debian-proxyproto,
+	tests/docker-ocserv/Dockerfile-debian-radius,
+	tests/docker-ocserv/Dockerfile-debian-radius-config,
+	tests/docker-ocserv/Dockerfile-debian-tcp,
+	tests/docker-ocserv/Dockerfile-debian-unix,
+	tests/docker-ocserv/Dockerfile-fedora-otp,
+	tests/docker-ocserv/Dockerfile-fedora-pam,
+	tests/docker-ocserv/Dockerfile-fedora-pam-noauth,
+	tests/docker-ocserv/Dockerfile-fedora-proxyproto,
+	tests/docker-ocserv/Dockerfile-fedora-proxyproto-unix,
+	tests/docker-ocserv/Dockerfile-fedora-radius,
+	tests/docker-ocserv/Dockerfile-fedora-radius-config,
+	tests/docker-ocserv/Dockerfile-fedora-tcp,
+	tests/docker-ocserv/Dockerfile-fedora-unix: Master process was
+	converted to use libev
+
+2015-12-03  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* src/config.c, src/log.c, src/main-ctl-unix.c, src/main-misc.c,
+	src/main-sec-mod-cmd.c, src/main.c, src/main.h, src/sec-mod.c,
+	src/sec-mod.h, src/tlslib.c, src/vpn.h, src/worker-vpn.c: Added
+	reference counting to configuration values.  That is, to allow referencing to these values from proc_st without
+	fearing of them being invalidated on a config reload. We perform a
+	cleanup of these values on the server periodic check.
+
+2015-12-03  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* src/config-ports.c: config-ports: added error checking on talloc
+
+2015-12-02  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* README.md: README.md: added liboath dependency
+
+2015-12-02  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* doc/sample.config, src/ocserv-args.def: doc: list 'route=default'
+	as an example
+
+2015-12-01  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* tests/full-test, tests/kerberos-test, tests/otp-test,
+	tests/pam-noauth-test, tests/pam-test, tests/proxyproto-test,
+	tests/proxyproto-unix-test, tests/radius-test, tests/unix-test: 
+	tests: use a common macro to obtain docker image IP address
+
+2015-12-01  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* tests/docker-common.sh, tests/docker-ocserv/Dockerfile-fedora-fw,
+	tests/docker-ocserv/ocserv-fw.conf, tests/firewall-test: tests:
+	check restrict-user-to-ports in firewall-test
+
+2015-12-01  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* tests/Makefile.am, tests/port-parsing.c: tests: Added check for
+	port parser
+
+2015-12-01  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* doc/sample.config, src/Makefile.am, src/common-config.h,
+	src/config-ports.c, src/config.c, src/ipc.proto,
+	src/main-sec-mod-cmd.c, src/main-user.c, src/ocserv-args.def,
+	src/ocserv-fw, src/sup-config/file.c, src/vpn.h: Added configuration
+	option 'restrict-user-to-ports' This option is intended to allow restricting users to accessing
+	specific ports once they enter the VPN. The rules set using this
+	option will be enforced by the ocserv-fw script.
+
+2015-12-01  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* src/vpn.h: removed unused structure
+
+2015-12-01  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* src/subconfig.c: eliminated double null check
+
+2015-11-27  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* README.md: README.md: added gssntlmssp as a dependency
 
 2015-11-29  Nikos Mavrogiannopoulos <nmav@gnutls.org>
 
 	* doc/sample.config, src/ocserv-args.def: doc: document the behavior
 	of restrict-user-to-routes in case of defaultroute
-
-2015-11-28  Nikos Mavrogiannopoulos <nmav@gnutls.org>
-
-	* NEWS: doc update
-
-2015-11-28  Nikos Mavrogiannopoulos <nmav@gnutls.org>
-
-	* src/main-ctl-unix.c: corrected keepalive reporting in occtl
 
 2015-11-28  Nikos Mavrogiannopoulos <nmav@gnutls.org>
 
@@ -56,7 +920,8 @@
 
 2015-11-28  Nikos Mavrogiannopoulos <nmav@gnutls.org>
 
-	* tests/test-cert: tests: fixed server reload on test-cert
+	* tests/common.sh, tests/test-cert: tests: check for sever exit in
+	test-cert
 
 2015-11-28  Nikos Mavrogiannopoulos <nmav@gnutls.org>
 
@@ -84,7 +949,19 @@
 
 2015-11-28  Nikos Mavrogiannopoulos <nmav@gnutls.org>
 
-	* NEWS: released 0.10.10
+	* .gitignore: .gitignore: ignore more auto-generated files
+
+2015-11-28  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* tests/Makefile.am, tests/test-append-routes,
+	tests/test-user-config.config: tests: check whether append-routes
+	directive works
+
+2015-11-28  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* NEWS, src/config.c, src/main-sec-mod-cmd.c, src/main.h,
+	src/ocserv-args.def, src/vpn.h: Added config option 'append-routes' If set to true it will restore the old configuration semantics of
+	appending the global routes to per user/group config.
 
 2015-11-27  Nikos Mavrogiannopoulos <nmav@redhat.com>
 
@@ -99,8 +976,7 @@
 
 2015-11-26  Nikos Mavrogiannopoulos <nmav@redhat.com>
 
-	* src/worker-auth.c: Allow matching passwords of format
-	<xxx_password> in client's login message
+	* NEWS: doc update
 
 2015-11-26  Nikos Mavrogiannopoulos <nmav@redhat.com>
 
@@ -108,9 +984,23 @@
 	tests/docker-ocserv/radius-clients.conf: tests: updated radius
 	config files for f23
 
-2015-11-24  Nikos Mavrogiannopoulos <nmav@redhat.com>
+2015-11-26  Nikos Mavrogiannopoulos <nmav@redhat.com>
 
-	* NEWS: doc update
+	* src/worker-auth.c: Allow matching passwords of format
+	<xxx_password> in client's login message
+
+2015-11-26  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* src/ip-lease.c, src/ipc.proto, src/main-auth.c,
+	src/main-ctl-unix.c, src/main-sec-mod-cmd.c, src/main-user.c,
+	src/main.h, src/ocserv-args.def, src/route-add.c,
+	src/sec-mod-auth.c, src/sup-config/file.c, src/sup-config/radius.c,
+	src/worker-auth.c, src/worker-http-handlers.c, src/worker-misc.c,
+	src/worker-vpn.c, src/worker.h: Simplified per-user/group
+	configuration handling We now use a common structure in SESSION_REPLY and AUTH_REP
+	messages. That structure is generated by sec-mod and forwarded by
+	main to worker, thus eliminating the need to create passing code for
+	each new user-config variable being added.
 
 2015-11-24  Nikos Mavrogiannopoulos <nmav@gnutls.org>
 
@@ -120,22 +1010,6 @@
 
 	* src/ocserv-fw: ocserv-fw: when called with --removeall exit
 	immediately after action
-
-2015-11-23  Nikos Mavrogiannopoulos <nmav@redhat.com>
-
-	* NEWS: doc update
-
-2015-11-19  Nikos Mavrogiannopoulos <nmav@gnutls.org>
-
-	* tests/Makefile.am, tests/ban-ips.c, tests/ipv4-prefix.c,
-	tests/ipv6-prefix.c, tests/json-escape.c, tests/kkdcp-parsing.c,
-	tests/str-test.c: tests: avoid source dependencies from other dirs
-	in Makefile That causes compilation errors under certain cirquimstances.
-
-2015-11-11  Nikos Mavrogiannopoulos <nmav@redhat.com>
-
-	* .gitignore, configure.ac, src/Makefile.am, src/ccan/Makefile.am: 
-	ccan: build as an included library
 
 2015-11-23  Nikos Mavrogiannopoulos <nmav@redhat.com>
 
@@ -152,19 +1026,13 @@
 
 2015-11-23  Nikos Mavrogiannopoulos <nmav@redhat.com>
 
-	* src/config.c, src/ctl.proto, src/ipc.proto, src/main-ctl-unix.c,
-	src/main-sec-mod-cmd.c, src/main-user.c, src/occtl-unix.c,
-	src/ocserv-args.def, src/ocserv-fw, src/sup-config/file.c,
-	src/vpn.h: Added configuration option restrict-user-to-routes This option, if set, will call /usr/bin/ocserv-fw for each user
+	* src/common/ctl.proto, src/config.c, src/ipc.proto,
+	src/main-ctl-unix.c, src/main-sec-mod-cmd.c, src/main-user.c,
+	src/occtl/unix.c, src/ocserv-args.def, src/ocserv-fw,
+	src/sup-config/file.c, src/vpn.h: Added configuration option
+	restrict-user-to-routes This option, if set, will call /usr/bin/ocserv-fw for each user
 	connecting, i.e., adding firewall restrictions based on its allowed
 	routes.
-
-2015-11-10  Nikos Mavrogiannopoulos <nmav@redhat.com>
-
-	* doc/sample.config, src/config.c, src/ipc.proto, src/main-auth.c,
-	src/main-sec-mod-cmd.c, src/ocserv-args.def, src/sup-config/file.c,
-	src/vpn.h, src/worker-vpn.c: Added configuration option
-	tunnel-all-dns
 
 2015-11-23  Nikos Mavrogiannopoulos <nmav@redhat.com>
 
@@ -188,39 +1056,91 @@
 	* doc/sample.config, src/main-user.c, src/ocserv-args.def: scripts:
 	export the routes,no-routes and dns servers
 
+2015-11-19  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* tests/Makefile.am, tests/ban-ips.c, tests/ipv4-prefix.c,
+	tests/ipv6-prefix.c, tests/json-escape.c, tests/kkdcp-parsing.c,
+	tests/str-test.c: tests: avoid source dependencies from other dirs
+	in Makefile That causes compilation errors under certain cirquimstances.
+
+2015-11-19  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* README.md: added cwrap libs as dependencies
+
+2015-11-19  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* tests/common.sh, tests/test-cert, tests/test-enc-key,
+	tests/test-enc-key.config, tests/test-enc-key2.config,
+	tests/test-group-pass, tests/test-group-pass.config,
+	tests/test-pass, tests/test-pass-cert, tests/test-pass-group-cert,
+	tests/test-pass-group-cert-no-pass, tests/test-sighup,
+	tests/test-sighup.config, tests/test-user-cert.config,
+	tests/test-user-group-cert-no-pass.config,
+	tests/test-user-group-cert.config, tests/test1.config,
+	tests/test3.config: tests: modified cwrap tests to run from
+	different builddir
+
 2015-11-19  Nikos Mavrogiannopoulos <nmav@redhat.com>
 
-	* src/ctl.proto, src/main-ctl-unix.c, src/occtl-unix.c: pass DPD and
-	keepalive values to occtl
+	* src/common/ctl.proto, src/main-ctl-unix.c, src/occtl/unix.c: pass
+	DPD and keepalive values to occtl
 
-2015-11-18  Nikos Mavrogiannopoulos <nmav@redhat.com>
+2015-11-19  Nikos Mavrogiannopoulos <nmav@redhat.com>
 
-	* NEWS, TODO: doc update
+	* .gitlab-ci.yml: .gitlab-ci.yml: run all checks on build systems
+
+2015-11-19  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* configure.ac, src/common/system.c, tests/Makefile.am,
+	tests/common.sh, tests/test-cert, tests/test-enc-key,
+	tests/test-enc-key.config, tests/test-enc-key2.config,
+	tests/test-group-cert, tests/test-group-cert.config,
+	tests/test-group-pass, tests/test-group-pass.config,
+	tests/test-pass, tests/test-pass-cert, tests/test-pass-group-cert,
+	tests/test-pass-group-cert-no-pass, tests/test-sighup,
+	tests/test-sighup.config, tests/test-user-cert.config,
+	tests/test-user-group-cert-no-pass.config,
+	tests/test-user-group-cert.config, tests/test1.config,
+	tests/test3.config: tests: converted part of the test suite to run
+	with cwrap That allows several tests to run as non-root.
+
+2015-11-19  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* src/main-misc.c: relocated confusing message on user logged in
 
 2015-11-17  Nikos Mavrogiannopoulos <nmav@gnutls.org>
 
 	* doc/sample.config, src/ocserv-args.def: doc update
+
+2015-11-14  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* tests/test-cookie-invalidation, tests/test-cookie-timeout,
+	tests/test-multi-cookie: tests: use more sensible names for pid
+	files
+
+2015-11-14  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* tests/Makefile.am, tests/test-cookie-rotation,
+	tests/test-cookie-rotation.config: tests: added check to verify the
+	proper operation of cookie key rotation
+
+2015-11-14  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* doc/sample.config, src/common/common.c, src/config.c,
+	src/cookies.h, src/ipc.proto, src/main-auth.c,
+	src/main-sec-mod-cmd.c, src/main.c, src/main.h,
+	src/ocserv-args.def, src/sec-mod.c, src/sec-mod.h, src/vpn.h: Added
+	cookie key rotation
 
 2015-11-16  Nikos Mavrogiannopoulos <nmav@gnutls.org>
 
 	* src/route-add.c: route-add: added more sensible version of
 	system()
 
-2015-11-14  Nikos Mavrogiannopoulos <nmav@gnutls.org>
-
-	* doc/sample.config, src/common.c, src/config.c, src/cookies.h,
-	src/ipc.proto, src/main-auth.c, src/main-sec-mod-cmd.c, src/main.c,
-	src/main.h, src/ocserv-args.def, src/sec-mod.c, src/sec-mod.h,
-	src/vpn.h: Added cookie key rotation
-
 2015-11-16  Nikos Mavrogiannopoulos <nmav@redhat.com>
 
 	* src/route-add.c: prior to calling system set the default signal
 	mask
-
-2015-11-16  Nikos Mavrogiannopoulos <nmav@redhat.com>
-
-	* NEWS: doc update
 
 2015-11-16  Nikos Mavrogiannopoulos <nmav@redhat.com>
 
@@ -246,23 +1166,126 @@
 	* src/main-misc.c, src/route-add.c, src/route-add.h: A failure to
 	apply iroutes is propagated and login is denied
 
-2015-11-12  Nikos Mavrogiannopoulos <nmav@redhat.com>
+2015-11-13  Nikos Mavrogiannopoulos <nmav@redhat.com>
 
-	* NEWS: doc update
+	* doc/design.md: design.md: document a possible optimization in IPC
+	protocol
+
+2015-11-13  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* src/Makefile.am, src/worker-extras.c, src/worker-http-handlers.c: 
+	worker-extras -> worker-http-handers
+
+2015-11-11  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* src/occtl/Makefile.am: occtl: include files from generated common
+	dir
+
+2015-11-11  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* tests/Makefile.am: tests: remove CCAN sources - we already link to
+	libccan.a
+
+2015-11-11  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* configure.ac, src/Makefile.am: don't export LIBTALLOC_CFLAGS when
+	using the included
+
+2015-11-11  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* tests/Makefile.am: tests: use proper cflags after code refactor
+
+2015-11-11  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* src/common/Makefile.am: common: include upper dir for
+	auto-generated headers
+
+2015-11-11  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* src/Makefile.am, src/common/Makefile.am: finish move of ctl.proto
+	to common/
+
+2015-11-11  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* src/common/Makefile.am: common: Added missing file
 
 2015-11-11  Nikos Mavrogiannopoulos <nmav@redhat.com>
 
 	* src/tlslib.c, src/worker-privs.c: cstp_send_file: use system calls
 	instead of libc for open/read That simplifies the handling of seccomp rules.
 
+2015-11-11  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* configure.ac, src/Makefile.am, src/common.c, src/common.h,
+	src/common/cloexec.c, src/common/cloexec.h, src/common/common.c,
+	src/common/common.h, src/common/ctl.proto, src/common/system.c,
+	src/common/system.h, src/ctl.proto, src/occtl/Makefile.am,
+	src/system.c, src/system.h: move common sources to common/
+
+2015-11-11  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* gl/Makefile.am, gl/c-ctype.c, gl/c-ctype.h, gl/cloexec.c,
+	gl/cloexec.h, gl/close.c, gl/dup2.c, gl/fcntl.c, gl/fcntl.in.h,
+	gl/fd-hook.c, gl/fd-hook.h, gl/getdtablesize.c, gl/m4/close.m4,
+	gl/m4/dup2.m4, gl/m4/fcntl-o.m4, gl/m4/fcntl.m4, gl/m4/fcntl_h.m4,
+	gl/m4/getdtablesize.m4, gl/m4/gnulib-cache.m4,
+	gl/m4/gnulib-common.m4, gl/m4/gnulib-comp.m4, gl/unistd.c: gnulib:
+	remove all fcntl/open/etc compatibility functions
+
+2015-11-11  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* .gitlab-ci.yml: .gitlab-ci.yml: cannot build with
+	--with-local-talloc - it conflicts with system header
+
+2015-11-11  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* .gitlab-ci.yml: .gitlab-ci.yml: don't use --enable-local-libopts
+	on minimal build It cannot be used everywhere.
+
+2015-11-11  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* .gitignore, configure.ac, src/Makefile.am, src/ccan/Makefile.am,
+	src/occtl/Makefile.am: ccan: build as an included library
+
+2015-11-11  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* .gitignore, configure.ac, src/Makefile.am, src/occtl/Makefile.am,
+	src/protobuf/Makefile.am: use an intermediate protobuf library for
+	the included protobuf sources
+
+2015-11-10  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* .gitlab-ci.yml: .gitlab-ci.yml: added build check with minimal
+	setup
+
+2015-11-10  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* doc/sample.config, src/config.c, src/ipc.proto, src/main-auth.c,
+	src/main-sec-mod-cmd.c, src/ocserv-args.def, src/sup-config/file.c,
+	src/vpn.h, src/worker-vpn.c: Added configuration option
+	tunnel-all-dns
+
 2015-11-10  Nikos Mavrogiannopoulos <nmav@redhat.com>
 
 	* src/worker-auth.c: use 'secondary_password' as name for any
 	additional XML password fields
 
-2015-11-06  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+2015-11-07  Nikos Mavrogiannopoulos <nmav@gnutls.org>
 
-	* NEWS: doc update
+	* doc/design.md, src/ipc.proto: Added a draft design document
+
+2015-11-06  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* .gitlab-ci.yml: .gitlab-ci.yml: compile and run make check with
+	libasan
+
+2015-11-06  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* tests/ban-ips.c: tests: ensure there are no leaks in ban-ips
+
+2015-11-06  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* src/ocpasswd/ocpasswd.c: ocpasswd: ensure there are no leaks
 
 2015-11-06  Nikos Mavrogiannopoulos <nmav@redhat.com>
 
@@ -281,7 +1304,7 @@
 
 2015-11-05  Nikos Mavrogiannopoulos <nmav@redhat.com>
 
-	* tests/Makefile.am: tests: updated Makefile for new ip-util file
+	* .gitignore: more files to ignore
 
 2015-11-05  Nikos Mavrogiannopoulos <nmav@redhat.com>
 
@@ -298,17 +1321,13 @@
 	src/vpn.h, src/worker-auth.c: Added user-specific configuration
 	options dpd, mobile-dpd, keepalive, max-same-clients
 
-2015-11-02  Nikos Mavrogiannopoulos <nmav@redhat.com>
-
-	* NEWS: doc update
-
 2015-11-02  Nikos Mavrogiannopoulos <nmav@gnutls.org>
 
 	* src/main-ban.c: corrected usage of human_addr2()
 
-2015-11-02  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+2015-11-02  Nikos Mavrogiannopoulos <nmav@redhat.com>
 
-	* NEWS: doc update
+	* configure.ac: bumped version
 
 2015-11-02  Nikos Mavrogiannopoulos <nmav@redhat.com>
 
@@ -318,10 +1337,7 @@
 
 2015-11-02  Nikos Mavrogiannopoulos <nmav@redhat.com>
 
-	* src/ctl.proto, src/main-ban.c, src/main-ban.h,
-	src/main-ctl-unix.c, src/main-misc.c, src/main-sec-mod-cmd.c,
-	src/occtl-unix.c: ip banning: entries hold in raw IP format rather
-	than textual
+	* tests/ipv6-prefix.c: tests: corrected header in ipv6-prefix
 
 2015-11-02  Nikos Mavrogiannopoulos <nmav@redhat.com>
 
@@ -330,7 +1346,19 @@
 
 2015-11-02  Nikos Mavrogiannopoulos <nmav@redhat.com>
 
-	* tests/ipv6-prefix.c: tests: corrected header in ipv6-prefix
+	* src/ctl.proto, src/main-ban.c, src/main-ban.h,
+	src/main-ctl-unix.c, src/main-misc.c, src/main-sec-mod-cmd.c,
+	src/occtl/unix.c: ip banning: entries hold in raw IP format rather
+	than textual
+
+2015-11-01  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* tests/docker-ocserv/Dockerfile-debian-proxyproto,
+	tests/docker-ocserv/Dockerfile-debian-radius,
+	tests/docker-ocserv/Dockerfile-debian-radius-config,
+	tests/docker-ocserv/Dockerfile-debian-tcp,
+	tests/docker-ocserv/Dockerfile-debian-unix: tests: use
+	debian:testing for tests
 
 2015-11-01  Nikos Mavrogiannopoulos <nmav@gnutls.org>
 
@@ -345,6 +1373,98 @@
 
 	* src/route-add.c: route-add: corrected CIDR route macro to conform
 	to documentation
+
+2015-10-31  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/occtl/Makefile.am: occtl: restrict common sources to minimum
+	necessary
+
+2015-10-31  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/common-json.c, src/common-json.h, src/occtl/Makefile.am,
+	src/occtl/json.c, src/occtl/json.h, src/occtl/print.c,
+	tests/Makefile.am, tests/json-escape.c: moved JSON functionality to
+	occtl/ as it was the only user
+
+2015-10-31  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* NEWS: doc update
+
+2015-10-31  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* Makefile.am, configure.ac: updated Makefile and configure for new
+	.def paths
+
+2015-10-31  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/Makefile.am, src/config.c, src/ctl.h, src/main-ctl.h,
+	src/main.h, src/occtl/args.def, src/occtl/ctl.h: occtl: move ctl.h
+	in occtl/ and fixed args.def to include version.inc
+
+2015-10-30  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* configure.ac, src/base64-helper.c: Added check for nettle < 3.0
+
+2015-10-30  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/ocpasswd/Makefile.am, src/ocpasswd/ocpasswd.c: ocpasswd:
+	include builddir and include proper header
+
+2015-10-30  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* tests/docker-common.sh: tests: copy ocpasswd and occtl from new
+	paths
+
+2015-10-30  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/occtl/Makefile.am: occtl: include builddir/.. into CPPFLAGS
+
+2015-09-03  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* configure.ac, src/Makefile.am, src/auth/gssapi.c,
+	src/auth/radius.h, src/base64-helper.c, src/base64-helper.h,
+	src/log.c, src/sec-mod-auth.c, src/sec-mod-db.c, src/sec-mod.h,
+	src/worker-auth.c, src/worker-http.c: use nettle's base64
+	implementation
+
+2015-09-03  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* build-aux/config.rpath, build-aux/snippet/arg-nonnull.h,
+	build-aux/snippet/c++defs.h, build-aux/snippet/warn-on-use.h,
+	gl/Makefile.am, gl/base64.c, gl/base64.h, gl/c-ctype.c,
+	gl/c-ctype.h, gl/c-strcase.h, gl/c-strcasecmp.c,
+	gl/c-strncasecmp.c, gl/cloexec.c, gl/cloexec.h, gl/close.c,
+	gl/dup2.c, gl/errno.in.h, gl/fcntl.c, gl/fcntl.in.h, gl/fd-hook.c,
+	gl/fd-hook.h, gl/fseek.c, gl/fseeko.c, gl/fstat.c, gl/getdelim.c,
+	gl/getdtablesize.c, gl/getline.c, gl/getpass.c, gl/getpass.h,
+	gl/gettimeofday.c, gl/lseek.c, gl/m4/00gnulib.m4,
+	gl/m4/absolute-header.m4, gl/m4/base64.m4, gl/m4/close.m4,
+	gl/m4/dup2.m4, gl/m4/errno_h.m4, gl/m4/extensions.m4,
+	gl/m4/extern-inline.m4, gl/m4/fcntl-o.m4, gl/m4/fcntl.m4,
+	gl/m4/fcntl_h.m4, gl/m4/fseek.m4, gl/m4/fseeko.m4, gl/m4/fstat.m4,
+	gl/m4/getdelim.m4, gl/m4/getdtablesize.m4, gl/m4/getline.m4,
+	gl/m4/getpass.m4, gl/m4/gettimeofday.m4, gl/m4/gnulib-cache.m4,
+	gl/m4/gnulib-common.m4, gl/m4/gnulib-comp.m4, gl/m4/gnulib-tool.m4,
+	gl/m4/include_next.m4, gl/m4/largefile.m4, gl/m4/lib-ld.m4,
+	gl/m4/lib-link.m4, gl/m4/lib-prefix.m4, gl/m4/longlong.m4,
+	gl/m4/lseek.m4, gl/m4/malloc.m4, gl/m4/memchr.m4, gl/m4/memmem.m4,
+	gl/m4/minmax.m4, gl/m4/mmap-anon.m4, gl/m4/msvc-inval.m4,
+	gl/m4/msvc-nothrow.m4, gl/m4/multiarch.m4, gl/m4/off_t.m4,
+	gl/m4/realloc.m4, gl/m4/ssize_t.m4, gl/m4/stdbool.m4,
+	gl/m4/stddef_h.m4, gl/m4/stdint.m4, gl/m4/stdio_h.m4,
+	gl/m4/stdlib_h.m4, gl/m4/strcase.m4, gl/m4/strcasestr.m4,
+	gl/m4/strdup.m4, gl/m4/string_h.m4, gl/m4/strings_h.m4,
+	gl/m4/sys_socket_h.m4, gl/m4/sys_stat_h.m4, gl/m4/sys_time_h.m4,
+	gl/m4/sys_types_h.m4, gl/m4/time_h.m4, gl/m4/unistd_h.m4,
+	gl/m4/warn-on-use.m4, gl/m4/wchar_t.m4, gl/malloc.c, gl/memchr.c,
+	gl/memmem.c, gl/minmax.h, gl/msvc-inval.c, gl/msvc-inval.h,
+	gl/msvc-nothrow.c, gl/msvc-nothrow.h, gl/realloc.c,
+	gl/stdbool.in.h, gl/stddef.in.h, gl/stdint.in.h, gl/stdio-impl.h,
+	gl/stdio.in.h, gl/stdlib.in.h, gl/str-two-way.h, gl/strcasecmp.c,
+	gl/strcasestr.c, gl/strdup.c, gl/string.in.h, gl/strings.in.h,
+	gl/strncasecmp.c, gl/sys_stat.in.h, gl/sys_time.in.h,
+	gl/sys_types.in.h, gl/time.in.h, gl/unistd.in.h: gnulib: updated and
+	removed base64
 
 2015-10-30  Nikos Mavrogiannopoulos <nmav@redhat.com>
 
@@ -372,6 +1492,11 @@
 
 2015-10-30  Nikos Mavrogiannopoulos <nmav@redhat.com>
 
+	* tests/Makefile.am, tests/ocpasswd-test: tests: ip and ocpasswd
+	were updated for reorg in src/
+
+2015-10-30  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
 	* src/ip-util.c, src/ip-util.h, src/ocserv-args.def,
 	src/route-add.c, src/str.c, src/str.h: Introduced %{RI} macro for
 	route-add/del-cmd to get route in CIDR format
@@ -382,6 +1507,20 @@
 	src/ip-lease.c, src/ip-util.c, src/ip-util.h, src/main-resume.c,
 	src/sup-config/file.c, src/sup-config/radius.c, src/vpn.h: moved
 	ip-related macros to ip-util
+
+2015-10-28  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* configure.ac, doc/Makefile.am, src/Makefile.am, src/common.mk,
+	src/occtl-args.def, src/occtl-cache.c, src/occtl-ip-cache.c,
+	src/occtl-nl.c, src/occtl-pager.c, src/occtl-print.c,
+	src/occtl-time.c, src/occtl-unix.c, src/occtl.c, src/occtl.h,
+	src/occtl/Makefile.am, src/occtl/args.def, src/occtl/cache.c,
+	src/occtl/ip-cache.c, src/occtl/nl.c, src/occtl/occtl.c,
+	src/occtl/occtl.h, src/occtl/pager.c, src/occtl/print.c,
+	src/occtl/time.c, src/occtl/unix.c, src/ocpasswd-args.def,
+	src/ocpasswd.c, src/ocpasswd/Makefile.am, src/ocpasswd/args.def,
+	src/ocpasswd/ocpasswd.c: occtl and ocpasswd were moved into separate
+	directories
 
 2015-10-30  Nikos Mavrogiannopoulos <nmav@redhat.com>
 

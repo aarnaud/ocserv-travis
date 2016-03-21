@@ -1,40 +1,4 @@
-/* === Authentication ===
- 
-  main                 sec-mod                 worker
-   |                      |                      |
-   |                      |  <--SEC_AUTH_INIT--- |
-   |                      |  ---SEC_AUTH_REP---> |
-   |                      |  <--SEC_AUTH_CONT--- |
-   |                      |         .            |
-   |                      |         .            |
-   |                      |         .            |
-   |                      |  ----SEC_AUTH_REP--> |
-   |                      |                      |
-   | <----------AUTH_COOKIE_REQ----------------- |
-   |                      |                      |
-   | ---SESSION_OPEN----> |                      |
-   | <--SESSION_REPLY---- |                      |   #contains additional config for client
-   |                      |                      |
-   | -----------------AUTH_REP-----------------> |   #forwards the additional config for client
-   |                      |                      |
-   | <------------SESSION_INFO------------------ |
-   |                      |                      |
-   |                      | <-- CLI_STATS ------ |
-   |                      |            (disconnect)
-   | ---SESSION_CLOSE---> |
-   | <-- CLI_STATS ------ |
-
- */
-
-
-/*
- * == Auth in main process (cookie auth only) ==
- *
- *   main                              worker
- *                      <------     AUTH_COOKIE_REQ
- * AUTH_REP(OK/FAILED)  ------>
- *  +user config
- *
+/* See doc/design.md for the IPC communication sequences.
  */
 
 enum AUTH_REP {
@@ -49,14 +13,62 @@ message auth_cookie_request_msg
 	required bytes cookie = 1;
 }
 
-/* AUTH_REP */
-message auth_reply_msg
+message fw_port_st
+{
+	required uint32 port = 1;
+	/* fw_proto_t */
+	required uint32 proto = 2;
+	/* negative rule, i.e., if non zero reject this port */
+	required uint32 negate = 3;
+}
+
+/* This is a structure for per-user/group supplemental configuration.
+ */
+message group_cfg_st
+{
+	/* sup - config, to add values, ensure we
+	 * apply a reasonable default in apply_default_config() */
+	optional uint32 interim_update_secs = 2;
+	optional uint32 session_timeout_secs = 3;
+	optional bool no_udp = 10;
+	optional bool deny_roaming = 11;
+	repeated string routes = 13;
+	repeated string iroutes = 14;
+	repeated string dns = 15;
+	repeated string nbns = 16;
+	optional string ipv4_net = 17;
+	optional string ipv4_netmask = 18;
+	optional string ipv6_net = 19;
+	optional uint32 ipv6_prefix = 20;
+	optional string cgroup = 21;
+	optional string xml_config_file = 22;
+	optional uint32 rx_per_sec = 23;
+	optional uint32 tx_per_sec = 24;
+	optional uint32 net_priority = 25;
+	optional string explicit_ipv4 = 26;
+	optional string explicit_ipv6 = 27;
+	repeated string no_routes = 28;
+	optional uint32 ipv6_subnet_prefix = 29;
+	optional uint32 dpd = 30;
+	optional uint32 mobile_dpd = 31;
+	optional uint32 keepalive = 32;
+	optional uint32 max_same_clients = 33;
+	optional uint32 tunnel_all_dns = 34;
+	optional bool restrict_user_to_routes = 35;
+	optional uint32 mtu = 36;
+	optional uint32 idle_timeout = 37;
+	optional uint32 mobile_idle_timeout = 38;
+	repeated fw_port_st fw_ports = 39;
+}
+
+/* AUTH_COOKIE_REP */
+message auth_cookie_reply_msg
 {
 	required AUTH_REP reply = 1;
 	optional bytes session_id = 3; /* dtls */
 	optional string vname = 4;
 	optional string user_name = 5;
-	optional string group_name = 25;
+	optional string group_name = 6;
 
 	/* the ips of the tun device */
 	optional string ipv4 = 7;
@@ -64,35 +76,20 @@ message auth_reply_msg
 	optional string ipv4_local = 9;
 	optional string ipv6_local = 10;
 
+	required bytes sid = 11;
+
 	/* additional config */
-	optional string ipv4_netmask = 15;
-	optional string ipv6_netmask = 16;
-	optional uint32 ipv6_prefix = 17;
-	optional uint32 rx_per_sec = 18;
-	optional uint32 tx_per_sec = 19;
-	optional uint32 net_priority = 20;
-	repeated string routes = 21;
-	repeated string dns = 22;
-	repeated string nbns = 23;
-	optional bool no_udp = 24 [default = false];
-	optional string xml_config_file = 26;
-	optional string ipv4_network = 27;
-	optional string ipv6_network = 28;
-	repeated string no_routes = 29;
-	required bytes sid = 30;
-	optional uint32 interim_update_secs = 31;
-	optional uint32 session_timeout_secs = 32;
-	optional uint32 ipv6_subnet_prefix = 33;
-	optional uint32 dpd = 34;
-	optional uint32 mobile_dpd = 35;
-	optional uint32 keepalive = 36;
-	optional uint32 tunnel_all_dns = 37;
+	optional group_cfg_st config = 20;
 }
 
 /* RESUME_FETCH_REQ + RESUME_DELETE_REQ */
 message session_resume_fetch_msg
 {
 	required bytes session_id = 1;
+	/* this is of type sockaddr_storage,
+	 * and contains the address of the client.
+	 */
+	required bytes cli_addr = 2;
 }
 
 /* RESUME_STORE_REQ */
@@ -100,6 +97,10 @@ message session_resume_store_req_msg
 {
 	required bytes session_id = 1;
 	required bytes session_data = 2;
+	/* this is of type sockaddr_storage,
+	 * and contains the address of the client.
+	 */
+	required bytes cli_addr = 3;
 }
 
 /* RESUME_FETCH_REP */
@@ -119,6 +120,8 @@ message tun_mtu_msg
 	required uint32 mtu = 1;
 }
 
+/* SEC_CLI_STATS */
+/* SECM_CLI_STATS */
 message cli_stats_msg
 {
 	required uint64 bytes_in = 1;
@@ -130,13 +133,14 @@ message cli_stats_msg
 	optional string ipv6 = 7;
 	optional uint32 discon_reason = 8;
 	optional uint32 secmod_client_entries = 9; /* from sec-mod to main only */
+	optional uint32 secmod_tlsdb_entries = 10; /* from sec-mod to main only */
 }
 
 /* UDP_FD */
 message udp_fd_msg
 {
 	required bool hello = 1 [default = true]; /* is that a client hello? */
-	optional bytes data = 2; /* the client hello data */
+	required bytes data = 2; /* the first packet in the fd */
 }
 
 /* SESSION_INFO */
@@ -153,6 +157,8 @@ message session_info_msg
 	 */
 	optional bytes our_addr = 6;
 	optional bytes remote_addr = 7;
+
+	optional string hostname = 8;
 }
 
 /* WORKER_BAN_IP: sent from worker to main */
@@ -199,10 +205,10 @@ message sec_auth_init_msg
 	optional string group_name = 4; /* selected group name */
 	optional string cert_user_name = 5;
 	repeated string cert_group_names = 6;
-	optional string hostname = 7;
 	required string ip = 8;
 	required uint32 auth_type = 9 [default = 0];
 	optional string our_ip = 10;
+	optional string user_agent = 11;
 }
 
 /* SEC_AUTH_CONT */
@@ -217,11 +223,10 @@ message sec_auth_cont_msg
 message sec_auth_reply_msg
 {
 	required AUTH_REP reply = 1;
-	optional bytes cookie = 2;
 	optional string user_name = 3;
 	optional string msg = 4; /* message to display to user */
 	optional bytes dtls_session_id = 5;
-	optional bytes sid = 6;
+	optional bytes sid = 6; /* cookie */
 	optional uint32 passwd_counter = 8; /* if that's a password prompt indicates the number of password asked */
 }
 
@@ -232,34 +237,26 @@ message sec_op_msg
 	required bytes data = 2;
 }
 
-/* Not a real message, but the cookie */
-message cookie
-{
-	required string username = 1;
-	required string groupname = 2;
-	required string hostname = 3;
-	required string ip = 4;
-	required uint32 expiration = 6;
-	required uint32 ipv4_seed = 7;
-	required bytes sid = 8;
-	required bool tls_auth_ok = 9;
-}
-
 /*
  * == Session Termination ==
  *
  *   main                           sec-mod
- * SESSION_OPEN/CLOSE   ------>
- *                      <------     SESSION_REPLY
+ * SECM_SESSION_OPEN/CLOSE   ------>
+ *                      <------     SECM_SESSION_REPLY
  */
 
-/* SEC_SESSION_CLOSE */
-message sec_auth_session_msg
+/* SECM_SESSION_OPEN */
+message secm_session_open_msg
 {
-	required bytes sid = 1;
-	/* on open */
-	optional bytes cookie = 2;
-	/* on close */
+	required bytes sid = 1; /* cookie */
+	optional string ipv4 = 6;
+	optional string ipv6 = 7;
+}
+
+/* SECM_SESSION_CLOSE */
+message secm_session_close_msg
+{
+	required bytes sid = 1; /* cookie */
 	optional uint32 uptime = 3;
 	optional uint64 bytes_in = 4;
 	optional uint64 bytes_out = 5;
@@ -267,44 +264,43 @@ message sec_auth_session_msg
 	optional string ipv6 = 7;
 }
 
-message sec_auth_session_reply_msg
+/* SECM_SESSION_REPLY */
+message secm_session_reply_msg
 {
 	required AUTH_REP reply = 1;
-	optional uint32 interim_update_secs = 2;
-	optional uint32 session_timeout_secs = 3;
 
-	/* sup - config */
-	optional bool no_udp = 10;
-	optional bool deny_roaming = 11;
-	repeated string routes = 13;
-	repeated string iroutes = 14;
-	repeated string dns = 15;
-	repeated string nbns = 16;
-	optional string ipv4_net = 17;
-	optional string ipv4_netmask = 18;
-	optional string ipv6_net = 19;
-	optional uint32 ipv6_prefix = 20;
-	optional string cgroup = 21;
-	optional string xml_config_file = 22;
-	optional uint32 rx_per_sec = 23;
-	optional uint32 tx_per_sec = 24;
-	optional uint32 net_priority = 25;
-	optional string explicit_ipv4 = 26;
-	optional string explicit_ipv6 = 27;
-	repeated string no_routes = 28;
-	optional uint32 ipv6_subnet_prefix = 29;
-	optional uint32 dpd = 30;
-	optional uint32 mobile_dpd = 31;
-	optional uint32 keepalive = 32;
-	optional uint32 max_same_clients = 33;
-	optional uint32 tunnel_all_dns = 34;
-	optional bool restrict_user_to_routes = 35;
+	required group_cfg_st config = 2;
+
+	required string username = 3;
+	required string groupname = 4;
+	required string ip = 6;
+	required uint32 ipv4_seed = 8;
+	required bytes sid = 9;
+	required bool tls_auth_ok = 10;
 }
 
-message sec_refresh_cookie_key
+/* internal struct */
+message cookie_int_msg
 {
-	required bytes key = 1;
+	required bytes sid = 1;
+	required bool session_is_open = 2;
+	required bool tls_auth_ok = 3;
+	required uint32 last_modified = 4;
+	required string username = 5;
+	optional string groupname = 6;
+	required string user_agent = 7;
+	required string remote_ip = 8;
+	required string psid = 9; /* printable form of sid */
+	required uint32 status = 10; /* the authentication status (PS_*) */
 }
 
-/* SEC_BAN_IP: sent from sec-mod to main */
+/* SECM_LIST_COOKIES - no content */
+/* SECM_LIST_COOKIES_REPLY */
+message secm_list_cookies_reply_msg
+{
+	repeated cookie_int_msg cookies = 1;
+}
+
+
+/* SECM_BAN_IP: sent from sec-mod to main */
 /* same as: ban_ip_msg */

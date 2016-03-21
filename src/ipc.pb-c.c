@@ -50,47 +50,133 @@ void   auth_cookie_request_msg__free_unpacked
   assert(message->base.descriptor == &auth_cookie_request_msg__descriptor);
   protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
 }
-void   auth_reply_msg__init
-                     (AuthReplyMsg         *message)
+void   fw_port_st__init
+                     (FwPortSt         *message)
 {
-  static AuthReplyMsg init_value = AUTH_REPLY_MSG__INIT;
+  static FwPortSt init_value = FW_PORT_ST__INIT;
   *message = init_value;
 }
-size_t auth_reply_msg__get_packed_size
-                     (const AuthReplyMsg *message)
+size_t fw_port_st__get_packed_size
+                     (const FwPortSt *message)
 {
-  assert(message->base.descriptor == &auth_reply_msg__descriptor);
+  assert(message->base.descriptor == &fw_port_st__descriptor);
   return protobuf_c_message_get_packed_size ((const ProtobufCMessage*)(message));
 }
-size_t auth_reply_msg__pack
-                     (const AuthReplyMsg *message,
+size_t fw_port_st__pack
+                     (const FwPortSt *message,
                       uint8_t       *out)
 {
-  assert(message->base.descriptor == &auth_reply_msg__descriptor);
+  assert(message->base.descriptor == &fw_port_st__descriptor);
   return protobuf_c_message_pack ((const ProtobufCMessage*)message, out);
 }
-size_t auth_reply_msg__pack_to_buffer
-                     (const AuthReplyMsg *message,
+size_t fw_port_st__pack_to_buffer
+                     (const FwPortSt *message,
                       ProtobufCBuffer *buffer)
 {
-  assert(message->base.descriptor == &auth_reply_msg__descriptor);
+  assert(message->base.descriptor == &fw_port_st__descriptor);
   return protobuf_c_message_pack_to_buffer ((const ProtobufCMessage*)message, buffer);
 }
-AuthReplyMsg *
-       auth_reply_msg__unpack
+FwPortSt *
+       fw_port_st__unpack
                      (ProtobufCAllocator  *allocator,
                       size_t               len,
                       const uint8_t       *data)
 {
-  return (AuthReplyMsg *)
-     protobuf_c_message_unpack (&auth_reply_msg__descriptor,
+  return (FwPortSt *)
+     protobuf_c_message_unpack (&fw_port_st__descriptor,
                                 allocator, len, data);
 }
-void   auth_reply_msg__free_unpacked
-                     (AuthReplyMsg *message,
+void   fw_port_st__free_unpacked
+                     (FwPortSt *message,
                       ProtobufCAllocator *allocator)
 {
-  assert(message->base.descriptor == &auth_reply_msg__descriptor);
+  assert(message->base.descriptor == &fw_port_st__descriptor);
+  protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
+}
+void   group_cfg_st__init
+                     (GroupCfgSt         *message)
+{
+  static GroupCfgSt init_value = GROUP_CFG_ST__INIT;
+  *message = init_value;
+}
+size_t group_cfg_st__get_packed_size
+                     (const GroupCfgSt *message)
+{
+  assert(message->base.descriptor == &group_cfg_st__descriptor);
+  return protobuf_c_message_get_packed_size ((const ProtobufCMessage*)(message));
+}
+size_t group_cfg_st__pack
+                     (const GroupCfgSt *message,
+                      uint8_t       *out)
+{
+  assert(message->base.descriptor == &group_cfg_st__descriptor);
+  return protobuf_c_message_pack ((const ProtobufCMessage*)message, out);
+}
+size_t group_cfg_st__pack_to_buffer
+                     (const GroupCfgSt *message,
+                      ProtobufCBuffer *buffer)
+{
+  assert(message->base.descriptor == &group_cfg_st__descriptor);
+  return protobuf_c_message_pack_to_buffer ((const ProtobufCMessage*)message, buffer);
+}
+GroupCfgSt *
+       group_cfg_st__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data)
+{
+  return (GroupCfgSt *)
+     protobuf_c_message_unpack (&group_cfg_st__descriptor,
+                                allocator, len, data);
+}
+void   group_cfg_st__free_unpacked
+                     (GroupCfgSt *message,
+                      ProtobufCAllocator *allocator)
+{
+  assert(message->base.descriptor == &group_cfg_st__descriptor);
+  protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
+}
+void   auth_cookie_reply_msg__init
+                     (AuthCookieReplyMsg         *message)
+{
+  static AuthCookieReplyMsg init_value = AUTH_COOKIE_REPLY_MSG__INIT;
+  *message = init_value;
+}
+size_t auth_cookie_reply_msg__get_packed_size
+                     (const AuthCookieReplyMsg *message)
+{
+  assert(message->base.descriptor == &auth_cookie_reply_msg__descriptor);
+  return protobuf_c_message_get_packed_size ((const ProtobufCMessage*)(message));
+}
+size_t auth_cookie_reply_msg__pack
+                     (const AuthCookieReplyMsg *message,
+                      uint8_t       *out)
+{
+  assert(message->base.descriptor == &auth_cookie_reply_msg__descriptor);
+  return protobuf_c_message_pack ((const ProtobufCMessage*)message, out);
+}
+size_t auth_cookie_reply_msg__pack_to_buffer
+                     (const AuthCookieReplyMsg *message,
+                      ProtobufCBuffer *buffer)
+{
+  assert(message->base.descriptor == &auth_cookie_reply_msg__descriptor);
+  return protobuf_c_message_pack_to_buffer ((const ProtobufCMessage*)message, buffer);
+}
+AuthCookieReplyMsg *
+       auth_cookie_reply_msg__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data)
+{
+  return (AuthCookieReplyMsg *)
+     protobuf_c_message_unpack (&auth_cookie_reply_msg__descriptor,
+                                allocator, len, data);
+}
+void   auth_cookie_reply_msg__free_unpacked
+                     (AuthCookieReplyMsg *message,
+                      ProtobufCAllocator *allocator)
+{
+  assert(message->base.descriptor == &auth_cookie_reply_msg__descriptor);
   protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
 }
 void   session_resume_fetch_msg__init
@@ -652,176 +738,219 @@ void   sec_op_msg__free_unpacked
   assert(message->base.descriptor == &sec_op_msg__descriptor);
   protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
 }
-void   cookie__init
-                     (Cookie         *message)
+void   secm_session_open_msg__init
+                     (SecmSessionOpenMsg         *message)
 {
-  static Cookie init_value = COOKIE__INIT;
+  static SecmSessionOpenMsg init_value = SECM_SESSION_OPEN_MSG__INIT;
   *message = init_value;
 }
-size_t cookie__get_packed_size
-                     (const Cookie *message)
+size_t secm_session_open_msg__get_packed_size
+                     (const SecmSessionOpenMsg *message)
 {
-  assert(message->base.descriptor == &cookie__descriptor);
+  assert(message->base.descriptor == &secm_session_open_msg__descriptor);
   return protobuf_c_message_get_packed_size ((const ProtobufCMessage*)(message));
 }
-size_t cookie__pack
-                     (const Cookie *message,
+size_t secm_session_open_msg__pack
+                     (const SecmSessionOpenMsg *message,
                       uint8_t       *out)
 {
-  assert(message->base.descriptor == &cookie__descriptor);
+  assert(message->base.descriptor == &secm_session_open_msg__descriptor);
   return protobuf_c_message_pack ((const ProtobufCMessage*)message, out);
 }
-size_t cookie__pack_to_buffer
-                     (const Cookie *message,
+size_t secm_session_open_msg__pack_to_buffer
+                     (const SecmSessionOpenMsg *message,
                       ProtobufCBuffer *buffer)
 {
-  assert(message->base.descriptor == &cookie__descriptor);
+  assert(message->base.descriptor == &secm_session_open_msg__descriptor);
   return protobuf_c_message_pack_to_buffer ((const ProtobufCMessage*)message, buffer);
 }
-Cookie *
-       cookie__unpack
+SecmSessionOpenMsg *
+       secm_session_open_msg__unpack
                      (ProtobufCAllocator  *allocator,
                       size_t               len,
                       const uint8_t       *data)
 {
-  return (Cookie *)
-     protobuf_c_message_unpack (&cookie__descriptor,
+  return (SecmSessionOpenMsg *)
+     protobuf_c_message_unpack (&secm_session_open_msg__descriptor,
                                 allocator, len, data);
 }
-void   cookie__free_unpacked
-                     (Cookie *message,
+void   secm_session_open_msg__free_unpacked
+                     (SecmSessionOpenMsg *message,
                       ProtobufCAllocator *allocator)
 {
-  assert(message->base.descriptor == &cookie__descriptor);
+  assert(message->base.descriptor == &secm_session_open_msg__descriptor);
   protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
 }
-void   sec_auth_session_msg__init
-                     (SecAuthSessionMsg         *message)
+void   secm_session_close_msg__init
+                     (SecmSessionCloseMsg         *message)
 {
-  static SecAuthSessionMsg init_value = SEC_AUTH_SESSION_MSG__INIT;
+  static SecmSessionCloseMsg init_value = SECM_SESSION_CLOSE_MSG__INIT;
   *message = init_value;
 }
-size_t sec_auth_session_msg__get_packed_size
-                     (const SecAuthSessionMsg *message)
+size_t secm_session_close_msg__get_packed_size
+                     (const SecmSessionCloseMsg *message)
 {
-  assert(message->base.descriptor == &sec_auth_session_msg__descriptor);
+  assert(message->base.descriptor == &secm_session_close_msg__descriptor);
   return protobuf_c_message_get_packed_size ((const ProtobufCMessage*)(message));
 }
-size_t sec_auth_session_msg__pack
-                     (const SecAuthSessionMsg *message,
+size_t secm_session_close_msg__pack
+                     (const SecmSessionCloseMsg *message,
                       uint8_t       *out)
 {
-  assert(message->base.descriptor == &sec_auth_session_msg__descriptor);
+  assert(message->base.descriptor == &secm_session_close_msg__descriptor);
   return protobuf_c_message_pack ((const ProtobufCMessage*)message, out);
 }
-size_t sec_auth_session_msg__pack_to_buffer
-                     (const SecAuthSessionMsg *message,
+size_t secm_session_close_msg__pack_to_buffer
+                     (const SecmSessionCloseMsg *message,
                       ProtobufCBuffer *buffer)
 {
-  assert(message->base.descriptor == &sec_auth_session_msg__descriptor);
+  assert(message->base.descriptor == &secm_session_close_msg__descriptor);
   return protobuf_c_message_pack_to_buffer ((const ProtobufCMessage*)message, buffer);
 }
-SecAuthSessionMsg *
-       sec_auth_session_msg__unpack
+SecmSessionCloseMsg *
+       secm_session_close_msg__unpack
                      (ProtobufCAllocator  *allocator,
                       size_t               len,
                       const uint8_t       *data)
 {
-  return (SecAuthSessionMsg *)
-     protobuf_c_message_unpack (&sec_auth_session_msg__descriptor,
+  return (SecmSessionCloseMsg *)
+     protobuf_c_message_unpack (&secm_session_close_msg__descriptor,
                                 allocator, len, data);
 }
-void   sec_auth_session_msg__free_unpacked
-                     (SecAuthSessionMsg *message,
+void   secm_session_close_msg__free_unpacked
+                     (SecmSessionCloseMsg *message,
                       ProtobufCAllocator *allocator)
 {
-  assert(message->base.descriptor == &sec_auth_session_msg__descriptor);
+  assert(message->base.descriptor == &secm_session_close_msg__descriptor);
   protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
 }
-void   sec_auth_session_reply_msg__init
-                     (SecAuthSessionReplyMsg         *message)
+void   secm_session_reply_msg__init
+                     (SecmSessionReplyMsg         *message)
 {
-  static SecAuthSessionReplyMsg init_value = SEC_AUTH_SESSION_REPLY_MSG__INIT;
+  static SecmSessionReplyMsg init_value = SECM_SESSION_REPLY_MSG__INIT;
   *message = init_value;
 }
-size_t sec_auth_session_reply_msg__get_packed_size
-                     (const SecAuthSessionReplyMsg *message)
+size_t secm_session_reply_msg__get_packed_size
+                     (const SecmSessionReplyMsg *message)
 {
-  assert(message->base.descriptor == &sec_auth_session_reply_msg__descriptor);
+  assert(message->base.descriptor == &secm_session_reply_msg__descriptor);
   return protobuf_c_message_get_packed_size ((const ProtobufCMessage*)(message));
 }
-size_t sec_auth_session_reply_msg__pack
-                     (const SecAuthSessionReplyMsg *message,
+size_t secm_session_reply_msg__pack
+                     (const SecmSessionReplyMsg *message,
                       uint8_t       *out)
 {
-  assert(message->base.descriptor == &sec_auth_session_reply_msg__descriptor);
+  assert(message->base.descriptor == &secm_session_reply_msg__descriptor);
   return protobuf_c_message_pack ((const ProtobufCMessage*)message, out);
 }
-size_t sec_auth_session_reply_msg__pack_to_buffer
-                     (const SecAuthSessionReplyMsg *message,
+size_t secm_session_reply_msg__pack_to_buffer
+                     (const SecmSessionReplyMsg *message,
                       ProtobufCBuffer *buffer)
 {
-  assert(message->base.descriptor == &sec_auth_session_reply_msg__descriptor);
+  assert(message->base.descriptor == &secm_session_reply_msg__descriptor);
   return protobuf_c_message_pack_to_buffer ((const ProtobufCMessage*)message, buffer);
 }
-SecAuthSessionReplyMsg *
-       sec_auth_session_reply_msg__unpack
+SecmSessionReplyMsg *
+       secm_session_reply_msg__unpack
                      (ProtobufCAllocator  *allocator,
                       size_t               len,
                       const uint8_t       *data)
 {
-  return (SecAuthSessionReplyMsg *)
-     protobuf_c_message_unpack (&sec_auth_session_reply_msg__descriptor,
+  return (SecmSessionReplyMsg *)
+     protobuf_c_message_unpack (&secm_session_reply_msg__descriptor,
                                 allocator, len, data);
 }
-void   sec_auth_session_reply_msg__free_unpacked
-                     (SecAuthSessionReplyMsg *message,
+void   secm_session_reply_msg__free_unpacked
+                     (SecmSessionReplyMsg *message,
                       ProtobufCAllocator *allocator)
 {
-  assert(message->base.descriptor == &sec_auth_session_reply_msg__descriptor);
+  assert(message->base.descriptor == &secm_session_reply_msg__descriptor);
   protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
 }
-void   sec_refresh_cookie_key__init
-                     (SecRefreshCookieKey         *message)
+void   cookie_int_msg__init
+                     (CookieIntMsg         *message)
 {
-  static SecRefreshCookieKey init_value = SEC_REFRESH_COOKIE_KEY__INIT;
+  static CookieIntMsg init_value = COOKIE_INT_MSG__INIT;
   *message = init_value;
 }
-size_t sec_refresh_cookie_key__get_packed_size
-                     (const SecRefreshCookieKey *message)
+size_t cookie_int_msg__get_packed_size
+                     (const CookieIntMsg *message)
 {
-  assert(message->base.descriptor == &sec_refresh_cookie_key__descriptor);
+  assert(message->base.descriptor == &cookie_int_msg__descriptor);
   return protobuf_c_message_get_packed_size ((const ProtobufCMessage*)(message));
 }
-size_t sec_refresh_cookie_key__pack
-                     (const SecRefreshCookieKey *message,
+size_t cookie_int_msg__pack
+                     (const CookieIntMsg *message,
                       uint8_t       *out)
 {
-  assert(message->base.descriptor == &sec_refresh_cookie_key__descriptor);
+  assert(message->base.descriptor == &cookie_int_msg__descriptor);
   return protobuf_c_message_pack ((const ProtobufCMessage*)message, out);
 }
-size_t sec_refresh_cookie_key__pack_to_buffer
-                     (const SecRefreshCookieKey *message,
+size_t cookie_int_msg__pack_to_buffer
+                     (const CookieIntMsg *message,
                       ProtobufCBuffer *buffer)
 {
-  assert(message->base.descriptor == &sec_refresh_cookie_key__descriptor);
+  assert(message->base.descriptor == &cookie_int_msg__descriptor);
   return protobuf_c_message_pack_to_buffer ((const ProtobufCMessage*)message, buffer);
 }
-SecRefreshCookieKey *
-       sec_refresh_cookie_key__unpack
+CookieIntMsg *
+       cookie_int_msg__unpack
                      (ProtobufCAllocator  *allocator,
                       size_t               len,
                       const uint8_t       *data)
 {
-  return (SecRefreshCookieKey *)
-     protobuf_c_message_unpack (&sec_refresh_cookie_key__descriptor,
+  return (CookieIntMsg *)
+     protobuf_c_message_unpack (&cookie_int_msg__descriptor,
                                 allocator, len, data);
 }
-void   sec_refresh_cookie_key__free_unpacked
-                     (SecRefreshCookieKey *message,
+void   cookie_int_msg__free_unpacked
+                     (CookieIntMsg *message,
                       ProtobufCAllocator *allocator)
 {
-  assert(message->base.descriptor == &sec_refresh_cookie_key__descriptor);
+  assert(message->base.descriptor == &cookie_int_msg__descriptor);
+  protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
+}
+void   secm_list_cookies_reply_msg__init
+                     (SecmListCookiesReplyMsg         *message)
+{
+  static SecmListCookiesReplyMsg init_value = SECM_LIST_COOKIES_REPLY_MSG__INIT;
+  *message = init_value;
+}
+size_t secm_list_cookies_reply_msg__get_packed_size
+                     (const SecmListCookiesReplyMsg *message)
+{
+  assert(message->base.descriptor == &secm_list_cookies_reply_msg__descriptor);
+  return protobuf_c_message_get_packed_size ((const ProtobufCMessage*)(message));
+}
+size_t secm_list_cookies_reply_msg__pack
+                     (const SecmListCookiesReplyMsg *message,
+                      uint8_t       *out)
+{
+  assert(message->base.descriptor == &secm_list_cookies_reply_msg__descriptor);
+  return protobuf_c_message_pack ((const ProtobufCMessage*)message, out);
+}
+size_t secm_list_cookies_reply_msg__pack_to_buffer
+                     (const SecmListCookiesReplyMsg *message,
+                      ProtobufCBuffer *buffer)
+{
+  assert(message->base.descriptor == &secm_list_cookies_reply_msg__descriptor);
+  return protobuf_c_message_pack_to_buffer ((const ProtobufCMessage*)message, buffer);
+}
+SecmListCookiesReplyMsg *
+       secm_list_cookies_reply_msg__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data)
+{
+  return (SecmListCookiesReplyMsg *)
+     protobuf_c_message_unpack (&secm_list_cookies_reply_msg__descriptor,
+                                allocator, len, data);
+}
+void   secm_list_cookies_reply_msg__free_unpacked
+                     (SecmListCookiesReplyMsg *message,
+                      ProtobufCAllocator *allocator)
+{
+  assert(message->base.descriptor == &secm_list_cookies_reply_msg__descriptor);
   protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
 }
 static const ProtobufCFieldDescriptor auth_cookie_request_msg__field_descriptors[1] =
@@ -862,8 +991,501 @@ const ProtobufCMessageDescriptor auth_cookie_request_msg__descriptor =
   (ProtobufCMessageInit) auth_cookie_request_msg__init,
   NULL,NULL,NULL    /* reserved[123] */
 };
-static const protobuf_c_boolean auth_reply_msg__no_udp__default_value = 0;
-static const ProtobufCFieldDescriptor auth_reply_msg__field_descriptors[31] =
+static const ProtobufCFieldDescriptor fw_port_st__field_descriptors[3] =
+{
+  {
+    "port",
+    1,
+    PROTOBUF_C_LABEL_REQUIRED,
+    PROTOBUF_C_TYPE_UINT32,
+    0,   /* quantifier_offset */
+    offsetof(FwPortSt, port),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "proto",
+    2,
+    PROTOBUF_C_LABEL_REQUIRED,
+    PROTOBUF_C_TYPE_UINT32,
+    0,   /* quantifier_offset */
+    offsetof(FwPortSt, proto),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "negate",
+    3,
+    PROTOBUF_C_LABEL_REQUIRED,
+    PROTOBUF_C_TYPE_UINT32,
+    0,   /* quantifier_offset */
+    offsetof(FwPortSt, negate),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+};
+static const unsigned fw_port_st__field_indices_by_name[] = {
+  2,   /* field[2] = negate */
+  0,   /* field[0] = port */
+  1,   /* field[1] = proto */
+};
+static const ProtobufCIntRange fw_port_st__number_ranges[1 + 1] =
+{
+  { 1, 0 },
+  { 0, 3 }
+};
+const ProtobufCMessageDescriptor fw_port_st__descriptor =
+{
+  PROTOBUF_C__MESSAGE_DESCRIPTOR_MAGIC,
+  "fw_port_st",
+  "FwPortSt",
+  "FwPortSt",
+  "",
+  sizeof(FwPortSt),
+  3,
+  fw_port_st__field_descriptors,
+  fw_port_st__field_indices_by_name,
+  1,  fw_port_st__number_ranges,
+  (ProtobufCMessageInit) fw_port_st__init,
+  NULL,NULL,NULL    /* reserved[123] */
+};
+static const ProtobufCFieldDescriptor group_cfg_st__field_descriptors[31] =
+{
+  {
+    "interim_update_secs",
+    2,
+    PROTOBUF_C_LABEL_OPTIONAL,
+    PROTOBUF_C_TYPE_UINT32,
+    offsetof(GroupCfgSt, has_interim_update_secs),
+    offsetof(GroupCfgSt, interim_update_secs),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "session_timeout_secs",
+    3,
+    PROTOBUF_C_LABEL_OPTIONAL,
+    PROTOBUF_C_TYPE_UINT32,
+    offsetof(GroupCfgSt, has_session_timeout_secs),
+    offsetof(GroupCfgSt, session_timeout_secs),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "no_udp",
+    10,
+    PROTOBUF_C_LABEL_OPTIONAL,
+    PROTOBUF_C_TYPE_BOOL,
+    offsetof(GroupCfgSt, has_no_udp),
+    offsetof(GroupCfgSt, no_udp),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "deny_roaming",
+    11,
+    PROTOBUF_C_LABEL_OPTIONAL,
+    PROTOBUF_C_TYPE_BOOL,
+    offsetof(GroupCfgSt, has_deny_roaming),
+    offsetof(GroupCfgSt, deny_roaming),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "routes",
+    13,
+    PROTOBUF_C_LABEL_REPEATED,
+    PROTOBUF_C_TYPE_STRING,
+    offsetof(GroupCfgSt, n_routes),
+    offsetof(GroupCfgSt, routes),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "iroutes",
+    14,
+    PROTOBUF_C_LABEL_REPEATED,
+    PROTOBUF_C_TYPE_STRING,
+    offsetof(GroupCfgSt, n_iroutes),
+    offsetof(GroupCfgSt, iroutes),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "dns",
+    15,
+    PROTOBUF_C_LABEL_REPEATED,
+    PROTOBUF_C_TYPE_STRING,
+    offsetof(GroupCfgSt, n_dns),
+    offsetof(GroupCfgSt, dns),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "nbns",
+    16,
+    PROTOBUF_C_LABEL_REPEATED,
+    PROTOBUF_C_TYPE_STRING,
+    offsetof(GroupCfgSt, n_nbns),
+    offsetof(GroupCfgSt, nbns),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "ipv4_net",
+    17,
+    PROTOBUF_C_LABEL_OPTIONAL,
+    PROTOBUF_C_TYPE_STRING,
+    0,   /* quantifier_offset */
+    offsetof(GroupCfgSt, ipv4_net),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "ipv4_netmask",
+    18,
+    PROTOBUF_C_LABEL_OPTIONAL,
+    PROTOBUF_C_TYPE_STRING,
+    0,   /* quantifier_offset */
+    offsetof(GroupCfgSt, ipv4_netmask),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "ipv6_net",
+    19,
+    PROTOBUF_C_LABEL_OPTIONAL,
+    PROTOBUF_C_TYPE_STRING,
+    0,   /* quantifier_offset */
+    offsetof(GroupCfgSt, ipv6_net),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "ipv6_prefix",
+    20,
+    PROTOBUF_C_LABEL_OPTIONAL,
+    PROTOBUF_C_TYPE_UINT32,
+    offsetof(GroupCfgSt, has_ipv6_prefix),
+    offsetof(GroupCfgSt, ipv6_prefix),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "cgroup",
+    21,
+    PROTOBUF_C_LABEL_OPTIONAL,
+    PROTOBUF_C_TYPE_STRING,
+    0,   /* quantifier_offset */
+    offsetof(GroupCfgSt, cgroup),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "xml_config_file",
+    22,
+    PROTOBUF_C_LABEL_OPTIONAL,
+    PROTOBUF_C_TYPE_STRING,
+    0,   /* quantifier_offset */
+    offsetof(GroupCfgSt, xml_config_file),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "rx_per_sec",
+    23,
+    PROTOBUF_C_LABEL_OPTIONAL,
+    PROTOBUF_C_TYPE_UINT32,
+    offsetof(GroupCfgSt, has_rx_per_sec),
+    offsetof(GroupCfgSt, rx_per_sec),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "tx_per_sec",
+    24,
+    PROTOBUF_C_LABEL_OPTIONAL,
+    PROTOBUF_C_TYPE_UINT32,
+    offsetof(GroupCfgSt, has_tx_per_sec),
+    offsetof(GroupCfgSt, tx_per_sec),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "net_priority",
+    25,
+    PROTOBUF_C_LABEL_OPTIONAL,
+    PROTOBUF_C_TYPE_UINT32,
+    offsetof(GroupCfgSt, has_net_priority),
+    offsetof(GroupCfgSt, net_priority),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "explicit_ipv4",
+    26,
+    PROTOBUF_C_LABEL_OPTIONAL,
+    PROTOBUF_C_TYPE_STRING,
+    0,   /* quantifier_offset */
+    offsetof(GroupCfgSt, explicit_ipv4),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "explicit_ipv6",
+    27,
+    PROTOBUF_C_LABEL_OPTIONAL,
+    PROTOBUF_C_TYPE_STRING,
+    0,   /* quantifier_offset */
+    offsetof(GroupCfgSt, explicit_ipv6),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "no_routes",
+    28,
+    PROTOBUF_C_LABEL_REPEATED,
+    PROTOBUF_C_TYPE_STRING,
+    offsetof(GroupCfgSt, n_no_routes),
+    offsetof(GroupCfgSt, no_routes),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "ipv6_subnet_prefix",
+    29,
+    PROTOBUF_C_LABEL_OPTIONAL,
+    PROTOBUF_C_TYPE_UINT32,
+    offsetof(GroupCfgSt, has_ipv6_subnet_prefix),
+    offsetof(GroupCfgSt, ipv6_subnet_prefix),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "dpd",
+    30,
+    PROTOBUF_C_LABEL_OPTIONAL,
+    PROTOBUF_C_TYPE_UINT32,
+    offsetof(GroupCfgSt, has_dpd),
+    offsetof(GroupCfgSt, dpd),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "mobile_dpd",
+    31,
+    PROTOBUF_C_LABEL_OPTIONAL,
+    PROTOBUF_C_TYPE_UINT32,
+    offsetof(GroupCfgSt, has_mobile_dpd),
+    offsetof(GroupCfgSt, mobile_dpd),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "keepalive",
+    32,
+    PROTOBUF_C_LABEL_OPTIONAL,
+    PROTOBUF_C_TYPE_UINT32,
+    offsetof(GroupCfgSt, has_keepalive),
+    offsetof(GroupCfgSt, keepalive),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "max_same_clients",
+    33,
+    PROTOBUF_C_LABEL_OPTIONAL,
+    PROTOBUF_C_TYPE_UINT32,
+    offsetof(GroupCfgSt, has_max_same_clients),
+    offsetof(GroupCfgSt, max_same_clients),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "tunnel_all_dns",
+    34,
+    PROTOBUF_C_LABEL_OPTIONAL,
+    PROTOBUF_C_TYPE_UINT32,
+    offsetof(GroupCfgSt, has_tunnel_all_dns),
+    offsetof(GroupCfgSt, tunnel_all_dns),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "restrict_user_to_routes",
+    35,
+    PROTOBUF_C_LABEL_OPTIONAL,
+    PROTOBUF_C_TYPE_BOOL,
+    offsetof(GroupCfgSt, has_restrict_user_to_routes),
+    offsetof(GroupCfgSt, restrict_user_to_routes),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "mtu",
+    36,
+    PROTOBUF_C_LABEL_OPTIONAL,
+    PROTOBUF_C_TYPE_UINT32,
+    offsetof(GroupCfgSt, has_mtu),
+    offsetof(GroupCfgSt, mtu),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "idle_timeout",
+    37,
+    PROTOBUF_C_LABEL_OPTIONAL,
+    PROTOBUF_C_TYPE_UINT32,
+    offsetof(GroupCfgSt, has_idle_timeout),
+    offsetof(GroupCfgSt, idle_timeout),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "mobile_idle_timeout",
+    38,
+    PROTOBUF_C_LABEL_OPTIONAL,
+    PROTOBUF_C_TYPE_UINT32,
+    offsetof(GroupCfgSt, has_mobile_idle_timeout),
+    offsetof(GroupCfgSt, mobile_idle_timeout),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "fw_ports",
+    39,
+    PROTOBUF_C_LABEL_REPEATED,
+    PROTOBUF_C_TYPE_MESSAGE,
+    offsetof(GroupCfgSt, n_fw_ports),
+    offsetof(GroupCfgSt, fw_ports),
+    &fw_port_st__descriptor,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+};
+static const unsigned group_cfg_st__field_indices_by_name[] = {
+  12,   /* field[12] = cgroup */
+  3,   /* field[3] = deny_roaming */
+  6,   /* field[6] = dns */
+  21,   /* field[21] = dpd */
+  17,   /* field[17] = explicit_ipv4 */
+  18,   /* field[18] = explicit_ipv6 */
+  30,   /* field[30] = fw_ports */
+  28,   /* field[28] = idle_timeout */
+  0,   /* field[0] = interim_update_secs */
+  8,   /* field[8] = ipv4_net */
+  9,   /* field[9] = ipv4_netmask */
+  10,   /* field[10] = ipv6_net */
+  11,   /* field[11] = ipv6_prefix */
+  20,   /* field[20] = ipv6_subnet_prefix */
+  5,   /* field[5] = iroutes */
+  23,   /* field[23] = keepalive */
+  24,   /* field[24] = max_same_clients */
+  22,   /* field[22] = mobile_dpd */
+  29,   /* field[29] = mobile_idle_timeout */
+  27,   /* field[27] = mtu */
+  7,   /* field[7] = nbns */
+  16,   /* field[16] = net_priority */
+  19,   /* field[19] = no_routes */
+  2,   /* field[2] = no_udp */
+  26,   /* field[26] = restrict_user_to_routes */
+  4,   /* field[4] = routes */
+  14,   /* field[14] = rx_per_sec */
+  1,   /* field[1] = session_timeout_secs */
+  25,   /* field[25] = tunnel_all_dns */
+  15,   /* field[15] = tx_per_sec */
+  13,   /* field[13] = xml_config_file */
+};
+static const ProtobufCIntRange group_cfg_st__number_ranges[3 + 1] =
+{
+  { 2, 0 },
+  { 10, 2 },
+  { 13, 4 },
+  { 0, 31 }
+};
+const ProtobufCMessageDescriptor group_cfg_st__descriptor =
+{
+  PROTOBUF_C__MESSAGE_DESCRIPTOR_MAGIC,
+  "group_cfg_st",
+  "GroupCfgSt",
+  "GroupCfgSt",
+  "",
+  sizeof(GroupCfgSt),
+  31,
+  group_cfg_st__field_descriptors,
+  group_cfg_st__field_indices_by_name,
+  3,  group_cfg_st__number_ranges,
+  (ProtobufCMessageInit) group_cfg_st__init,
+  NULL,NULL,NULL    /* reserved[123] */
+};
+static const ProtobufCFieldDescriptor auth_cookie_reply_msg__field_descriptors[11] =
 {
   {
     "reply",
@@ -871,7 +1493,7 @@ static const ProtobufCFieldDescriptor auth_reply_msg__field_descriptors[31] =
     PROTOBUF_C_LABEL_REQUIRED,
     PROTOBUF_C_TYPE_ENUM,
     0,   /* quantifier_offset */
-    offsetof(AuthReplyMsg, reply),
+    offsetof(AuthCookieReplyMsg, reply),
     &auth__rep__descriptor,
     NULL,
     0,             /* flags */
@@ -882,8 +1504,8 @@ static const ProtobufCFieldDescriptor auth_reply_msg__field_descriptors[31] =
     3,
     PROTOBUF_C_LABEL_OPTIONAL,
     PROTOBUF_C_TYPE_BYTES,
-    offsetof(AuthReplyMsg, has_session_id),
-    offsetof(AuthReplyMsg, session_id),
+    offsetof(AuthCookieReplyMsg, has_session_id),
+    offsetof(AuthCookieReplyMsg, session_id),
     NULL,
     NULL,
     0,             /* flags */
@@ -895,7 +1517,7 @@ static const ProtobufCFieldDescriptor auth_reply_msg__field_descriptors[31] =
     PROTOBUF_C_LABEL_OPTIONAL,
     PROTOBUF_C_TYPE_STRING,
     0,   /* quantifier_offset */
-    offsetof(AuthReplyMsg, vname),
+    offsetof(AuthCookieReplyMsg, vname),
     NULL,
     NULL,
     0,             /* flags */
@@ -907,7 +1529,19 @@ static const ProtobufCFieldDescriptor auth_reply_msg__field_descriptors[31] =
     PROTOBUF_C_LABEL_OPTIONAL,
     PROTOBUF_C_TYPE_STRING,
     0,   /* quantifier_offset */
-    offsetof(AuthReplyMsg, user_name),
+    offsetof(AuthCookieReplyMsg, user_name),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "group_name",
+    6,
+    PROTOBUF_C_LABEL_OPTIONAL,
+    PROTOBUF_C_TYPE_STRING,
+    0,   /* quantifier_offset */
+    offsetof(AuthCookieReplyMsg, group_name),
     NULL,
     NULL,
     0,             /* flags */
@@ -919,7 +1553,7 @@ static const ProtobufCFieldDescriptor auth_reply_msg__field_descriptors[31] =
     PROTOBUF_C_LABEL_OPTIONAL,
     PROTOBUF_C_TYPE_STRING,
     0,   /* quantifier_offset */
-    offsetof(AuthReplyMsg, ipv4),
+    offsetof(AuthCookieReplyMsg, ipv4),
     NULL,
     NULL,
     0,             /* flags */
@@ -931,7 +1565,7 @@ static const ProtobufCFieldDescriptor auth_reply_msg__field_descriptors[31] =
     PROTOBUF_C_LABEL_OPTIONAL,
     PROTOBUF_C_TYPE_STRING,
     0,   /* quantifier_offset */
-    offsetof(AuthReplyMsg, ipv6),
+    offsetof(AuthCookieReplyMsg, ipv6),
     NULL,
     NULL,
     0,             /* flags */
@@ -943,7 +1577,7 @@ static const ProtobufCFieldDescriptor auth_reply_msg__field_descriptors[31] =
     PROTOBUF_C_LABEL_OPTIONAL,
     PROTOBUF_C_TYPE_STRING,
     0,   /* quantifier_offset */
-    offsetof(AuthReplyMsg, ipv4_local),
+    offsetof(AuthCookieReplyMsg, ipv4_local),
     NULL,
     NULL,
     0,             /* flags */
@@ -955,187 +1589,7 @@ static const ProtobufCFieldDescriptor auth_reply_msg__field_descriptors[31] =
     PROTOBUF_C_LABEL_OPTIONAL,
     PROTOBUF_C_TYPE_STRING,
     0,   /* quantifier_offset */
-    offsetof(AuthReplyMsg, ipv6_local),
-    NULL,
-    NULL,
-    0,             /* flags */
-    0,NULL,NULL    /* reserved1,reserved2, etc */
-  },
-  {
-    "ipv4_netmask",
-    15,
-    PROTOBUF_C_LABEL_OPTIONAL,
-    PROTOBUF_C_TYPE_STRING,
-    0,   /* quantifier_offset */
-    offsetof(AuthReplyMsg, ipv4_netmask),
-    NULL,
-    NULL,
-    0,             /* flags */
-    0,NULL,NULL    /* reserved1,reserved2, etc */
-  },
-  {
-    "ipv6_netmask",
-    16,
-    PROTOBUF_C_LABEL_OPTIONAL,
-    PROTOBUF_C_TYPE_STRING,
-    0,   /* quantifier_offset */
-    offsetof(AuthReplyMsg, ipv6_netmask),
-    NULL,
-    NULL,
-    0,             /* flags */
-    0,NULL,NULL    /* reserved1,reserved2, etc */
-  },
-  {
-    "ipv6_prefix",
-    17,
-    PROTOBUF_C_LABEL_OPTIONAL,
-    PROTOBUF_C_TYPE_UINT32,
-    offsetof(AuthReplyMsg, has_ipv6_prefix),
-    offsetof(AuthReplyMsg, ipv6_prefix),
-    NULL,
-    NULL,
-    0,             /* flags */
-    0,NULL,NULL    /* reserved1,reserved2, etc */
-  },
-  {
-    "rx_per_sec",
-    18,
-    PROTOBUF_C_LABEL_OPTIONAL,
-    PROTOBUF_C_TYPE_UINT32,
-    offsetof(AuthReplyMsg, has_rx_per_sec),
-    offsetof(AuthReplyMsg, rx_per_sec),
-    NULL,
-    NULL,
-    0,             /* flags */
-    0,NULL,NULL    /* reserved1,reserved2, etc */
-  },
-  {
-    "tx_per_sec",
-    19,
-    PROTOBUF_C_LABEL_OPTIONAL,
-    PROTOBUF_C_TYPE_UINT32,
-    offsetof(AuthReplyMsg, has_tx_per_sec),
-    offsetof(AuthReplyMsg, tx_per_sec),
-    NULL,
-    NULL,
-    0,             /* flags */
-    0,NULL,NULL    /* reserved1,reserved2, etc */
-  },
-  {
-    "net_priority",
-    20,
-    PROTOBUF_C_LABEL_OPTIONAL,
-    PROTOBUF_C_TYPE_UINT32,
-    offsetof(AuthReplyMsg, has_net_priority),
-    offsetof(AuthReplyMsg, net_priority),
-    NULL,
-    NULL,
-    0,             /* flags */
-    0,NULL,NULL    /* reserved1,reserved2, etc */
-  },
-  {
-    "routes",
-    21,
-    PROTOBUF_C_LABEL_REPEATED,
-    PROTOBUF_C_TYPE_STRING,
-    offsetof(AuthReplyMsg, n_routes),
-    offsetof(AuthReplyMsg, routes),
-    NULL,
-    NULL,
-    0,             /* flags */
-    0,NULL,NULL    /* reserved1,reserved2, etc */
-  },
-  {
-    "dns",
-    22,
-    PROTOBUF_C_LABEL_REPEATED,
-    PROTOBUF_C_TYPE_STRING,
-    offsetof(AuthReplyMsg, n_dns),
-    offsetof(AuthReplyMsg, dns),
-    NULL,
-    NULL,
-    0,             /* flags */
-    0,NULL,NULL    /* reserved1,reserved2, etc */
-  },
-  {
-    "nbns",
-    23,
-    PROTOBUF_C_LABEL_REPEATED,
-    PROTOBUF_C_TYPE_STRING,
-    offsetof(AuthReplyMsg, n_nbns),
-    offsetof(AuthReplyMsg, nbns),
-    NULL,
-    NULL,
-    0,             /* flags */
-    0,NULL,NULL    /* reserved1,reserved2, etc */
-  },
-  {
-    "no_udp",
-    24,
-    PROTOBUF_C_LABEL_OPTIONAL,
-    PROTOBUF_C_TYPE_BOOL,
-    offsetof(AuthReplyMsg, has_no_udp),
-    offsetof(AuthReplyMsg, no_udp),
-    NULL,
-    &auth_reply_msg__no_udp__default_value,
-    0,             /* flags */
-    0,NULL,NULL    /* reserved1,reserved2, etc */
-  },
-  {
-    "group_name",
-    25,
-    PROTOBUF_C_LABEL_OPTIONAL,
-    PROTOBUF_C_TYPE_STRING,
-    0,   /* quantifier_offset */
-    offsetof(AuthReplyMsg, group_name),
-    NULL,
-    NULL,
-    0,             /* flags */
-    0,NULL,NULL    /* reserved1,reserved2, etc */
-  },
-  {
-    "xml_config_file",
-    26,
-    PROTOBUF_C_LABEL_OPTIONAL,
-    PROTOBUF_C_TYPE_STRING,
-    0,   /* quantifier_offset */
-    offsetof(AuthReplyMsg, xml_config_file),
-    NULL,
-    NULL,
-    0,             /* flags */
-    0,NULL,NULL    /* reserved1,reserved2, etc */
-  },
-  {
-    "ipv4_network",
-    27,
-    PROTOBUF_C_LABEL_OPTIONAL,
-    PROTOBUF_C_TYPE_STRING,
-    0,   /* quantifier_offset */
-    offsetof(AuthReplyMsg, ipv4_network),
-    NULL,
-    NULL,
-    0,             /* flags */
-    0,NULL,NULL    /* reserved1,reserved2, etc */
-  },
-  {
-    "ipv6_network",
-    28,
-    PROTOBUF_C_LABEL_OPTIONAL,
-    PROTOBUF_C_TYPE_STRING,
-    0,   /* quantifier_offset */
-    offsetof(AuthReplyMsg, ipv6_network),
-    NULL,
-    NULL,
-    0,             /* flags */
-    0,NULL,NULL    /* reserved1,reserved2, etc */
-  },
-  {
-    "no_routes",
-    29,
-    PROTOBUF_C_LABEL_REPEATED,
-    PROTOBUF_C_TYPE_STRING,
-    offsetof(AuthReplyMsg, n_no_routes),
-    offsetof(AuthReplyMsg, no_routes),
+    offsetof(AuthCookieReplyMsg, ipv6_local),
     NULL,
     NULL,
     0,             /* flags */
@@ -1143,158 +1597,65 @@ static const ProtobufCFieldDescriptor auth_reply_msg__field_descriptors[31] =
   },
   {
     "sid",
-    30,
+    11,
     PROTOBUF_C_LABEL_REQUIRED,
     PROTOBUF_C_TYPE_BYTES,
     0,   /* quantifier_offset */
-    offsetof(AuthReplyMsg, sid),
+    offsetof(AuthCookieReplyMsg, sid),
     NULL,
     NULL,
     0,             /* flags */
     0,NULL,NULL    /* reserved1,reserved2, etc */
   },
   {
-    "interim_update_secs",
-    31,
+    "config",
+    20,
     PROTOBUF_C_LABEL_OPTIONAL,
-    PROTOBUF_C_TYPE_UINT32,
-    offsetof(AuthReplyMsg, has_interim_update_secs),
-    offsetof(AuthReplyMsg, interim_update_secs),
-    NULL,
-    NULL,
-    0,             /* flags */
-    0,NULL,NULL    /* reserved1,reserved2, etc */
-  },
-  {
-    "session_timeout_secs",
-    32,
-    PROTOBUF_C_LABEL_OPTIONAL,
-    PROTOBUF_C_TYPE_UINT32,
-    offsetof(AuthReplyMsg, has_session_timeout_secs),
-    offsetof(AuthReplyMsg, session_timeout_secs),
-    NULL,
-    NULL,
-    0,             /* flags */
-    0,NULL,NULL    /* reserved1,reserved2, etc */
-  },
-  {
-    "ipv6_subnet_prefix",
-    33,
-    PROTOBUF_C_LABEL_OPTIONAL,
-    PROTOBUF_C_TYPE_UINT32,
-    offsetof(AuthReplyMsg, has_ipv6_subnet_prefix),
-    offsetof(AuthReplyMsg, ipv6_subnet_prefix),
-    NULL,
-    NULL,
-    0,             /* flags */
-    0,NULL,NULL    /* reserved1,reserved2, etc */
-  },
-  {
-    "dpd",
-    34,
-    PROTOBUF_C_LABEL_OPTIONAL,
-    PROTOBUF_C_TYPE_UINT32,
-    offsetof(AuthReplyMsg, has_dpd),
-    offsetof(AuthReplyMsg, dpd),
-    NULL,
-    NULL,
-    0,             /* flags */
-    0,NULL,NULL    /* reserved1,reserved2, etc */
-  },
-  {
-    "mobile_dpd",
-    35,
-    PROTOBUF_C_LABEL_OPTIONAL,
-    PROTOBUF_C_TYPE_UINT32,
-    offsetof(AuthReplyMsg, has_mobile_dpd),
-    offsetof(AuthReplyMsg, mobile_dpd),
-    NULL,
-    NULL,
-    0,             /* flags */
-    0,NULL,NULL    /* reserved1,reserved2, etc */
-  },
-  {
-    "keepalive",
-    36,
-    PROTOBUF_C_LABEL_OPTIONAL,
-    PROTOBUF_C_TYPE_UINT32,
-    offsetof(AuthReplyMsg, has_keepalive),
-    offsetof(AuthReplyMsg, keepalive),
-    NULL,
-    NULL,
-    0,             /* flags */
-    0,NULL,NULL    /* reserved1,reserved2, etc */
-  },
-  {
-    "tunnel_all_dns",
-    37,
-    PROTOBUF_C_LABEL_OPTIONAL,
-    PROTOBUF_C_TYPE_UINT32,
-    offsetof(AuthReplyMsg, has_tunnel_all_dns),
-    offsetof(AuthReplyMsg, tunnel_all_dns),
-    NULL,
+    PROTOBUF_C_TYPE_MESSAGE,
+    0,   /* quantifier_offset */
+    offsetof(AuthCookieReplyMsg, config),
+    &group_cfg_st__descriptor,
     NULL,
     0,             /* flags */
     0,NULL,NULL    /* reserved1,reserved2, etc */
   },
 };
-static const unsigned auth_reply_msg__field_indices_by_name[] = {
-  15,   /* field[15] = dns */
-  27,   /* field[27] = dpd */
-  18,   /* field[18] = group_name */
-  24,   /* field[24] = interim_update_secs */
-  4,   /* field[4] = ipv4 */
-  6,   /* field[6] = ipv4_local */
-  8,   /* field[8] = ipv4_netmask */
-  20,   /* field[20] = ipv4_network */
-  5,   /* field[5] = ipv6 */
-  7,   /* field[7] = ipv6_local */
-  9,   /* field[9] = ipv6_netmask */
-  21,   /* field[21] = ipv6_network */
-  10,   /* field[10] = ipv6_prefix */
-  26,   /* field[26] = ipv6_subnet_prefix */
-  29,   /* field[29] = keepalive */
-  28,   /* field[28] = mobile_dpd */
-  16,   /* field[16] = nbns */
-  13,   /* field[13] = net_priority */
-  22,   /* field[22] = no_routes */
-  17,   /* field[17] = no_udp */
+static const unsigned auth_cookie_reply_msg__field_indices_by_name[] = {
+  10,   /* field[10] = config */
+  4,   /* field[4] = group_name */
+  5,   /* field[5] = ipv4 */
+  7,   /* field[7] = ipv4_local */
+  6,   /* field[6] = ipv6 */
+  8,   /* field[8] = ipv6_local */
   0,   /* field[0] = reply */
-  14,   /* field[14] = routes */
-  11,   /* field[11] = rx_per_sec */
   1,   /* field[1] = session_id */
-  25,   /* field[25] = session_timeout_secs */
-  23,   /* field[23] = sid */
-  30,   /* field[30] = tunnel_all_dns */
-  12,   /* field[12] = tx_per_sec */
+  9,   /* field[9] = sid */
   3,   /* field[3] = user_name */
   2,   /* field[2] = vname */
-  19,   /* field[19] = xml_config_file */
 };
-static const ProtobufCIntRange auth_reply_msg__number_ranges[4 + 1] =
+static const ProtobufCIntRange auth_cookie_reply_msg__number_ranges[3 + 1] =
 {
   { 1, 0 },
   { 3, 1 },
-  { 7, 4 },
-  { 15, 8 },
-  { 0, 31 }
+  { 20, 10 },
+  { 0, 11 }
 };
-const ProtobufCMessageDescriptor auth_reply_msg__descriptor =
+const ProtobufCMessageDescriptor auth_cookie_reply_msg__descriptor =
 {
   PROTOBUF_C__MESSAGE_DESCRIPTOR_MAGIC,
-  "auth_reply_msg",
-  "AuthReplyMsg",
-  "AuthReplyMsg",
+  "auth_cookie_reply_msg",
+  "AuthCookieReplyMsg",
+  "AuthCookieReplyMsg",
   "",
-  sizeof(AuthReplyMsg),
-  31,
-  auth_reply_msg__field_descriptors,
-  auth_reply_msg__field_indices_by_name,
-  4,  auth_reply_msg__number_ranges,
-  (ProtobufCMessageInit) auth_reply_msg__init,
+  sizeof(AuthCookieReplyMsg),
+  11,
+  auth_cookie_reply_msg__field_descriptors,
+  auth_cookie_reply_msg__field_indices_by_name,
+  3,  auth_cookie_reply_msg__number_ranges,
+  (ProtobufCMessageInit) auth_cookie_reply_msg__init,
   NULL,NULL,NULL    /* reserved[123] */
 };
-static const ProtobufCFieldDescriptor session_resume_fetch_msg__field_descriptors[1] =
+static const ProtobufCFieldDescriptor session_resume_fetch_msg__field_descriptors[2] =
 {
   {
     "session_id",
@@ -1308,14 +1669,27 @@ static const ProtobufCFieldDescriptor session_resume_fetch_msg__field_descriptor
     0,             /* flags */
     0,NULL,NULL    /* reserved1,reserved2, etc */
   },
+  {
+    "cli_addr",
+    2,
+    PROTOBUF_C_LABEL_REQUIRED,
+    PROTOBUF_C_TYPE_BYTES,
+    0,   /* quantifier_offset */
+    offsetof(SessionResumeFetchMsg, cli_addr),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
 };
 static const unsigned session_resume_fetch_msg__field_indices_by_name[] = {
+  1,   /* field[1] = cli_addr */
   0,   /* field[0] = session_id */
 };
 static const ProtobufCIntRange session_resume_fetch_msg__number_ranges[1 + 1] =
 {
   { 1, 0 },
-  { 0, 1 }
+  { 0, 2 }
 };
 const ProtobufCMessageDescriptor session_resume_fetch_msg__descriptor =
 {
@@ -1325,14 +1699,14 @@ const ProtobufCMessageDescriptor session_resume_fetch_msg__descriptor =
   "SessionResumeFetchMsg",
   "",
   sizeof(SessionResumeFetchMsg),
-  1,
+  2,
   session_resume_fetch_msg__field_descriptors,
   session_resume_fetch_msg__field_indices_by_name,
   1,  session_resume_fetch_msg__number_ranges,
   (ProtobufCMessageInit) session_resume_fetch_msg__init,
   NULL,NULL,NULL    /* reserved[123] */
 };
-static const ProtobufCFieldDescriptor session_resume_store_req_msg__field_descriptors[2] =
+static const ProtobufCFieldDescriptor session_resume_store_req_msg__field_descriptors[3] =
 {
   {
     "session_id",
@@ -1358,15 +1732,28 @@ static const ProtobufCFieldDescriptor session_resume_store_req_msg__field_descri
     0,             /* flags */
     0,NULL,NULL    /* reserved1,reserved2, etc */
   },
+  {
+    "cli_addr",
+    3,
+    PROTOBUF_C_LABEL_REQUIRED,
+    PROTOBUF_C_TYPE_BYTES,
+    0,   /* quantifier_offset */
+    offsetof(SessionResumeStoreReqMsg, cli_addr),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
 };
 static const unsigned session_resume_store_req_msg__field_indices_by_name[] = {
+  2,   /* field[2] = cli_addr */
   1,   /* field[1] = session_data */
   0,   /* field[0] = session_id */
 };
 static const ProtobufCIntRange session_resume_store_req_msg__number_ranges[1 + 1] =
 {
   { 1, 0 },
-  { 0, 2 }
+  { 0, 3 }
 };
 const ProtobufCMessageDescriptor session_resume_store_req_msg__descriptor =
 {
@@ -1376,7 +1763,7 @@ const ProtobufCMessageDescriptor session_resume_store_req_msg__descriptor =
   "SessionResumeStoreReqMsg",
   "",
   sizeof(SessionResumeStoreReqMsg),
-  2,
+  3,
   session_resume_store_req_msg__field_descriptors,
   session_resume_store_req_msg__field_indices_by_name,
   1,  session_resume_store_req_msg__number_ranges,
@@ -1500,7 +1887,7 @@ const ProtobufCMessageDescriptor tun_mtu_msg__descriptor =
   (ProtobufCMessageInit) tun_mtu_msg__init,
   NULL,NULL,NULL    /* reserved[123] */
 };
-static const ProtobufCFieldDescriptor cli_stats_msg__field_descriptors[9] =
+static const ProtobufCFieldDescriptor cli_stats_msg__field_descriptors[10] =
 {
   {
     "bytes_in",
@@ -1610,6 +1997,18 @@ static const ProtobufCFieldDescriptor cli_stats_msg__field_descriptors[9] =
     0,             /* flags */
     0,NULL,NULL    /* reserved1,reserved2, etc */
   },
+  {
+    "secmod_tlsdb_entries",
+    10,
+    PROTOBUF_C_LABEL_OPTIONAL,
+    PROTOBUF_C_TYPE_UINT32,
+    offsetof(CliStatsMsg, has_secmod_tlsdb_entries),
+    offsetof(CliStatsMsg, secmod_tlsdb_entries),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
 };
 static const unsigned cli_stats_msg__field_indices_by_name[] = {
   0,   /* field[0] = bytes_in */
@@ -1619,13 +2018,14 @@ static const unsigned cli_stats_msg__field_indices_by_name[] = {
   6,   /* field[6] = ipv6 */
   4,   /* field[4] = remote_ip */
   8,   /* field[8] = secmod_client_entries */
+  9,   /* field[9] = secmod_tlsdb_entries */
   2,   /* field[2] = sid */
   3,   /* field[3] = uptime */
 };
 static const ProtobufCIntRange cli_stats_msg__number_ranges[1 + 1] =
 {
   { 1, 0 },
-  { 0, 9 }
+  { 0, 10 }
 };
 const ProtobufCMessageDescriptor cli_stats_msg__descriptor =
 {
@@ -1635,7 +2035,7 @@ const ProtobufCMessageDescriptor cli_stats_msg__descriptor =
   "CliStatsMsg",
   "",
   sizeof(CliStatsMsg),
-  9,
+  10,
   cli_stats_msg__field_descriptors,
   cli_stats_msg__field_indices_by_name,
   1,  cli_stats_msg__number_ranges,
@@ -1660,9 +2060,9 @@ static const ProtobufCFieldDescriptor udp_fd_msg__field_descriptors[2] =
   {
     "data",
     2,
-    PROTOBUF_C_LABEL_OPTIONAL,
+    PROTOBUF_C_LABEL_REQUIRED,
     PROTOBUF_C_TYPE_BYTES,
-    offsetof(UdpFdMsg, has_data),
+    0,   /* quantifier_offset */
     offsetof(UdpFdMsg, data),
     NULL,
     NULL,
@@ -1694,7 +2094,7 @@ const ProtobufCMessageDescriptor udp_fd_msg__descriptor =
   (ProtobufCMessageInit) udp_fd_msg__init,
   NULL,NULL,NULL    /* reserved[123] */
 };
-static const ProtobufCFieldDescriptor session_info_msg__field_descriptors[7] =
+static const ProtobufCFieldDescriptor session_info_msg__field_descriptors[8] =
 {
   {
     "tls_ciphersuite",
@@ -1780,11 +2180,24 @@ static const ProtobufCFieldDescriptor session_info_msg__field_descriptors[7] =
     0,             /* flags */
     0,NULL,NULL    /* reserved1,reserved2, etc */
   },
+  {
+    "hostname",
+    8,
+    PROTOBUF_C_LABEL_OPTIONAL,
+    PROTOBUF_C_TYPE_STRING,
+    0,   /* quantifier_offset */
+    offsetof(SessionInfoMsg, hostname),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
 };
 static const unsigned session_info_msg__field_indices_by_name[] = {
   3,   /* field[3] = cstp_compr */
   1,   /* field[1] = dtls_ciphersuite */
   4,   /* field[4] = dtls_compr */
+  7,   /* field[7] = hostname */
   5,   /* field[5] = our_addr */
   6,   /* field[6] = remote_addr */
   0,   /* field[0] = tls_ciphersuite */
@@ -1793,7 +2206,7 @@ static const unsigned session_info_msg__field_indices_by_name[] = {
 static const ProtobufCIntRange session_info_msg__number_ranges[1 + 1] =
 {
   { 1, 0 },
-  { 0, 7 }
+  { 0, 8 }
 };
 const ProtobufCMessageDescriptor session_info_msg__descriptor =
 {
@@ -1803,7 +2216,7 @@ const ProtobufCMessageDescriptor session_info_msg__descriptor =
   "SessionInfoMsg",
   "",
   sizeof(SessionInfoMsg),
-  7,
+  8,
   session_info_msg__field_descriptors,
   session_info_msg__field_indices_by_name,
   1,  session_info_msg__number_ranges,
@@ -1990,18 +2403,6 @@ static const ProtobufCFieldDescriptor sec_auth_init_msg__field_descriptors[9] =
     0,NULL,NULL    /* reserved1,reserved2, etc */
   },
   {
-    "hostname",
-    7,
-    PROTOBUF_C_LABEL_OPTIONAL,
-    PROTOBUF_C_TYPE_STRING,
-    0,   /* quantifier_offset */
-    offsetof(SecAuthInitMsg, hostname),
-    NULL,
-    NULL,
-    0,             /* flags */
-    0,NULL,NULL    /* reserved1,reserved2, etc */
-  },
-  {
     "ip",
     8,
     PROTOBUF_C_LABEL_REQUIRED,
@@ -2037,21 +2438,34 @@ static const ProtobufCFieldDescriptor sec_auth_init_msg__field_descriptors[9] =
     0,             /* flags */
     0,NULL,NULL    /* reserved1,reserved2, etc */
   },
+  {
+    "user_agent",
+    11,
+    PROTOBUF_C_LABEL_OPTIONAL,
+    PROTOBUF_C_TYPE_STRING,
+    0,   /* quantifier_offset */
+    offsetof(SecAuthInitMsg, user_agent),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
 };
 static const unsigned sec_auth_init_msg__field_indices_by_name[] = {
-  7,   /* field[7] = auth_type */
+  6,   /* field[6] = auth_type */
   4,   /* field[4] = cert_group_names */
   3,   /* field[3] = cert_user_name */
   2,   /* field[2] = group_name */
-  5,   /* field[5] = hostname */
-  6,   /* field[6] = ip */
-  8,   /* field[8] = our_ip */
+  5,   /* field[5] = ip */
+  7,   /* field[7] = our_ip */
   0,   /* field[0] = tls_auth_ok */
+  8,   /* field[8] = user_agent */
   1,   /* field[1] = user_name */
 };
-static const ProtobufCIntRange sec_auth_init_msg__number_ranges[1 + 1] =
+static const ProtobufCIntRange sec_auth_init_msg__number_ranges[2 + 1] =
 {
   { 2, 0 },
+  { 8, 5 },
   { 0, 9 }
 };
 const ProtobufCMessageDescriptor sec_auth_init_msg__descriptor =
@@ -2065,7 +2479,7 @@ const ProtobufCMessageDescriptor sec_auth_init_msg__descriptor =
   9,
   sec_auth_init_msg__field_descriptors,
   sec_auth_init_msg__field_indices_by_name,
-  1,  sec_auth_init_msg__number_ranges,
+  2,  sec_auth_init_msg__number_ranges,
   (ProtobufCMessageInit) sec_auth_init_msg__init,
   NULL,NULL,NULL    /* reserved[123] */
 };
@@ -2133,7 +2547,7 @@ const ProtobufCMessageDescriptor sec_auth_cont_msg__descriptor =
   (ProtobufCMessageInit) sec_auth_cont_msg__init,
   NULL,NULL,NULL    /* reserved[123] */
 };
-static const ProtobufCFieldDescriptor sec_auth_reply_msg__field_descriptors[7] =
+static const ProtobufCFieldDescriptor sec_auth_reply_msg__field_descriptors[6] =
 {
   {
     "reply",
@@ -2143,18 +2557,6 @@ static const ProtobufCFieldDescriptor sec_auth_reply_msg__field_descriptors[7] =
     0,   /* quantifier_offset */
     offsetof(SecAuthReplyMsg, reply),
     &auth__rep__descriptor,
-    NULL,
-    0,             /* flags */
-    0,NULL,NULL    /* reserved1,reserved2, etc */
-  },
-  {
-    "cookie",
-    2,
-    PROTOBUF_C_LABEL_OPTIONAL,
-    PROTOBUF_C_TYPE_BYTES,
-    offsetof(SecAuthReplyMsg, has_cookie),
-    offsetof(SecAuthReplyMsg, cookie),
-    NULL,
     NULL,
     0,             /* flags */
     0,NULL,NULL    /* reserved1,reserved2, etc */
@@ -2221,19 +2623,19 @@ static const ProtobufCFieldDescriptor sec_auth_reply_msg__field_descriptors[7] =
   },
 };
 static const unsigned sec_auth_reply_msg__field_indices_by_name[] = {
-  1,   /* field[1] = cookie */
-  4,   /* field[4] = dtls_session_id */
-  3,   /* field[3] = msg */
-  6,   /* field[6] = passwd_counter */
+  3,   /* field[3] = dtls_session_id */
+  2,   /* field[2] = msg */
+  5,   /* field[5] = passwd_counter */
   0,   /* field[0] = reply */
-  5,   /* field[5] = sid */
-  2,   /* field[2] = user_name */
+  4,   /* field[4] = sid */
+  1,   /* field[1] = user_name */
 };
-static const ProtobufCIntRange sec_auth_reply_msg__number_ranges[2 + 1] =
+static const ProtobufCIntRange sec_auth_reply_msg__number_ranges[3 + 1] =
 {
   { 1, 0 },
-  { 8, 6 },
-  { 0, 7 }
+  { 3, 1 },
+  { 8, 5 },
+  { 0, 6 }
 };
 const ProtobufCMessageDescriptor sec_auth_reply_msg__descriptor =
 {
@@ -2243,10 +2645,10 @@ const ProtobufCMessageDescriptor sec_auth_reply_msg__descriptor =
   "SecAuthReplyMsg",
   "",
   sizeof(SecAuthReplyMsg),
-  7,
+  6,
   sec_auth_reply_msg__field_descriptors,
   sec_auth_reply_msg__field_indices_by_name,
-  2,  sec_auth_reply_msg__number_ranges,
+  3,  sec_auth_reply_msg__number_ranges,
   (ProtobufCMessageInit) sec_auth_reply_msg__init,
   NULL,NULL,NULL    /* reserved[123] */
 };
@@ -2301,137 +2703,7 @@ const ProtobufCMessageDescriptor sec_op_msg__descriptor =
   (ProtobufCMessageInit) sec_op_msg__init,
   NULL,NULL,NULL    /* reserved[123] */
 };
-static const ProtobufCFieldDescriptor cookie__field_descriptors[8] =
-{
-  {
-    "username",
-    1,
-    PROTOBUF_C_LABEL_REQUIRED,
-    PROTOBUF_C_TYPE_STRING,
-    0,   /* quantifier_offset */
-    offsetof(Cookie, username),
-    NULL,
-    NULL,
-    0,             /* flags */
-    0,NULL,NULL    /* reserved1,reserved2, etc */
-  },
-  {
-    "groupname",
-    2,
-    PROTOBUF_C_LABEL_REQUIRED,
-    PROTOBUF_C_TYPE_STRING,
-    0,   /* quantifier_offset */
-    offsetof(Cookie, groupname),
-    NULL,
-    NULL,
-    0,             /* flags */
-    0,NULL,NULL    /* reserved1,reserved2, etc */
-  },
-  {
-    "hostname",
-    3,
-    PROTOBUF_C_LABEL_REQUIRED,
-    PROTOBUF_C_TYPE_STRING,
-    0,   /* quantifier_offset */
-    offsetof(Cookie, hostname),
-    NULL,
-    NULL,
-    0,             /* flags */
-    0,NULL,NULL    /* reserved1,reserved2, etc */
-  },
-  {
-    "ip",
-    4,
-    PROTOBUF_C_LABEL_REQUIRED,
-    PROTOBUF_C_TYPE_STRING,
-    0,   /* quantifier_offset */
-    offsetof(Cookie, ip),
-    NULL,
-    NULL,
-    0,             /* flags */
-    0,NULL,NULL    /* reserved1,reserved2, etc */
-  },
-  {
-    "expiration",
-    6,
-    PROTOBUF_C_LABEL_REQUIRED,
-    PROTOBUF_C_TYPE_UINT32,
-    0,   /* quantifier_offset */
-    offsetof(Cookie, expiration),
-    NULL,
-    NULL,
-    0,             /* flags */
-    0,NULL,NULL    /* reserved1,reserved2, etc */
-  },
-  {
-    "ipv4_seed",
-    7,
-    PROTOBUF_C_LABEL_REQUIRED,
-    PROTOBUF_C_TYPE_UINT32,
-    0,   /* quantifier_offset */
-    offsetof(Cookie, ipv4_seed),
-    NULL,
-    NULL,
-    0,             /* flags */
-    0,NULL,NULL    /* reserved1,reserved2, etc */
-  },
-  {
-    "sid",
-    8,
-    PROTOBUF_C_LABEL_REQUIRED,
-    PROTOBUF_C_TYPE_BYTES,
-    0,   /* quantifier_offset */
-    offsetof(Cookie, sid),
-    NULL,
-    NULL,
-    0,             /* flags */
-    0,NULL,NULL    /* reserved1,reserved2, etc */
-  },
-  {
-    "tls_auth_ok",
-    9,
-    PROTOBUF_C_LABEL_REQUIRED,
-    PROTOBUF_C_TYPE_BOOL,
-    0,   /* quantifier_offset */
-    offsetof(Cookie, tls_auth_ok),
-    NULL,
-    NULL,
-    0,             /* flags */
-    0,NULL,NULL    /* reserved1,reserved2, etc */
-  },
-};
-static const unsigned cookie__field_indices_by_name[] = {
-  4,   /* field[4] = expiration */
-  1,   /* field[1] = groupname */
-  2,   /* field[2] = hostname */
-  3,   /* field[3] = ip */
-  5,   /* field[5] = ipv4_seed */
-  6,   /* field[6] = sid */
-  7,   /* field[7] = tls_auth_ok */
-  0,   /* field[0] = username */
-};
-static const ProtobufCIntRange cookie__number_ranges[2 + 1] =
-{
-  { 1, 0 },
-  { 6, 4 },
-  { 0, 8 }
-};
-const ProtobufCMessageDescriptor cookie__descriptor =
-{
-  PROTOBUF_C__MESSAGE_DESCRIPTOR_MAGIC,
-  "cookie",
-  "Cookie",
-  "Cookie",
-  "",
-  sizeof(Cookie),
-  8,
-  cookie__field_descriptors,
-  cookie__field_indices_by_name,
-  2,  cookie__number_ranges,
-  (ProtobufCMessageInit) cookie__init,
-  NULL,NULL,NULL    /* reserved[123] */
-};
-static const ProtobufCFieldDescriptor sec_auth_session_msg__field_descriptors[7] =
+static const ProtobufCFieldDescriptor secm_session_open_msg__field_descriptors[3] =
 {
   {
     "sid",
@@ -2439,55 +2711,7 @@ static const ProtobufCFieldDescriptor sec_auth_session_msg__field_descriptors[7]
     PROTOBUF_C_LABEL_REQUIRED,
     PROTOBUF_C_TYPE_BYTES,
     0,   /* quantifier_offset */
-    offsetof(SecAuthSessionMsg, sid),
-    NULL,
-    NULL,
-    0,             /* flags */
-    0,NULL,NULL    /* reserved1,reserved2, etc */
-  },
-  {
-    "cookie",
-    2,
-    PROTOBUF_C_LABEL_OPTIONAL,
-    PROTOBUF_C_TYPE_BYTES,
-    offsetof(SecAuthSessionMsg, has_cookie),
-    offsetof(SecAuthSessionMsg, cookie),
-    NULL,
-    NULL,
-    0,             /* flags */
-    0,NULL,NULL    /* reserved1,reserved2, etc */
-  },
-  {
-    "uptime",
-    3,
-    PROTOBUF_C_LABEL_OPTIONAL,
-    PROTOBUF_C_TYPE_UINT32,
-    offsetof(SecAuthSessionMsg, has_uptime),
-    offsetof(SecAuthSessionMsg, uptime),
-    NULL,
-    NULL,
-    0,             /* flags */
-    0,NULL,NULL    /* reserved1,reserved2, etc */
-  },
-  {
-    "bytes_in",
-    4,
-    PROTOBUF_C_LABEL_OPTIONAL,
-    PROTOBUF_C_TYPE_UINT64,
-    offsetof(SecAuthSessionMsg, has_bytes_in),
-    offsetof(SecAuthSessionMsg, bytes_in),
-    NULL,
-    NULL,
-    0,             /* flags */
-    0,NULL,NULL    /* reserved1,reserved2, etc */
-  },
-  {
-    "bytes_out",
-    5,
-    PROTOBUF_C_LABEL_OPTIONAL,
-    PROTOBUF_C_TYPE_UINT64,
-    offsetof(SecAuthSessionMsg, has_bytes_out),
-    offsetof(SecAuthSessionMsg, bytes_out),
+    offsetof(SecmSessionOpenMsg, sid),
     NULL,
     NULL,
     0,             /* flags */
@@ -2499,7 +2723,7 @@ static const ProtobufCFieldDescriptor sec_auth_session_msg__field_descriptors[7]
     PROTOBUF_C_LABEL_OPTIONAL,
     PROTOBUF_C_TYPE_STRING,
     0,   /* quantifier_offset */
-    offsetof(SecAuthSessionMsg, ipv4),
+    offsetof(SecmSessionOpenMsg, ipv4),
     NULL,
     NULL,
     0,             /* flags */
@@ -2511,43 +2735,144 @@ static const ProtobufCFieldDescriptor sec_auth_session_msg__field_descriptors[7]
     PROTOBUF_C_LABEL_OPTIONAL,
     PROTOBUF_C_TYPE_STRING,
     0,   /* quantifier_offset */
-    offsetof(SecAuthSessionMsg, ipv6),
+    offsetof(SecmSessionOpenMsg, ipv6),
     NULL,
     NULL,
     0,             /* flags */
     0,NULL,NULL    /* reserved1,reserved2, etc */
   },
 };
-static const unsigned sec_auth_session_msg__field_indices_by_name[] = {
-  3,   /* field[3] = bytes_in */
-  4,   /* field[4] = bytes_out */
-  1,   /* field[1] = cookie */
-  5,   /* field[5] = ipv4 */
-  6,   /* field[6] = ipv6 */
+static const unsigned secm_session_open_msg__field_indices_by_name[] = {
+  1,   /* field[1] = ipv4 */
+  2,   /* field[2] = ipv6 */
   0,   /* field[0] = sid */
-  2,   /* field[2] = uptime */
 };
-static const ProtobufCIntRange sec_auth_session_msg__number_ranges[1 + 1] =
+static const ProtobufCIntRange secm_session_open_msg__number_ranges[2 + 1] =
 {
   { 1, 0 },
-  { 0, 7 }
+  { 6, 1 },
+  { 0, 3 }
 };
-const ProtobufCMessageDescriptor sec_auth_session_msg__descriptor =
+const ProtobufCMessageDescriptor secm_session_open_msg__descriptor =
 {
   PROTOBUF_C__MESSAGE_DESCRIPTOR_MAGIC,
-  "sec_auth_session_msg",
-  "SecAuthSessionMsg",
-  "SecAuthSessionMsg",
+  "secm_session_open_msg",
+  "SecmSessionOpenMsg",
+  "SecmSessionOpenMsg",
   "",
-  sizeof(SecAuthSessionMsg),
-  7,
-  sec_auth_session_msg__field_descriptors,
-  sec_auth_session_msg__field_indices_by_name,
-  1,  sec_auth_session_msg__number_ranges,
-  (ProtobufCMessageInit) sec_auth_session_msg__init,
+  sizeof(SecmSessionOpenMsg),
+  3,
+  secm_session_open_msg__field_descriptors,
+  secm_session_open_msg__field_indices_by_name,
+  2,  secm_session_open_msg__number_ranges,
+  (ProtobufCMessageInit) secm_session_open_msg__init,
   NULL,NULL,NULL    /* reserved[123] */
 };
-static const ProtobufCFieldDescriptor sec_auth_session_reply_msg__field_descriptors[28] =
+static const ProtobufCFieldDescriptor secm_session_close_msg__field_descriptors[6] =
+{
+  {
+    "sid",
+    1,
+    PROTOBUF_C_LABEL_REQUIRED,
+    PROTOBUF_C_TYPE_BYTES,
+    0,   /* quantifier_offset */
+    offsetof(SecmSessionCloseMsg, sid),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "uptime",
+    3,
+    PROTOBUF_C_LABEL_OPTIONAL,
+    PROTOBUF_C_TYPE_UINT32,
+    offsetof(SecmSessionCloseMsg, has_uptime),
+    offsetof(SecmSessionCloseMsg, uptime),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "bytes_in",
+    4,
+    PROTOBUF_C_LABEL_OPTIONAL,
+    PROTOBUF_C_TYPE_UINT64,
+    offsetof(SecmSessionCloseMsg, has_bytes_in),
+    offsetof(SecmSessionCloseMsg, bytes_in),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "bytes_out",
+    5,
+    PROTOBUF_C_LABEL_OPTIONAL,
+    PROTOBUF_C_TYPE_UINT64,
+    offsetof(SecmSessionCloseMsg, has_bytes_out),
+    offsetof(SecmSessionCloseMsg, bytes_out),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "ipv4",
+    6,
+    PROTOBUF_C_LABEL_OPTIONAL,
+    PROTOBUF_C_TYPE_STRING,
+    0,   /* quantifier_offset */
+    offsetof(SecmSessionCloseMsg, ipv4),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "ipv6",
+    7,
+    PROTOBUF_C_LABEL_OPTIONAL,
+    PROTOBUF_C_TYPE_STRING,
+    0,   /* quantifier_offset */
+    offsetof(SecmSessionCloseMsg, ipv6),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+};
+static const unsigned secm_session_close_msg__field_indices_by_name[] = {
+  2,   /* field[2] = bytes_in */
+  3,   /* field[3] = bytes_out */
+  4,   /* field[4] = ipv4 */
+  5,   /* field[5] = ipv6 */
+  0,   /* field[0] = sid */
+  1,   /* field[1] = uptime */
+};
+static const ProtobufCIntRange secm_session_close_msg__number_ranges[2 + 1] =
+{
+  { 1, 0 },
+  { 3, 1 },
+  { 0, 6 }
+};
+const ProtobufCMessageDescriptor secm_session_close_msg__descriptor =
+{
+  PROTOBUF_C__MESSAGE_DESCRIPTOR_MAGIC,
+  "secm_session_close_msg",
+  "SecmSessionCloseMsg",
+  "SecmSessionCloseMsg",
+  "",
+  sizeof(SecmSessionCloseMsg),
+  6,
+  secm_session_close_msg__field_descriptors,
+  secm_session_close_msg__field_indices_by_name,
+  2,  secm_session_close_msg__number_ranges,
+  (ProtobufCMessageInit) secm_session_close_msg__init,
+  NULL,NULL,NULL    /* reserved[123] */
+};
+static const ProtobufCFieldDescriptor secm_session_reply_msg__field_descriptors[8] =
 {
   {
     "reply",
@@ -2555,425 +2880,320 @@ static const ProtobufCFieldDescriptor sec_auth_session_reply_msg__field_descript
     PROTOBUF_C_LABEL_REQUIRED,
     PROTOBUF_C_TYPE_ENUM,
     0,   /* quantifier_offset */
-    offsetof(SecAuthSessionReplyMsg, reply),
+    offsetof(SecmSessionReplyMsg, reply),
     &auth__rep__descriptor,
     NULL,
     0,             /* flags */
     0,NULL,NULL    /* reserved1,reserved2, etc */
   },
   {
-    "interim_update_secs",
+    "config",
     2,
-    PROTOBUF_C_LABEL_OPTIONAL,
-    PROTOBUF_C_TYPE_UINT32,
-    offsetof(SecAuthSessionReplyMsg, has_interim_update_secs),
-    offsetof(SecAuthSessionReplyMsg, interim_update_secs),
-    NULL,
+    PROTOBUF_C_LABEL_REQUIRED,
+    PROTOBUF_C_TYPE_MESSAGE,
+    0,   /* quantifier_offset */
+    offsetof(SecmSessionReplyMsg, config),
+    &group_cfg_st__descriptor,
     NULL,
     0,             /* flags */
     0,NULL,NULL    /* reserved1,reserved2, etc */
   },
   {
-    "session_timeout_secs",
+    "username",
     3,
-    PROTOBUF_C_LABEL_OPTIONAL,
-    PROTOBUF_C_TYPE_UINT32,
-    offsetof(SecAuthSessionReplyMsg, has_session_timeout_secs),
-    offsetof(SecAuthSessionReplyMsg, session_timeout_secs),
+    PROTOBUF_C_LABEL_REQUIRED,
+    PROTOBUF_C_TYPE_STRING,
+    0,   /* quantifier_offset */
+    offsetof(SecmSessionReplyMsg, username),
     NULL,
     NULL,
     0,             /* flags */
     0,NULL,NULL    /* reserved1,reserved2, etc */
   },
   {
-    "no_udp",
+    "groupname",
+    4,
+    PROTOBUF_C_LABEL_REQUIRED,
+    PROTOBUF_C_TYPE_STRING,
+    0,   /* quantifier_offset */
+    offsetof(SecmSessionReplyMsg, groupname),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "ip",
+    6,
+    PROTOBUF_C_LABEL_REQUIRED,
+    PROTOBUF_C_TYPE_STRING,
+    0,   /* quantifier_offset */
+    offsetof(SecmSessionReplyMsg, ip),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "ipv4_seed",
+    8,
+    PROTOBUF_C_LABEL_REQUIRED,
+    PROTOBUF_C_TYPE_UINT32,
+    0,   /* quantifier_offset */
+    offsetof(SecmSessionReplyMsg, ipv4_seed),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "sid",
+    9,
+    PROTOBUF_C_LABEL_REQUIRED,
+    PROTOBUF_C_TYPE_BYTES,
+    0,   /* quantifier_offset */
+    offsetof(SecmSessionReplyMsg, sid),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "tls_auth_ok",
     10,
-    PROTOBUF_C_LABEL_OPTIONAL,
+    PROTOBUF_C_LABEL_REQUIRED,
     PROTOBUF_C_TYPE_BOOL,
-    offsetof(SecAuthSessionReplyMsg, has_no_udp),
-    offsetof(SecAuthSessionReplyMsg, no_udp),
-    NULL,
-    NULL,
-    0,             /* flags */
-    0,NULL,NULL    /* reserved1,reserved2, etc */
-  },
-  {
-    "deny_roaming",
-    11,
-    PROTOBUF_C_LABEL_OPTIONAL,
-    PROTOBUF_C_TYPE_BOOL,
-    offsetof(SecAuthSessionReplyMsg, has_deny_roaming),
-    offsetof(SecAuthSessionReplyMsg, deny_roaming),
-    NULL,
-    NULL,
-    0,             /* flags */
-    0,NULL,NULL    /* reserved1,reserved2, etc */
-  },
-  {
-    "routes",
-    13,
-    PROTOBUF_C_LABEL_REPEATED,
-    PROTOBUF_C_TYPE_STRING,
-    offsetof(SecAuthSessionReplyMsg, n_routes),
-    offsetof(SecAuthSessionReplyMsg, routes),
-    NULL,
-    NULL,
-    0,             /* flags */
-    0,NULL,NULL    /* reserved1,reserved2, etc */
-  },
-  {
-    "iroutes",
-    14,
-    PROTOBUF_C_LABEL_REPEATED,
-    PROTOBUF_C_TYPE_STRING,
-    offsetof(SecAuthSessionReplyMsg, n_iroutes),
-    offsetof(SecAuthSessionReplyMsg, iroutes),
-    NULL,
-    NULL,
-    0,             /* flags */
-    0,NULL,NULL    /* reserved1,reserved2, etc */
-  },
-  {
-    "dns",
-    15,
-    PROTOBUF_C_LABEL_REPEATED,
-    PROTOBUF_C_TYPE_STRING,
-    offsetof(SecAuthSessionReplyMsg, n_dns),
-    offsetof(SecAuthSessionReplyMsg, dns),
-    NULL,
-    NULL,
-    0,             /* flags */
-    0,NULL,NULL    /* reserved1,reserved2, etc */
-  },
-  {
-    "nbns",
-    16,
-    PROTOBUF_C_LABEL_REPEATED,
-    PROTOBUF_C_TYPE_STRING,
-    offsetof(SecAuthSessionReplyMsg, n_nbns),
-    offsetof(SecAuthSessionReplyMsg, nbns),
-    NULL,
-    NULL,
-    0,             /* flags */
-    0,NULL,NULL    /* reserved1,reserved2, etc */
-  },
-  {
-    "ipv4_net",
-    17,
-    PROTOBUF_C_LABEL_OPTIONAL,
-    PROTOBUF_C_TYPE_STRING,
     0,   /* quantifier_offset */
-    offsetof(SecAuthSessionReplyMsg, ipv4_net),
-    NULL,
-    NULL,
-    0,             /* flags */
-    0,NULL,NULL    /* reserved1,reserved2, etc */
-  },
-  {
-    "ipv4_netmask",
-    18,
-    PROTOBUF_C_LABEL_OPTIONAL,
-    PROTOBUF_C_TYPE_STRING,
-    0,   /* quantifier_offset */
-    offsetof(SecAuthSessionReplyMsg, ipv4_netmask),
-    NULL,
-    NULL,
-    0,             /* flags */
-    0,NULL,NULL    /* reserved1,reserved2, etc */
-  },
-  {
-    "ipv6_net",
-    19,
-    PROTOBUF_C_LABEL_OPTIONAL,
-    PROTOBUF_C_TYPE_STRING,
-    0,   /* quantifier_offset */
-    offsetof(SecAuthSessionReplyMsg, ipv6_net),
-    NULL,
-    NULL,
-    0,             /* flags */
-    0,NULL,NULL    /* reserved1,reserved2, etc */
-  },
-  {
-    "ipv6_prefix",
-    20,
-    PROTOBUF_C_LABEL_OPTIONAL,
-    PROTOBUF_C_TYPE_UINT32,
-    offsetof(SecAuthSessionReplyMsg, has_ipv6_prefix),
-    offsetof(SecAuthSessionReplyMsg, ipv6_prefix),
-    NULL,
-    NULL,
-    0,             /* flags */
-    0,NULL,NULL    /* reserved1,reserved2, etc */
-  },
-  {
-    "cgroup",
-    21,
-    PROTOBUF_C_LABEL_OPTIONAL,
-    PROTOBUF_C_TYPE_STRING,
-    0,   /* quantifier_offset */
-    offsetof(SecAuthSessionReplyMsg, cgroup),
-    NULL,
-    NULL,
-    0,             /* flags */
-    0,NULL,NULL    /* reserved1,reserved2, etc */
-  },
-  {
-    "xml_config_file",
-    22,
-    PROTOBUF_C_LABEL_OPTIONAL,
-    PROTOBUF_C_TYPE_STRING,
-    0,   /* quantifier_offset */
-    offsetof(SecAuthSessionReplyMsg, xml_config_file),
-    NULL,
-    NULL,
-    0,             /* flags */
-    0,NULL,NULL    /* reserved1,reserved2, etc */
-  },
-  {
-    "rx_per_sec",
-    23,
-    PROTOBUF_C_LABEL_OPTIONAL,
-    PROTOBUF_C_TYPE_UINT32,
-    offsetof(SecAuthSessionReplyMsg, has_rx_per_sec),
-    offsetof(SecAuthSessionReplyMsg, rx_per_sec),
-    NULL,
-    NULL,
-    0,             /* flags */
-    0,NULL,NULL    /* reserved1,reserved2, etc */
-  },
-  {
-    "tx_per_sec",
-    24,
-    PROTOBUF_C_LABEL_OPTIONAL,
-    PROTOBUF_C_TYPE_UINT32,
-    offsetof(SecAuthSessionReplyMsg, has_tx_per_sec),
-    offsetof(SecAuthSessionReplyMsg, tx_per_sec),
-    NULL,
-    NULL,
-    0,             /* flags */
-    0,NULL,NULL    /* reserved1,reserved2, etc */
-  },
-  {
-    "net_priority",
-    25,
-    PROTOBUF_C_LABEL_OPTIONAL,
-    PROTOBUF_C_TYPE_UINT32,
-    offsetof(SecAuthSessionReplyMsg, has_net_priority),
-    offsetof(SecAuthSessionReplyMsg, net_priority),
-    NULL,
-    NULL,
-    0,             /* flags */
-    0,NULL,NULL    /* reserved1,reserved2, etc */
-  },
-  {
-    "explicit_ipv4",
-    26,
-    PROTOBUF_C_LABEL_OPTIONAL,
-    PROTOBUF_C_TYPE_STRING,
-    0,   /* quantifier_offset */
-    offsetof(SecAuthSessionReplyMsg, explicit_ipv4),
-    NULL,
-    NULL,
-    0,             /* flags */
-    0,NULL,NULL    /* reserved1,reserved2, etc */
-  },
-  {
-    "explicit_ipv6",
-    27,
-    PROTOBUF_C_LABEL_OPTIONAL,
-    PROTOBUF_C_TYPE_STRING,
-    0,   /* quantifier_offset */
-    offsetof(SecAuthSessionReplyMsg, explicit_ipv6),
-    NULL,
-    NULL,
-    0,             /* flags */
-    0,NULL,NULL    /* reserved1,reserved2, etc */
-  },
-  {
-    "no_routes",
-    28,
-    PROTOBUF_C_LABEL_REPEATED,
-    PROTOBUF_C_TYPE_STRING,
-    offsetof(SecAuthSessionReplyMsg, n_no_routes),
-    offsetof(SecAuthSessionReplyMsg, no_routes),
-    NULL,
-    NULL,
-    0,             /* flags */
-    0,NULL,NULL    /* reserved1,reserved2, etc */
-  },
-  {
-    "ipv6_subnet_prefix",
-    29,
-    PROTOBUF_C_LABEL_OPTIONAL,
-    PROTOBUF_C_TYPE_UINT32,
-    offsetof(SecAuthSessionReplyMsg, has_ipv6_subnet_prefix),
-    offsetof(SecAuthSessionReplyMsg, ipv6_subnet_prefix),
-    NULL,
-    NULL,
-    0,             /* flags */
-    0,NULL,NULL    /* reserved1,reserved2, etc */
-  },
-  {
-    "dpd",
-    30,
-    PROTOBUF_C_LABEL_OPTIONAL,
-    PROTOBUF_C_TYPE_UINT32,
-    offsetof(SecAuthSessionReplyMsg, has_dpd),
-    offsetof(SecAuthSessionReplyMsg, dpd),
-    NULL,
-    NULL,
-    0,             /* flags */
-    0,NULL,NULL    /* reserved1,reserved2, etc */
-  },
-  {
-    "mobile_dpd",
-    31,
-    PROTOBUF_C_LABEL_OPTIONAL,
-    PROTOBUF_C_TYPE_UINT32,
-    offsetof(SecAuthSessionReplyMsg, has_mobile_dpd),
-    offsetof(SecAuthSessionReplyMsg, mobile_dpd),
-    NULL,
-    NULL,
-    0,             /* flags */
-    0,NULL,NULL    /* reserved1,reserved2, etc */
-  },
-  {
-    "keepalive",
-    32,
-    PROTOBUF_C_LABEL_OPTIONAL,
-    PROTOBUF_C_TYPE_UINT32,
-    offsetof(SecAuthSessionReplyMsg, has_keepalive),
-    offsetof(SecAuthSessionReplyMsg, keepalive),
-    NULL,
-    NULL,
-    0,             /* flags */
-    0,NULL,NULL    /* reserved1,reserved2, etc */
-  },
-  {
-    "max_same_clients",
-    33,
-    PROTOBUF_C_LABEL_OPTIONAL,
-    PROTOBUF_C_TYPE_UINT32,
-    offsetof(SecAuthSessionReplyMsg, has_max_same_clients),
-    offsetof(SecAuthSessionReplyMsg, max_same_clients),
-    NULL,
-    NULL,
-    0,             /* flags */
-    0,NULL,NULL    /* reserved1,reserved2, etc */
-  },
-  {
-    "tunnel_all_dns",
-    34,
-    PROTOBUF_C_LABEL_OPTIONAL,
-    PROTOBUF_C_TYPE_UINT32,
-    offsetof(SecAuthSessionReplyMsg, has_tunnel_all_dns),
-    offsetof(SecAuthSessionReplyMsg, tunnel_all_dns),
-    NULL,
-    NULL,
-    0,             /* flags */
-    0,NULL,NULL    /* reserved1,reserved2, etc */
-  },
-  {
-    "restrict_user_to_routes",
-    35,
-    PROTOBUF_C_LABEL_OPTIONAL,
-    PROTOBUF_C_TYPE_BOOL,
-    offsetof(SecAuthSessionReplyMsg, has_restrict_user_to_routes),
-    offsetof(SecAuthSessionReplyMsg, restrict_user_to_routes),
+    offsetof(SecmSessionReplyMsg, tls_auth_ok),
     NULL,
     NULL,
     0,             /* flags */
     0,NULL,NULL    /* reserved1,reserved2, etc */
   },
 };
-static const unsigned sec_auth_session_reply_msg__field_indices_by_name[] = {
-  13,   /* field[13] = cgroup */
-  4,   /* field[4] = deny_roaming */
-  7,   /* field[7] = dns */
-  22,   /* field[22] = dpd */
-  18,   /* field[18] = explicit_ipv4 */
-  19,   /* field[19] = explicit_ipv6 */
-  1,   /* field[1] = interim_update_secs */
-  9,   /* field[9] = ipv4_net */
-  10,   /* field[10] = ipv4_netmask */
-  11,   /* field[11] = ipv6_net */
-  12,   /* field[12] = ipv6_prefix */
-  21,   /* field[21] = ipv6_subnet_prefix */
-  6,   /* field[6] = iroutes */
-  24,   /* field[24] = keepalive */
-  25,   /* field[25] = max_same_clients */
-  23,   /* field[23] = mobile_dpd */
-  8,   /* field[8] = nbns */
-  17,   /* field[17] = net_priority */
-  20,   /* field[20] = no_routes */
-  3,   /* field[3] = no_udp */
+static const unsigned secm_session_reply_msg__field_indices_by_name[] = {
+  1,   /* field[1] = config */
+  3,   /* field[3] = groupname */
+  4,   /* field[4] = ip */
+  5,   /* field[5] = ipv4_seed */
   0,   /* field[0] = reply */
-  27,   /* field[27] = restrict_user_to_routes */
-  5,   /* field[5] = routes */
-  15,   /* field[15] = rx_per_sec */
-  2,   /* field[2] = session_timeout_secs */
-  26,   /* field[26] = tunnel_all_dns */
-  16,   /* field[16] = tx_per_sec */
-  14,   /* field[14] = xml_config_file */
+  6,   /* field[6] = sid */
+  7,   /* field[7] = tls_auth_ok */
+  2,   /* field[2] = username */
 };
-static const ProtobufCIntRange sec_auth_session_reply_msg__number_ranges[3 + 1] =
+static const ProtobufCIntRange secm_session_reply_msg__number_ranges[3 + 1] =
 {
   { 1, 0 },
-  { 10, 3 },
-  { 13, 5 },
-  { 0, 28 }
+  { 6, 4 },
+  { 8, 5 },
+  { 0, 8 }
 };
-const ProtobufCMessageDescriptor sec_auth_session_reply_msg__descriptor =
+const ProtobufCMessageDescriptor secm_session_reply_msg__descriptor =
 {
   PROTOBUF_C__MESSAGE_DESCRIPTOR_MAGIC,
-  "sec_auth_session_reply_msg",
-  "SecAuthSessionReplyMsg",
-  "SecAuthSessionReplyMsg",
+  "secm_session_reply_msg",
+  "SecmSessionReplyMsg",
+  "SecmSessionReplyMsg",
   "",
-  sizeof(SecAuthSessionReplyMsg),
-  28,
-  sec_auth_session_reply_msg__field_descriptors,
-  sec_auth_session_reply_msg__field_indices_by_name,
-  3,  sec_auth_session_reply_msg__number_ranges,
-  (ProtobufCMessageInit) sec_auth_session_reply_msg__init,
+  sizeof(SecmSessionReplyMsg),
+  8,
+  secm_session_reply_msg__field_descriptors,
+  secm_session_reply_msg__field_indices_by_name,
+  3,  secm_session_reply_msg__number_ranges,
+  (ProtobufCMessageInit) secm_session_reply_msg__init,
   NULL,NULL,NULL    /* reserved[123] */
 };
-static const ProtobufCFieldDescriptor sec_refresh_cookie_key__field_descriptors[1] =
+static const ProtobufCFieldDescriptor cookie_int_msg__field_descriptors[10] =
 {
   {
-    "key",
+    "sid",
     1,
     PROTOBUF_C_LABEL_REQUIRED,
     PROTOBUF_C_TYPE_BYTES,
     0,   /* quantifier_offset */
-    offsetof(SecRefreshCookieKey, key),
+    offsetof(CookieIntMsg, sid),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "session_is_open",
+    2,
+    PROTOBUF_C_LABEL_REQUIRED,
+    PROTOBUF_C_TYPE_BOOL,
+    0,   /* quantifier_offset */
+    offsetof(CookieIntMsg, session_is_open),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "tls_auth_ok",
+    3,
+    PROTOBUF_C_LABEL_REQUIRED,
+    PROTOBUF_C_TYPE_BOOL,
+    0,   /* quantifier_offset */
+    offsetof(CookieIntMsg, tls_auth_ok),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "last_modified",
+    4,
+    PROTOBUF_C_LABEL_REQUIRED,
+    PROTOBUF_C_TYPE_UINT32,
+    0,   /* quantifier_offset */
+    offsetof(CookieIntMsg, last_modified),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "username",
+    5,
+    PROTOBUF_C_LABEL_REQUIRED,
+    PROTOBUF_C_TYPE_STRING,
+    0,   /* quantifier_offset */
+    offsetof(CookieIntMsg, username),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "groupname",
+    6,
+    PROTOBUF_C_LABEL_OPTIONAL,
+    PROTOBUF_C_TYPE_STRING,
+    0,   /* quantifier_offset */
+    offsetof(CookieIntMsg, groupname),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "user_agent",
+    7,
+    PROTOBUF_C_LABEL_REQUIRED,
+    PROTOBUF_C_TYPE_STRING,
+    0,   /* quantifier_offset */
+    offsetof(CookieIntMsg, user_agent),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "remote_ip",
+    8,
+    PROTOBUF_C_LABEL_REQUIRED,
+    PROTOBUF_C_TYPE_STRING,
+    0,   /* quantifier_offset */
+    offsetof(CookieIntMsg, remote_ip),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "psid",
+    9,
+    PROTOBUF_C_LABEL_REQUIRED,
+    PROTOBUF_C_TYPE_STRING,
+    0,   /* quantifier_offset */
+    offsetof(CookieIntMsg, psid),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "status",
+    10,
+    PROTOBUF_C_LABEL_REQUIRED,
+    PROTOBUF_C_TYPE_UINT32,
+    0,   /* quantifier_offset */
+    offsetof(CookieIntMsg, status),
     NULL,
     NULL,
     0,             /* flags */
     0,NULL,NULL    /* reserved1,reserved2, etc */
   },
 };
-static const unsigned sec_refresh_cookie_key__field_indices_by_name[] = {
-  0,   /* field[0] = key */
+static const unsigned cookie_int_msg__field_indices_by_name[] = {
+  5,   /* field[5] = groupname */
+  3,   /* field[3] = last_modified */
+  8,   /* field[8] = psid */
+  7,   /* field[7] = remote_ip */
+  1,   /* field[1] = session_is_open */
+  0,   /* field[0] = sid */
+  9,   /* field[9] = status */
+  2,   /* field[2] = tls_auth_ok */
+  6,   /* field[6] = user_agent */
+  4,   /* field[4] = username */
 };
-static const ProtobufCIntRange sec_refresh_cookie_key__number_ranges[1 + 1] =
+static const ProtobufCIntRange cookie_int_msg__number_ranges[1 + 1] =
+{
+  { 1, 0 },
+  { 0, 10 }
+};
+const ProtobufCMessageDescriptor cookie_int_msg__descriptor =
+{
+  PROTOBUF_C__MESSAGE_DESCRIPTOR_MAGIC,
+  "cookie_int_msg",
+  "CookieIntMsg",
+  "CookieIntMsg",
+  "",
+  sizeof(CookieIntMsg),
+  10,
+  cookie_int_msg__field_descriptors,
+  cookie_int_msg__field_indices_by_name,
+  1,  cookie_int_msg__number_ranges,
+  (ProtobufCMessageInit) cookie_int_msg__init,
+  NULL,NULL,NULL    /* reserved[123] */
+};
+static const ProtobufCFieldDescriptor secm_list_cookies_reply_msg__field_descriptors[1] =
+{
+  {
+    "cookies",
+    1,
+    PROTOBUF_C_LABEL_REPEATED,
+    PROTOBUF_C_TYPE_MESSAGE,
+    offsetof(SecmListCookiesReplyMsg, n_cookies),
+    offsetof(SecmListCookiesReplyMsg, cookies),
+    &cookie_int_msg__descriptor,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+};
+static const unsigned secm_list_cookies_reply_msg__field_indices_by_name[] = {
+  0,   /* field[0] = cookies */
+};
+static const ProtobufCIntRange secm_list_cookies_reply_msg__number_ranges[1 + 1] =
 {
   { 1, 0 },
   { 0, 1 }
 };
-const ProtobufCMessageDescriptor sec_refresh_cookie_key__descriptor =
+const ProtobufCMessageDescriptor secm_list_cookies_reply_msg__descriptor =
 {
   PROTOBUF_C__MESSAGE_DESCRIPTOR_MAGIC,
-  "sec_refresh_cookie_key",
-  "SecRefreshCookieKey",
-  "SecRefreshCookieKey",
+  "secm_list_cookies_reply_msg",
+  "SecmListCookiesReplyMsg",
+  "SecmListCookiesReplyMsg",
   "",
-  sizeof(SecRefreshCookieKey),
+  sizeof(SecmListCookiesReplyMsg),
   1,
-  sec_refresh_cookie_key__field_descriptors,
-  sec_refresh_cookie_key__field_indices_by_name,
-  1,  sec_refresh_cookie_key__number_ranges,
-  (ProtobufCMessageInit) sec_refresh_cookie_key__init,
+  secm_list_cookies_reply_msg__field_descriptors,
+  secm_list_cookies_reply_msg__field_indices_by_name,
+  1,  secm_list_cookies_reply_msg__number_ranges,
+  (ProtobufCMessageInit) secm_list_cookies_reply_msg__init,
   NULL,NULL,NULL    /* reserved[123] */
 };
 const ProtobufCEnumValue auth__rep__enum_values_by_number[3] =

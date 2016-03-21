@@ -1,5 +1,6 @@
 /*
- * Copyright (C) 2013 Nikos Mavrogiannopoulos
+ * Copyright (C) 2013-2016 Nikos Mavrogiannopoulos
+ * Copyright (C) 2015-2016 Red Hat, Inc.
  *
  * Author: Nikos Mavrogiannopoulos
  *
@@ -31,30 +32,15 @@
 #  define GNUTLS_DTLS1_2 202
 # endif
 
+# if GNUTLS_VERSION_NUMBER >= 0x030305
+#  define ZERO_COPY
+# endif
+
 typedef struct 
 {
 	struct htable *ht;
 	unsigned int entries;
 } tls_sess_db_st;
-
-#if 0
-#define tls_puts(s, str) tls_send(s, str, sizeof(str)-1)
-
-int __attribute__ ((format(printf, 2, 3)))
-    tls_printf(gnutls_session_t session, const char *fmt, ...);
-
-#define tls_recv_nb gnutls_record_recv
-ssize_t tls_recv(gnutls_session_t session, void *data, size_t data_size);
-ssize_t tls_send(gnutls_session_t session, const void *data,
-			size_t data_size);
-ssize_t tls_send_nb(gnutls_session_t session, const void *data,
-			size_t data_size);
-
-void tls_cork(gnutls_session_t session);
-int tls_uncork(gnutls_session_t session);
-
-ssize_t tls_send_file(gnutls_session_t session, const char *file);
-#endif
 
 typedef struct tls_st {
 	gnutls_certificate_credentials_t xcred;
@@ -65,11 +51,14 @@ typedef struct tls_st {
 void tls_reload_crl(struct main_server_st* s, struct tls_st *creds, unsigned force);
 void tls_global_init(struct tls_st *creds);
 void tls_global_deinit(struct tls_st *creds);
-void tls_load_certs(struct main_server_st* s, struct tls_st *creds);
+void tls_load_files(struct main_server_st* s, struct tls_st *creds);
+void tls_load_prio(struct main_server_st *s, tls_st *creds);
 
 size_t tls_get_overhead(gnutls_protocol_t, gnutls_cipher_algorithm_t, gnutls_mac_algorithm_t);
 
-#define GNUTLS_FATAL_ERR_CMD(x, CMD) \
+#define GNUTLS_FATAL_ERR DTLS_FATAL_ERR
+
+#define DTLS_FATAL_ERR_CMD(x, CMD) \
         if (x < 0 && gnutls_error_is_fatal (x) != 0) { \
                 if (syslog_open) \
                 	syslog(LOG_ERR, "GnuTLS error (at %s:%d): %s", __FILE__, __LINE__, gnutls_strerror(x)); \
@@ -78,9 +67,9 @@ size_t tls_get_overhead(gnutls_protocol_t, gnutls_cipher_algorithm_t, gnutls_mac
                 CMD; \
         }
 
-#define GNUTLS_FATAL_ERR(x) GNUTLS_FATAL_ERR_CMD(x, exit(1))
+#define DTLS_FATAL_ERR(x) DTLS_FATAL_ERR_CMD(x, exit(1))
 
-#define FATAL_ERR_CMD(ws, x, CMD) \
+#define CSTP_FATAL_ERR_CMD(ws, x, CMD) \
         if (ws->session != NULL) { \
 	        if (x < 0 && gnutls_error_is_fatal (x) != 0) { \
                		oclog(ws, LOG_ERR, "GnuTLS error (at %s:%d): %s", __FILE__, __LINE__, gnutls_strerror(x)); \
@@ -93,20 +82,7 @@ size_t tls_get_overhead(gnutls_protocol_t, gnutls_cipher_algorithm_t, gnutls_mac
 	        } \
 	}
 
-#define FATAL_ERR(ws, x) FATAL_ERR_CMD(ws, x, exit(1))
-
-#define GNUTLS_S_FATAL_ERR(session, x) \
-        if (x < 0 && gnutls_error_is_fatal (x) != 0) { \
-                if (syslog_open) { \
-	        	if (ret == GNUTLS_E_FATAL_ALERT_RECEIVED) { \
-	        		syslog(LOG_ERR, "GnuTLS error (at %s:%d): %s: %s", __FILE__, __LINE__, gnutls_strerror(x), gnutls_alert_get_name(gnutls_alert_get(session))); \
-        		} else { \
-        			syslog(LOG_ERR, "GnuTLS error (at %s:%d): %s", __FILE__, __LINE__, gnutls_strerror(x)); \
-			} \
-                } else \
-                        fprintf(stderr, "GnuTLS error (at %s:%d): %s\n", __FILE__, __LINE__, gnutls_strerror(x)); \
-                exit(1); \
-        }
+#define CSTP_FATAL_ERR(ws, x) CSTP_FATAL_ERR_CMD(ws, x, exit(1))
 
 void tls_close(gnutls_session_t session);
 
@@ -155,5 +131,21 @@ int cstp_uncork(struct worker_st *ws);
 /* DTLS API */
 void dtls_close(struct worker_st *ws);
 ssize_t dtls_send(struct worker_st *ws, const void *data, size_t data_size);
+
+/* packet API */
+inline static void packet_deinit(void *p)
+{
+#ifdef ZERO_COPY
+	gnutls_packet_t packet = p;
+ 	if (packet)
+	 	gnutls_packet_deinit(packet);
+#endif
+}
+
+ssize_t cstp_recv_packet(struct worker_st *ws, gnutls_datum_t *data, void **p);
+ssize_t dtls_recv_packet(struct worker_st *ws, gnutls_datum_t *data, void **p);
+
+/* Helper functions */
+unsigned need_file_reload(const char *file, time_t last_access);
 
 #endif

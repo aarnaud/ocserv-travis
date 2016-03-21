@@ -179,6 +179,49 @@ void   user_list_rep__free_unpacked
   assert(message->base.descriptor == &user_list_rep__descriptor);
   protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
 }
+void   top_update_rep__init
+                     (TopUpdateRep         *message)
+{
+  static TopUpdateRep init_value = TOP_UPDATE_REP__INIT;
+  *message = init_value;
+}
+size_t top_update_rep__get_packed_size
+                     (const TopUpdateRep *message)
+{
+  assert(message->base.descriptor == &top_update_rep__descriptor);
+  return protobuf_c_message_get_packed_size ((const ProtobufCMessage*)(message));
+}
+size_t top_update_rep__pack
+                     (const TopUpdateRep *message,
+                      uint8_t       *out)
+{
+  assert(message->base.descriptor == &top_update_rep__descriptor);
+  return protobuf_c_message_pack ((const ProtobufCMessage*)message, out);
+}
+size_t top_update_rep__pack_to_buffer
+                     (const TopUpdateRep *message,
+                      ProtobufCBuffer *buffer)
+{
+  assert(message->base.descriptor == &top_update_rep__descriptor);
+  return protobuf_c_message_pack_to_buffer ((const ProtobufCMessage*)message, buffer);
+}
+TopUpdateRep *
+       top_update_rep__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data)
+{
+  return (TopUpdateRep *)
+     protobuf_c_message_unpack (&top_update_rep__descriptor,
+                                allocator, len, data);
+}
+void   top_update_rep__free_unpacked
+                     (TopUpdateRep *message,
+                      ProtobufCAllocator *allocator)
+{
+  assert(message->base.descriptor == &top_update_rep__descriptor);
+  protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
+}
 void   username_req__init
                      (UsernameReq         *message)
 {
@@ -563,7 +606,7 @@ const ProtobufCMessageDescriptor bool_msg__descriptor =
   (ProtobufCMessageInit) bool_msg__init,
   NULL,NULL,NULL    /* reserved[123] */
 };
-static const ProtobufCFieldDescriptor user_info_rep__field_descriptors[30] =
+static const ProtobufCFieldDescriptor user_info_rep__field_descriptors[31] =
 {
   {
     "id",
@@ -713,7 +756,7 @@ static const ProtobufCFieldDescriptor user_info_rep__field_descriptors[30] =
     "status",
     13,
     PROTOBUF_C_LABEL_REQUIRED,
-    PROTOBUF_C_TYPE_STRING,
+    PROTOBUF_C_TYPE_UINT32,
     0,   /* quantifier_offset */
     offsetof(UserInfoRep, status),
     NULL,
@@ -925,6 +968,18 @@ static const ProtobufCFieldDescriptor user_info_rep__field_descriptors[30] =
     0,             /* flags */
     0,NULL,NULL    /* reserved1,reserved2, etc */
   },
+  {
+    "fw_ports",
+    31,
+    PROTOBUF_C_LABEL_REPEATED,
+    PROTOBUF_C_TYPE_MESSAGE,
+    offsetof(UserInfoRep, n_fw_ports),
+    offsetof(UserInfoRep, fw_ports),
+    &fw_port_st__descriptor,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
 };
 static const unsigned user_info_rep__field_indices_by_name[] = {
   9,   /* field[9] = conn_time */
@@ -934,6 +989,7 @@ static const unsigned user_info_rep__field_indices_by_name[] = {
   27,   /* field[27] = dpd */
   14,   /* field[14] = dtls_ciphersuite */
   23,   /* field[23] = dtls_compr */
+  30,   /* field[30] = fw_ports */
   2,   /* field[2] = groupname */
   10,   /* field[10] = hostname */
   0,   /* field[0] = id */
@@ -961,7 +1017,7 @@ static const unsigned user_info_rep__field_indices_by_name[] = {
 static const ProtobufCIntRange user_info_rep__number_ranges[1 + 1] =
 {
   { 1, 0 },
-  { 0, 30 }
+  { 0, 31 }
 };
 const ProtobufCMessageDescriptor user_info_rep__descriptor =
 {
@@ -971,7 +1027,7 @@ const ProtobufCMessageDescriptor user_info_rep__descriptor =
   "UserInfoRep",
   "",
   sizeof(UserInfoRep),
-  30,
+  31,
   user_info_rep__field_descriptors,
   user_info_rep__field_indices_by_name,
   1,  user_info_rep__number_ranges,
@@ -1014,6 +1070,83 @@ const ProtobufCMessageDescriptor user_list_rep__descriptor =
   user_list_rep__field_indices_by_name,
   1,  user_list_rep__number_ranges,
   (ProtobufCMessageInit) user_list_rep__init,
+  NULL,NULL,NULL    /* reserved[123] */
+};
+static const ProtobufCFieldDescriptor top_update_rep__field_descriptors[4] =
+{
+  {
+    "connected",
+    1,
+    PROTOBUF_C_LABEL_REQUIRED,
+    PROTOBUF_C_TYPE_UINT32,
+    0,   /* quantifier_offset */
+    offsetof(TopUpdateRep, connected),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "discon_reason",
+    2,
+    PROTOBUF_C_LABEL_OPTIONAL,
+    PROTOBUF_C_TYPE_UINT32,
+    offsetof(TopUpdateRep, has_discon_reason),
+    offsetof(TopUpdateRep, discon_reason),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "discon_reason_txt",
+    3,
+    PROTOBUF_C_LABEL_OPTIONAL,
+    PROTOBUF_C_TYPE_STRING,
+    0,   /* quantifier_offset */
+    offsetof(TopUpdateRep, discon_reason_txt),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "user",
+    4,
+    PROTOBUF_C_LABEL_REQUIRED,
+    PROTOBUF_C_TYPE_MESSAGE,
+    0,   /* quantifier_offset */
+    offsetof(TopUpdateRep, user),
+    &user_list_rep__descriptor,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+};
+static const unsigned top_update_rep__field_indices_by_name[] = {
+  0,   /* field[0] = connected */
+  1,   /* field[1] = discon_reason */
+  2,   /* field[2] = discon_reason_txt */
+  3,   /* field[3] = user */
+};
+static const ProtobufCIntRange top_update_rep__number_ranges[1 + 1] =
+{
+  { 1, 0 },
+  { 0, 4 }
+};
+const ProtobufCMessageDescriptor top_update_rep__descriptor =
+{
+  PROTOBUF_C__MESSAGE_DESCRIPTOR_MAGIC,
+  "top_update_rep",
+  "TopUpdateRep",
+  "TopUpdateRep",
+  "",
+  sizeof(TopUpdateRep),
+  4,
+  top_update_rep__field_descriptors,
+  top_update_rep__field_indices_by_name,
+  1,  top_update_rep__number_ranges,
+  (ProtobufCMessageInit) top_update_rep__init,
   NULL,NULL,NULL    /* reserved[123] */
 };
 static const ProtobufCFieldDescriptor username_req__field_descriptors[1] =

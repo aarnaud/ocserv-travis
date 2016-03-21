@@ -39,6 +39,10 @@ if test -z $FEDORA && test -z $DEBIAN;then
 	exit 77
 fi
 
+get_ip() {
+	IP=`$DOCKER inspect $IMAGE_NAME | grep \"IPAddress\" | cut -d '"' -f 4|head -n1`
+}
+
 check_for_file() {
 	FILENAME=$1
 	IMG=$2
@@ -132,7 +136,7 @@ if test ! -f $DOCKER_DIR/Dockerfile;then
 fi
 
 rm -f $DOCKER_DIR/ocserv $DOCKER_DIR/ocpasswd $DOCKER_DIR/occtl $DOCKER_DIR/ocserv-fw
-cp ../src/ocserv ../src/ocserv-fw ../src/ocpasswd ../src/occtl $DOCKER_DIR/
+cp ../src/ocserv ../src/ocserv-fw ../src/ocpasswd/ocpasswd ../src/occtl/occtl $DOCKER_DIR/
 
 echo "Creating image $IMAGE"
 $DOCKER build -t $IMAGE $DOCKER_DIR/

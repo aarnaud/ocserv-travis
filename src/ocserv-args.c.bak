@@ -53,7 +53,7 @@ extern "C" {
 #endif
 extern FILE * option_usage_fp;
 #define zCopyright      (ocserv_opt_strs+0)
-#define zLicenseDescrip (ocserv_opt_strs+268)
+#define zLicenseDescrip (ocserv_opt_strs+267)
 
 
 #ifndef NULL
@@ -63,13 +63,13 @@ extern FILE * option_usage_fp;
 /**
  *  static const strings for ocserv options
  */
-static char const ocserv_opt_strs[1595] =
-/*     0 */ "ocserv 0.10.11\n"
+static char const ocserv_opt_strs[1654] =
+/*     0 */ "ocserv 0.11.1\n"
             "Copyright (C) 2013, 2014, 2015 Nikos Mavrogiannopoulos, all rights reserved.\n"
             "This is free software. It is licensed for use, modification and\n"
             "redistribution under the terms of the GNU General Public License,\n"
             "version 2 <http://gnu.org/licenses/gpl.html>\n\0"
-/*   268 */ "ocserv is free software: you can redistribute it and/or modify it under the\n"
+/*   267 */ "ocserv is free software: you can redistribute it and/or modify it under the\n"
             "terms of version 2 of the GNU General Public License, as published by the\n"
             "Free Software Foundation.\n\n"
             "ocserv is distributed in the hope that it will be useful, but WITHOUT ANY\n"
@@ -78,45 +78,48 @@ static char const ocserv_opt_strs[1595] =
             "details.\n\n"
             "You should have received a copy of the GNU General Public License, version\n"
             "2, along with this program.  If not, see <http://www.gnu.org/licenses/>.\n\0"
-/*   823 */ "Do not fork into background\0"
-/*   851 */ "FOREGROUND\0"
-/*   862 */ "foreground\0"
-/*   873 */ "Enable verbose network debugging information\0"
-/*   918 */ "DEBUG\0"
-/*   924 */ "debug\0"
-/*   930 */ "Configuration file for the server\0"
-/*   964 */ "CONFIG\0"
-/*   971 */ "config\0"
-/*   978 */ "Specify pid file for the server\0"
-/*  1010 */ "PID_FILE\0"
-/*  1019 */ "pid-file\0"
-/*  1028 */ "display extended usage information and exit\0"
-/*  1072 */ "help\0"
-/*  1077 */ "extended usage information passed thru pager\0"
-/*  1122 */ "more-help\0"
-/*  1132 */ "output version information and exit\0"
-/*  1168 */ "version\0"
-/*  1176 */ "OCSERV\0"
-/*  1183 */ "ocserv - OpenConnect VPN server\n"
+/*   822 */ "Do not fork into background\0"
+/*   850 */ "FOREGROUND\0"
+/*   861 */ "foreground\0"
+/*   872 */ "Enable verbose network debugging information\0"
+/*   917 */ "DEBUG\0"
+/*   923 */ "debug\0"
+/*   929 */ "Configuration file for the server\0"
+/*   963 */ "CONFIG\0"
+/*   970 */ "config\0"
+/*   977 */ "Test the provided configuration file\0"
+/*  1014 */ "TEST_CONFIG\0"
+/*  1026 */ "test-config\0"
+/*  1038 */ "Specify pid file for the server\0"
+/*  1070 */ "PID_FILE\0"
+/*  1079 */ "pid-file\0"
+/*  1088 */ "display extended usage information and exit\0"
+/*  1132 */ "help\0"
+/*  1137 */ "extended usage information passed thru pager\0"
+/*  1182 */ "more-help\0"
+/*  1192 */ "output version information and exit\0"
+/*  1228 */ "version\0"
+/*  1236 */ "OCSERV\0"
+/*  1243 */ "ocserv - OpenConnect VPN server\n"
             "Usage:  %s [ -<flag> [<val>] | --<name>[{=| }<val>] ]...\n\0"
-/*  1273 */ "openconnect-devel@lists.infradead.org\0"
-/*  1311 */ "\n\0"
-/*  1313 */ "Openconnect VPN server (ocserv) is a VPN server compatible with the\n"
+/*  1333 */ "openconnect-devel@lists.infradead.org\0"
+/*  1371 */ "\n\0"
+/*  1373 */ "Openconnect VPN server (ocserv) is a VPN server compatible with the\n"
             "openconnect VPN client.  It follows the TLS and DTLS-based AnyConnect VPN\n"
             "protocol which is used by several CISCO routers.\n\0"
-/*  1505 */ "ocserv 0.10.11\0"
-/*  1520 */ "Usage: ocserv [options] -c [config]\n"
+/*  1565 */ "ocserv 0.11.1\0"
+/*  1579 */ "Usage: ocserv [options] -c [config]\n"
             "ocserv --help for usage instructions.\n";
 
 /**
  *  foreground option description:
  */
 /** Descriptive text for the foreground option */
-#define FOREGROUND_DESC      (ocserv_opt_strs+823)
+#define FOREGROUND_DESC      (ocserv_opt_strs+822)
 /** Upper-cased name for the foreground option */
-#define FOREGROUND_NAME      (ocserv_opt_strs+851)
+#define FOREGROUND_NAME      (ocserv_opt_strs+850)
 /** Name string for the foreground option */
-#define FOREGROUND_name      (ocserv_opt_strs+862)
+#define FOREGROUND_name      (ocserv_opt_strs+861)
 /** Compiled in flag settings for the foreground option */
 #define FOREGROUND_FLAGS     (OPTST_DISABLED)
 
@@ -124,11 +127,11 @@ static char const ocserv_opt_strs[1595] =
  *  debug option description:
  */
 /** Descriptive text for the debug option */
-#define DEBUG_DESC      (ocserv_opt_strs+873)
+#define DEBUG_DESC      (ocserv_opt_strs+872)
 /** Upper-cased name for the debug option */
-#define DEBUG_NAME      (ocserv_opt_strs+918)
+#define DEBUG_NAME      (ocserv_opt_strs+917)
 /** Name string for the debug option */
-#define DEBUG_name      (ocserv_opt_strs+924)
+#define DEBUG_name      (ocserv_opt_strs+923)
 /** Compiled in flag settings for the debug option */
 #define DEBUG_FLAGS     (OPTST_DISABLED \
         | OPTST_SET_ARGTYPE(OPARG_TYPE_NUMERIC))
@@ -137,24 +140,36 @@ static char const ocserv_opt_strs[1595] =
  *  config option description:
  */
 /** Descriptive text for the config option */
-#define CONFIG_DESC      (ocserv_opt_strs+930)
+#define CONFIG_DESC      (ocserv_opt_strs+929)
 /** Upper-cased name for the config option */
-#define CONFIG_NAME      (ocserv_opt_strs+964)
+#define CONFIG_NAME      (ocserv_opt_strs+963)
 /** Name string for the config option */
-#define CONFIG_name      (ocserv_opt_strs+971)
+#define CONFIG_name      (ocserv_opt_strs+970)
 /** Compiled in flag settings for the config option */
 #define CONFIG_FLAGS     (OPTST_DISABLED \
         | OPTST_SET_ARGTYPE(OPARG_TYPE_FILE))
 
 /**
+ *  test-config option description:
+ */
+/** Descriptive text for the test-config option */
+#define TEST_CONFIG_DESC      (ocserv_opt_strs+977)
+/** Upper-cased name for the test-config option */
+#define TEST_CONFIG_NAME      (ocserv_opt_strs+1014)
+/** Name string for the test-config option */
+#define TEST_CONFIG_name      (ocserv_opt_strs+1026)
+/** Compiled in flag settings for the test-config option */
+#define TEST_CONFIG_FLAGS     (OPTST_DISABLED)
+
+/**
  *  pid-file option description:
  */
 /** Descriptive text for the pid-file option */
-#define PID_FILE_DESC      (ocserv_opt_strs+978)
+#define PID_FILE_DESC      (ocserv_opt_strs+1038)
 /** Upper-cased name for the pid-file option */
-#define PID_FILE_NAME      (ocserv_opt_strs+1010)
+#define PID_FILE_NAME      (ocserv_opt_strs+1070)
 /** Name string for the pid-file option */
-#define PID_FILE_name      (ocserv_opt_strs+1019)
+#define PID_FILE_name      (ocserv_opt_strs+1079)
 /** Compiled in flag settings for the pid-file option */
 #define PID_FILE_FLAGS     (OPTST_DISABLED \
         | OPTST_SET_ARGTYPE(OPARG_TYPE_FILE))
@@ -162,11 +177,11 @@ static char const ocserv_opt_strs[1595] =
 /*
  *  Help/More_Help/Version option descriptions:
  */
-#define HELP_DESC       (ocserv_opt_strs+1028)
-#define HELP_name       (ocserv_opt_strs+1072)
+#define HELP_DESC       (ocserv_opt_strs+1088)
+#define HELP_name       (ocserv_opt_strs+1132)
 #ifdef HAVE_WORKING_FORK
-#define MORE_HELP_DESC  (ocserv_opt_strs+1077)
-#define MORE_HELP_name  (ocserv_opt_strs+1122)
+#define MORE_HELP_DESC  (ocserv_opt_strs+1137)
+#define MORE_HELP_name  (ocserv_opt_strs+1182)
 #define MORE_HELP_FLAGS (OPTST_IMM | OPTST_NO_INIT)
 #else
 #define MORE_HELP_DESC  HELP_DESC
@@ -179,8 +194,8 @@ static char const ocserv_opt_strs[1595] =
 #  define VER_FLAGS     (OPTST_SET_ARGTYPE(OPARG_TYPE_STRING) | \
                          OPTST_ARG_OPTIONAL | OPTST_IMM | OPTST_NO_INIT)
 #endif
-#define VER_DESC        (ocserv_opt_strs+1132)
-#define VER_name        (ocserv_opt_strs+1168)
+#define VER_DESC        (ocserv_opt_strs+1192)
+#define VER_name        (ocserv_opt_strs+1228)
 /**
  *  Declare option callback procedures
  */
@@ -236,8 +251,20 @@ static tOptDesc optDesc[OPTION_CT] = {
      /* desc, NAME, name */ CONFIG_DESC, CONFIG_NAME, CONFIG_name,
      /* disablement strs */ NULL, NULL },
 
-  {  /* entry idx, value */ 3, VALUE_OPT_PID_FILE,
-     /* equiv idx, value */ 3, VALUE_OPT_PID_FILE,
+  {  /* entry idx, value */ 3, VALUE_OPT_TEST_CONFIG,
+     /* equiv idx, value */ 3, VALUE_OPT_TEST_CONFIG,
+     /* equivalenced to  */ NO_EQUIVALENT,
+     /* min, max, act ct */ 0, 1, 0,
+     /* opt state flags  */ TEST_CONFIG_FLAGS, 0,
+     /* last opt argumnt */ { NULL }, /* --test-config */
+     /* arg list/cookie  */ NULL,
+     /* must/cannot opts */ NULL, NULL,
+     /* option proc      */ NULL,
+     /* desc, NAME, name */ TEST_CONFIG_DESC, TEST_CONFIG_NAME, TEST_CONFIG_name,
+     /* disablement strs */ NULL, NULL },
+
+  {  /* entry idx, value */ 4, VALUE_OPT_PID_FILE,
+     /* equiv idx, value */ 4, VALUE_OPT_PID_FILE,
      /* equivalenced to  */ NO_EQUIVALENT,
      /* min, max, act ct */ 0, 1, 0,
      /* opt state flags  */ PID_FILE_FLAGS, 0,
@@ -290,21 +317,21 @@ static tOptDesc optDesc[OPTION_CT] = {
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 /** Reference to the upper cased version of ocserv. */
-#define zPROGNAME       (ocserv_opt_strs+1176)
+#define zPROGNAME       (ocserv_opt_strs+1236)
 /** Reference to the title line for ocserv usage. */
-#define zUsageTitle     (ocserv_opt_strs+1183)
+#define zUsageTitle     (ocserv_opt_strs+1243)
 /** There is no ocserv configuration file. */
 #define zRcName         NULL
 /** There are no directories to search for ocserv config files. */
 #define apzHomeList     NULL
 /** The ocserv program bug email address. */
-#define zBugsAddr       (ocserv_opt_strs+1273)
+#define zBugsAddr       (ocserv_opt_strs+1333)
 /** Clarification/explanation of what ocserv does. */
-#define zExplain        (ocserv_opt_strs+1311)
+#define zExplain        (ocserv_opt_strs+1371)
 /** Extra detail explaining what ocserv does. */
-#define zDetail         (ocserv_opt_strs+1313)
+#define zDetail         (ocserv_opt_strs+1373)
 /** The full version string for ocserv. */
-#define zFullVersion    (ocserv_opt_strs+1505)
+#define zFullVersion    (ocserv_opt_strs+1565)
 /* extracted from optcode.tlib near line 364 */
 
 #if defined(ENABLE_NLS)
@@ -316,7 +343,7 @@ static tOptDesc optDesc[OPTION_CT] = {
 #endif /* ENABLE_NLS */
 
 #define ocserv_full_usage (NULL)
-#define ocserv_short_usage (ocserv_opt_strs+1520)
+#define ocserv_short_usage (ocserv_opt_strs+1579)
 
 #endif /* not defined __doxygen__ */
 
@@ -488,7 +515,7 @@ tOptions ocservOptions = {
       NO_EQUIVALENT, /* '-#' option index */
       NO_EQUIVALENT /* index of default opt */
     },
-    7 /* full option count */, 4 /* user option count */,
+    8 /* full option count */, 5 /* user option count */,
     ocserv_full_usage, ocserv_short_usage,
     NULL, NULL,
     PKGDATADIR, ocserv_packager_info
@@ -623,7 +650,7 @@ static void bogus_function(void) {
      translate option names.
    */
   /* referenced via ocservOptions.pzCopyright */
-  puts(_("ocserv 0.10.11\n\
+  puts(_("ocserv 0.11.1\n\
 Copyright (C) 2013, 2014, 2015 Nikos Mavrogiannopoulos, all rights reserved.\n\
 This is free software. It is licensed for use, modification and\n\
 redistribution under the terms of the GNU General Public License,\n\
@@ -650,6 +677,9 @@ details.\n\n"));
   puts(_("Configuration file for the server"));
 
   /* referenced via ocservOptions.pOptDesc->pzText */
+  puts(_("Test the provided configuration file"));
+
+  /* referenced via ocservOptions.pOptDesc->pzText */
   puts(_("Specify pid file for the server"));
 
   /* referenced via ocservOptions.pOptDesc->pzText */
@@ -674,7 +704,7 @@ openconnect VPN client.  It follows the TLS and DTLS-based AnyConnect VPN\n\
 protocol which is used by several CISCO routers.\n"));
 
   /* referenced via ocservOptions.pzFullVersion */
-  puts(_("ocserv 0.10.11"));
+  puts(_("ocserv 0.11.1"));
 
   /* referenced via ocservOptions.pzFullUsage */
   puts(_("<<<NOT-FOUND>>>"));

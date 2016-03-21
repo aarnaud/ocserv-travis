@@ -1,3 +1,5 @@
+import "ipc.proto";
+
 /* STATUS */
 message status_rep
 {
@@ -30,7 +32,7 @@ message user_info_rep
 	required uint32 conn_time = 10;
 	optional string hostname = 11;
 	optional string user_agent = 12;
-	required string status = 13;
+	required uint32 status = 13; /* PS_ */
 	optional string tls_ciphersuite = 14;
 	optional string dtls_ciphersuite = 15;
 
@@ -50,11 +52,20 @@ message user_info_rep
 	required uint32 dpd = 28;
 	required uint32 keepalive = 29;
 	required bool restrict_to_routes = 30;
+	repeated fw_port_st fw_ports = 31;
 }
 
 message user_list_rep
 {
 	repeated user_info_rep user = 1;
+}
+
+message top_update_rep
+{
+	required uint32 connected = 1;
+	optional uint32 discon_reason = 2;
+	optional string discon_reason_txt = 3;
+	required user_list_rep user = 4;
 }
 
 message username_req

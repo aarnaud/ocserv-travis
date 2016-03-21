@@ -34,12 +34,11 @@
 #include <unistd.h>
 #include <limits.h>
 #include <ipc.pb-c.h>
-#include <base64.h>
+#include <base64-helper.h>
 
 #include <vpn.h>
 #include "html.h"
 #include <worker.h>
-#include <cookies.h>
 #include <common.h>
 #include <tlslib.h>
 
@@ -169,7 +168,7 @@ static int append_group_str(worker_st * ws, str_st *str, const char *group)
 int get_auth_handler2(worker_st * ws, unsigned http_ver, const char *pmsg, unsigned pcounter)
 {
 	int ret;
-	char context[BASE64_LENGTH(SID_SIZE) + 1];
+	char context[BASE64_ENCODE_RAW_LENGTH(SID_SIZE) + 1];
 	unsigned int i, j;
 	str_st str;
 	const char *login_msg_start;
@@ -200,7 +199,7 @@ int get_auth_handler2(worker_st * ws, unsigned http_ver, const char *pmsg, unsig
 
 
 	if (ws->sid_set != 0) {
-		base64_encode((char *)ws->sid, sizeof(ws->sid), (char *)context,
+		oc_base64_encode((char *)ws->sid, sizeof(ws->sid), (char *)context,
 			      sizeof(context));
 
 		ret =
@@ -210,7 +209,7 @@ int get_auth_handler2(worker_st * ws, unsigned http_ver, const char *pmsg, unsig
 		if (ret < 0)
 			return -1;
 
-		oclog(ws, LOG_DEBUG, "sent sid: %s", context);
+		oclog(ws, LOG_SENSITIVE, "sent sid: %s", context);
 	} else {
 		ret =
 		    cstp_puts(ws,
@@ -443,9 +442,13 @@ int get_cert_names(worker_st * ws, const gnutls_datum_t * raw)
 		if (ret == GNUTLS_E_SHORT_MEMORY_BUFFER)
 			oclog(ws, LOG_ERR, "certificate's username exceed the maximum buffer size (%u)",
 			      (unsigned)sizeof(ws->cert_username));
-		else
-			oclog(ws, LOG_ERR, "cannot obtain user from certificate DN: %s",
-			      gnutls_strerror(ret));
+		else if (ret == GNUTLS_E_REQUESTED_DATA_NOT_AVAILABLE) {
+			oclog(ws, LOG_ERR, "the certificate's DN does not contain OID %s; cannot determine username",
+			      ws->config->cert_user_oid);
+		} else {
+			oclog(ws, LOG_ERR, "cannot obtain user name from certificate DN(%s): %s",
+			      ws->config->cert_user_oid, gnutls_strerror(ret));
+		}
 		goto fail;
 	}
 
@@ -471,8 +474,8 @@ int get_cert_names(worker_st * ws, const gnutls_datum_t * raw)
 				if (ret == 0)
 					ret = GNUTLS_E_INTERNAL_ERROR;
 				oclog(ws, LOG_ERR,
-				      "cannot obtain group from certificate DN: %s",
-				      gnutls_strerror(ret));
+				      "cannot obtain group from certificate DN(%s): %s",
+				      ws->config->cert_group_oid, gnutls_strerror(ret));
 				goto fail;
 			}
 
@@ -507,18 +510,31 @@ int get_cert_names(worker_st * ws, const gnutls_datum_t * raw)
 
 }
 
+static
+unsigned check_if_default_route(char **routes, unsigned routes_size)
+{
+	unsigned i;
+
+	for (i=0;i<routes_size;i++) {
+		if (strcmp(routes[i], "default") == 0 ||
+		    strcmp(routes[i], "0.0.0.0/0") == 0)
+		    return 1;
+	}
+
+	return 0;
+}
+
 /* auth reply from main process */
 static int recv_cookie_auth_reply(worker_st * ws)
 {
-	unsigned i;
 	int ret;
 	int socketfd = -1;
-	AuthReplyMsg *msg = NULL;
+	AuthCookieReplyMsg *msg = NULL;
 	PROTOBUF_ALLOCATOR(pa, ws);
 
 	ret = recv_socket_msg(ws, ws->cmd_fd, AUTH_COOKIE_REP, &socketfd,
 			      (void *)&msg,
-			      (unpack_func) auth_reply_msg__unpack,
+			      (unpack_func) auth_cookie_reply_msg__unpack,
 			      DEFAULT_SOCKET_TIMEOUT);
 	if (ret < 0) {
 		oclog(ws, LOG_ERR, "error receiving auth reply message");
@@ -533,7 +549,7 @@ static int recv_cookie_auth_reply(worker_st * ws)
 		if (socketfd != -1) {
 			ws->tun_fd = socketfd;
 
-			if (msg->vname == NULL || msg->user_name == NULL || msg->sid.len != sizeof(ws->sid)) {
+			if (msg->vname == NULL || msg->config == NULL || msg->user_name == NULL || msg->sid.len != sizeof(ws->sid)) {
 				ret = ERR_AUTH_FAIL;
 				goto cleanup;
 			}
@@ -554,17 +570,7 @@ static int recv_cookie_auth_reply(worker_st * ws)
 			memcpy(ws->session_id, msg->session_id.data,
 			       msg->session_id.len);
 
-			if (msg->has_interim_update_secs) {
-				oclog(ws, LOG_DEBUG, "overriding stats-report-time with auth server's value (%u)",
-				      (unsigned)msg->interim_update_secs);
-				ws->config->stats_report_time = msg->interim_update_secs;
-			}
-
-			if (msg->has_session_timeout_secs) {
-				oclog(ws, LOG_DEBUG, "overriding session-timeout with auth server's value (%u)",
-				      (unsigned)msg->session_timeout_secs);
-				ws->config->session_timeout = msg->session_timeout_secs;
-			}
+			ws->user_config = msg->config;
 
 			if (msg->ipv4 != NULL) {
 				talloc_free(ws->vinfo.ipv4);
@@ -602,107 +608,12 @@ static int recv_cookie_auth_reply(worker_st * ws)
 					    talloc_strdup(ws, msg->ipv6_local);
 			}
 
-			/* Read any additional data */
-			if (msg->ipv4_netmask != NULL) {
-				talloc_free(ws->config->network.ipv4_netmask);
-				ws->config->network.ipv4_netmask =
-				    talloc_strdup(ws, msg->ipv4_netmask);
-			}
-
-			if (msg->ipv4_network != NULL) {
-				talloc_free(ws->config->network.ipv4_network);
-				ws->config->network.ipv4_network =
-				    talloc_strdup(ws, msg->ipv4_network);
-			}
-
-			if (msg->ipv6_network != NULL) {
-				talloc_free(ws->config->network.ipv6_network);
-				ws->config->network.ipv6_network =
-				    talloc_strdup(ws, msg->ipv6_network);
-			}
-
-			if (msg->has_ipv6_prefix) {
-				ws->config->network.ipv6_prefix = msg->ipv6_prefix;
-			}
-
-			if (msg->has_ipv6_subnet_prefix) {
-				ws->config->network.ipv6_subnet_prefix = msg->ipv6_subnet_prefix;
-			}
-
-			if (msg->has_dpd)
-				ws->config->dpd = msg->dpd;
-
-			if (msg->has_keepalive)
-				ws->config->keepalive = msg->keepalive;
-
-			if (msg->has_mobile_dpd)
-				ws->config->mobile_dpd = msg->mobile_dpd;
-
-			if (msg->has_rx_per_sec)
-				ws->config->rx_per_sec = msg->rx_per_sec;
-
-			if (msg->has_tx_per_sec)
-				ws->config->tx_per_sec = msg->tx_per_sec;
-
-			if (msg->has_net_priority)
-				ws->config->net_priority = msg->net_priority;
-
-			if (msg->has_no_udp && msg->no_udp != 0)
+			if (msg->config->no_udp != 0)
 				ws->perm_config->udp_port = 0;
 
-			if (msg->xml_config_file) {
-				talloc_free(ws->config->xml_config_file);
-				ws->config->xml_config_file = talloc_strdup(ws, msg->xml_config_file);
-			}
-
 			/* routes */
-			ws->routes = talloc_size(ws, msg->n_routes*sizeof(char*));
-			if (ws->routes != NULL) {
-				ws->routes_size = msg->n_routes;
-				for (i = 0; i < ws->routes_size; i++) {
-					ws->routes[i] =
-					    talloc_strdup(ws, msg->routes[i]);
-
-					/* If a default route is detected */
-					if (ws->routes[i] != NULL &&
-					    (strcmp(ws->routes[i], "default") == 0 ||
-					     strcmp(ws->routes[i], "0.0.0.0/0") == 0)) {
-
-					     /* disable all routes */
-					     ws->routes_size = 0;
-					     ws->default_route = 1;
-					     break;
-					}
-				}
-			}
-
-			if (check_if_default_route(ws->routes, ws->routes_size))
+			if (check_if_default_route(msg->config->routes, msg->config->n_routes))
 				ws->default_route = 1;
-
-			ws->no_routes = talloc_size(ws, msg->n_no_routes*sizeof(char*));
-			if (ws->no_routes != NULL) {
-				ws->no_routes_size = msg->n_no_routes;
-				for (i = 0; i < ws->no_routes_size; i++) {
-					ws->no_routes[i] =
-					    talloc_strdup(ws, msg->no_routes[i]);
-				}
-			}
-
-			ws->dns = talloc_size(ws, msg->n_dns*sizeof(char*));
-			if (ws->dns != NULL) {
-				ws->dns_size = msg->n_dns;
-				for (i = 0; i < ws->dns_size; i++) {
-					ws->dns[i] = talloc_strdup(ws, msg->dns[i]);
-				}
-			}
-
-			ws->nbns = talloc_size(ws, msg->n_nbns*sizeof(char*));
-			if (ws->nbns != NULL) {
-				ws->nbns_size = msg->n_nbns;
-				for (i = 0; i < ws->nbns_size; i++) {
-					ws->nbns[i] = talloc_strdup(ws, msg->nbns[i]);
-				}
-			}
 		} else {
 			oclog(ws, LOG_ERR, "error in received message");
 			ret = ERR_AUTH_FAIL;
@@ -720,7 +631,12 @@ static int recv_cookie_auth_reply(worker_st * ws)
 
 	ret = 0;
  cleanup:
-	auth_reply_msg__free_unpacked(msg, &pa);
+	if (ret < 0) {
+		/* we only release on error, as the user configuration
+		 * remains. */
+		auth_cookie_reply_msg__free_unpacked(msg, &pa);
+		ws->user_config = NULL;
+	}
 	return ret;
 }
 
@@ -757,7 +673,7 @@ static int recv_auth_reply(worker_st * ws, int sd, char **txt, unsigned *pcounte
 	SecAuthReplyMsg *msg = NULL;
 	PROTOBUF_ALLOCATOR(pa, ws);
 
-	ret = recv_msg(ws, sd, SM_CMD_AUTH_REP,
+	ret = recv_msg(ws, sd, CMD_SEC_AUTH_REPLY,
 		       (void *)&msg, (unpack_func) sec_auth_reply_msg__unpack,
 		       DEFAULT_SOCKET_TIMEOUT);
 	if (ret < 0) {
@@ -803,19 +719,17 @@ static int recv_auth_reply(worker_st * ws, int sd, char **txt, unsigned *pcounte
 			ws->sid_set = 1;
 		}
 
-		if (msg->has_cookie == 0 ||
-		    msg->cookie.len == 0 ||
+		if (msg->has_sid == 0 ||
+		    msg->sid.len != sizeof(ws->cookie) ||
 		    msg->dtls_session_id.len != sizeof(ws->session_id)) {
 
 			ret = ERR_AUTH_FAIL;
 			goto cleanup;
 		}
-		
-		ws->cookie = talloc_memdup(ws, msg->cookie.data, msg->cookie.len);
-		if (ws->cookie) {
-			ws->cookie_size = msg->cookie.len;
-			ws->cookie_set = 1;
-		}
+
+		memcpy(ws->cookie, msg->sid.data, msg->sid.len);
+		ws->cookie_set = 1;
+
 		memcpy(ws->session_id, msg->dtls_session_id.data,
 		       msg->dtls_session_id.len);
 
@@ -865,15 +779,53 @@ int get_cert_info(worker_st * ws)
 	ret = get_cert_names(ws, cert);
 	if (ret < 0) {
 		if (ws->config->cert_user_oid == NULL) {
-			oclog(ws, LOG_ERR, "cannot read username from certificate; no cert-user-oid is set");
+			oclog(ws, LOG_ERR, "cannot read username from certificate; cert-user-oid is not set");
 		} else {
-			oclog(ws, LOG_ERR, "cannot read username (%s) from certificate",
-			      ws->config->cert_user_oid);
+			oclog(ws, LOG_ERR, "cannot read username from certificate");
 		}
 		return -1;
 	}
 
 	return 0;
+}
+
+/* This makes sure that the provided cookie is valid,
+ * and fills in the ws->user_config.
+ */
+void cookie_authenticate_or_exit(worker_st *ws)
+{
+	int ret;
+
+	if (ws->auth_state == S_AUTH_COMPLETE)
+		return;
+
+	/* we must be in S_AUTH_COOKIE state */
+	if (ws->auth_state != S_AUTH_COOKIE || ws->cookie_set == 0) {
+		oclog(ws, LOG_WARNING, "no cookie found");
+		cstp_puts(ws,
+			 "HTTP/1.1 503 Service Unavailable\r\n\r\n");
+		cstp_fatal_close(ws, GNUTLS_A_ACCESS_DENIED);
+		exit_worker(ws);
+	}
+
+	/* we have authenticated against sec-mod, we need to complete
+	 * our authentication by forwarding our cookie to main. */
+	ret = auth_cookie(ws, ws->cookie, sizeof(ws->cookie));
+	if (ret < 0) {
+		oclog(ws, LOG_WARNING, "failed cookie authentication attempt");
+		if (ret == ERR_AUTH_FAIL) {
+			cstp_puts(ws,
+				 "HTTP/1.1 401 Unauthorized\r\n\r\n");
+			cstp_puts(ws,
+				 "X-Reason: Cookie is not acceptable\r\n\r\n");
+		} else {
+			cstp_puts(ws,
+				 "HTTP/1.1 503 Service Unavailable\r\n\r\n");
+		}
+		cstp_fatal_close(ws, GNUTLS_A_ACCESS_DENIED);
+		exit_worker(ws);
+	}
+	ws->auth_state = S_AUTH_COMPLETE;
 }
 
 /* sends a cookie authentication request to main thread and waits for
@@ -914,7 +866,7 @@ int auth_cookie(worker_st * ws, void *cookie, size_t cookie_size)
 
 	ret = recv_cookie_auth_reply(ws);
 	if (ret < 0) {
-		oclog(ws, LOG_INFO,
+		oclog(ws, LOG_DEBUG,
 		      "error receiving cookie authentication reply");
 		return ret;
 	}
@@ -925,7 +877,7 @@ int auth_cookie(worker_st * ws, void *cookie, size_t cookie_size)
 int post_common_handler(worker_st * ws, unsigned http_ver, const char *imsg)
 {
 	int ret, size;
-	char str_cookie[BASE64_LENGTH(ws->cookie_size)+1];
+	char str_cookie[BASE64_ENCODE_RAW_LENGTH(sizeof(ws->cookie))+1];
 	size_t str_cookie_size = sizeof(str_cookie);
 	char msg[MAX_BANNER_SIZE + 32];
 	const char *success_msg_head;
@@ -945,7 +897,7 @@ int post_common_handler(worker_st * ws, unsigned http_ver, const char *imsg)
 		success_msg_foot_size = sizeof(oc_success_msg_foot)-1;
 	}
 
-	base64_encode((char *)ws->cookie, ws->cookie_size,
+	oc_base64_encode((char *)ws->cookie, sizeof(ws->cookie),
 		      (char *)str_cookie, str_cookie_size);
 
 	/* reply */
@@ -994,10 +946,10 @@ int post_common_handler(worker_st * ws, unsigned http_ver, const char *imsg)
 		return -1;
 
 	if (ws->sid_set != 0) {
-		char context[BASE64_LENGTH(SID_SIZE) + 1];
+		char context[BASE64_ENCODE_RAW_LENGTH(SID_SIZE) + 1];
 
-		base64_encode((char *)ws->sid, sizeof(ws->sid), (char *)context,
-			      sizeof(context));
+		oc_base64_encode((char *)ws->sid, sizeof(ws->sid), (char *)context,
+			         sizeof(context));
 
 		ret =
 		    cstp_printf(ws,
@@ -1006,7 +958,7 @@ int post_common_handler(worker_st * ws, unsigned http_ver, const char *imsg)
 		if (ret < 0)
 			return -1;
 
-		oclog(ws, LOG_DEBUG, "sent sid: %s", context);
+		oclog(ws, LOG_SENSITIVE, "sent sid: %s", context);
 	}
 
 	ret =
@@ -1442,9 +1394,10 @@ int post_auth_handler(worker_st * ws, unsigned http_ver)
 			ireq.auth_type |= AUTH_TYPE_CERTIFICATE;
 		}
 
-		ireq.hostname = req->hostname;
 		ireq.ip = ws->remote_ip_str;
 		ireq.our_ip = get_our_ip(ws, our_ip_str);
+		if (req->user_agent[0] != 0)
+			ireq.user_agent = req->user_agent;
 
 		sd = connect_to_secmod(ws);
 		if (sd == -1) {
@@ -1453,7 +1406,7 @@ int post_auth_handler(worker_st * ws, unsigned http_ver)
 			goto auth_fail;
 		}
 
-		ret = send_msg_to_secmod(ws, sd, SM_CMD_AUTH_INIT,
+		ret = send_msg_to_secmod(ws, sd, CMD_SEC_AUTH_INIT,
 					 &ireq, (pack_size_func)
 					 sec_auth_init_msg__get_packed_size,
 					 (pack_func) sec_auth_init_msg__pack);
@@ -1509,7 +1462,7 @@ int post_auth_handler(worker_st * ws, unsigned http_ver)
 			}
 
 			ret =
-			    send_msg_to_secmod(ws, sd, SM_CMD_AUTH_CONT, &areq,
+			    send_msg_to_secmod(ws, sd, CMD_SEC_AUTH_CONT, &areq,
 					       (pack_size_func)
 					       sec_auth_cont_msg__get_packed_size,
 					       (pack_func)

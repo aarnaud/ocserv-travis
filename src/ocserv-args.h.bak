@@ -66,20 +66,21 @@
  *  Enumeration of each option type for ocserv
  */
 typedef enum {
-    INDEX_OPT_FOREGROUND  =  0,
-    INDEX_OPT_DEBUG       =  1,
-    INDEX_OPT_CONFIG      =  2,
-    INDEX_OPT_PID_FILE    =  3,
-    INDEX_OPT_VERSION     =  4,
-    INDEX_OPT_HELP        =  5,
-    INDEX_OPT_MORE_HELP   =  6
+    INDEX_OPT_FOREGROUND   =  0,
+    INDEX_OPT_DEBUG        =  1,
+    INDEX_OPT_CONFIG       =  2,
+    INDEX_OPT_TEST_CONFIG  =  3,
+    INDEX_OPT_PID_FILE     =  4,
+    INDEX_OPT_VERSION      =  5,
+    INDEX_OPT_HELP         =  6,
+    INDEX_OPT_MORE_HELP    =  7
 } teOptIndex;
 /** count of all options for ocserv */
-#define OPTION_CT    7
+#define OPTION_CT    8
 /** ocserv version */
-#define OCSERV_VERSION       "0.10.11"
+#define OCSERV_VERSION       "0.11.1"
 /** Full ocserv version text */
-#define OCSERV_FULL_VERSION  "ocserv 0.10.11"
+#define OCSERV_FULL_VERSION  "ocserv 0.11.1"
 
 /**
  *  Interface defines for all options.  Replace "n" with the UPPER_CASED
@@ -135,6 +136,7 @@ typedef enum {
 
 #define OPT_VALUE_DEBUG          (DESC(DEBUG).optArg.argInt)
 #define VALUE_OPT_CONFIG         'c'
+#define VALUE_OPT_TEST_CONFIG    't'
 #define VALUE_OPT_PID_FILE       'p'
 /** option flag (value) for help-value option */
 #define VALUE_OPT_HELP          'h'

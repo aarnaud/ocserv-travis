@@ -18,7 +18,6 @@
  */
 
 #include <config.h>
-
 #include <stdlib.h>
 #include <stdarg.h>
 #include <stdio.h>
@@ -31,7 +30,8 @@
 # include "lzs.h"
 #endif
 
-#include <base64.h>
+#include <nettle/base64.h>
+#include <base64-helper.h>
 #include <c-strcase.h>
 #include <c-ctype.h>
 
@@ -40,7 +40,7 @@
 
 #define CS_AES128_GCM "OC-DTLS1_2-AES128-GCM"
 #define CS_AES256_GCM "OC-DTLS1_2-AES256-GCM"
-#define CS_CHACHA20_POLY1305 "OC-DTLS1_2-CHACHA20-POLY1305"
+#define CS_CHACHA20_POLY1305 "OC2-DTLS1_2-CHACHA20-POLY1305"
 
 struct known_urls_st {
 	const char *url;
@@ -84,6 +84,7 @@ static const dtls_ciphersuite_st ciphersuites[] = {
 	 "NONE:+VERS-DTLS1.2:+COMP-NULL:+AES-128-GCM:+AEAD:+RSA:%COMPAT:+SIGN-ALL",
 	 .gnutls_version = GNUTLS_DTLS1_2,
 	 .gnutls_mac = GNUTLS_MAC_AEAD,
+	 .gnutls_kx = GNUTLS_KX_RSA,
 	 .gnutls_cipher = GNUTLS_CIPHER_AES_128_GCM,
 	 .txt_version = "3.2.7",
 	 .server_prio = 90},
@@ -93,6 +94,7 @@ static const dtls_ciphersuite_st ciphersuites[] = {
 	 "NONE:+VERS-DTLS1.2:+COMP-NULL:+AES-256-GCM:+AEAD:+RSA:%COMPAT:+SIGN-ALL",
 	 .gnutls_version = GNUTLS_DTLS1_2,
 	 .gnutls_mac = GNUTLS_MAC_AEAD,
+	 .gnutls_kx = GNUTLS_KX_RSA,
 	 .gnutls_cipher = GNUTLS_CIPHER_AES_256_GCM,
 	 .server_prio = 80,
 	 .txt_version = "3.2.7",
@@ -103,6 +105,7 @@ static const dtls_ciphersuite_st ciphersuites[] = {
 	 "NONE:+VERS-DTLS0.9:+COMP-NULL:+AES-128-CBC:+SHA1:+RSA:%COMPAT",
 	 .gnutls_version = GNUTLS_DTLS0_9,
 	 .gnutls_mac = GNUTLS_MAC_SHA1,
+	 .gnutls_kx = GNUTLS_KX_RSA,
 	 .gnutls_cipher = GNUTLS_CIPHER_AES_128_CBC,
 	 .server_prio = 50,
 	 },
@@ -112,6 +115,7 @@ static const dtls_ciphersuite_st ciphersuites[] = {
 	 "NONE:+VERS-DTLS0.9:+COMP-NULL:+3DES-CBC:+SHA1:+RSA:%COMPAT",
 	 .gnutls_version = GNUTLS_DTLS0_9,
 	 .gnutls_mac = GNUTLS_MAC_SHA1,
+	 .gnutls_kx = GNUTLS_KX_RSA,
 	 .gnutls_cipher = GNUTLS_CIPHER_3DES_CBC,
 	 .server_prio = 1,
 	 },
@@ -119,11 +123,12 @@ static const dtls_ciphersuite_st ciphersuites[] = {
 	{
 	 .oc_name = CS_CHACHA20_POLY1305,
 	 .gnutls_name =
-	 "NONE:+VERS-DTLS1.2:+COMP-NULL:+CHACHA20-POLY1305:+AEAD:+RSA:%COMPAT:+SIGN-ALL",
+	 "NONE:+VERS-DTLS1.2:+COMP-NULL:+CHACHA20-POLY1305:+AEAD:+PSK:%COMPAT:+SIGN-ALL",
 	 .gnutls_version = GNUTLS_DTLS1_2,
 	 .gnutls_mac = GNUTLS_MAC_AEAD,
+	 .gnutls_kx = GNUTLS_KX_PSK,
 	 .gnutls_cipher = GNUTLS_CIPHER_CHACHA20_POLY1305,
-	 .txt_version = "3.4.0",
+	 .txt_version = "3.4.8",
 	 .server_prio = 40
 	},
 #endif
@@ -167,6 +172,7 @@ struct compression_method_st comp_methods[] = {
 };
 #endif
 
+
 static
 void header_value_check(struct worker_st *ws, struct http_req_st *req)
 {
@@ -184,8 +190,14 @@ void header_value_check(struct worker_st *ws, struct http_req_st *req)
 	if (req->value.length <= 0)
 		return;
 
-	oclog(ws, LOG_HTTP_DEBUG, "HTTP processing: %.*s: %.*s", (int)req->header.length,
-	      req->header.data, (int)req->value.length, req->value.data);
+	if (ws->perm_config->debug < DEBUG_SENSITIVE &&
+		((req->header.length == 6 && strncasecmp((char*)req->header.data, "Cookie", 6) == 0) ||
+		(req->header.length == 20 && strncasecmp((char*)req->header.data, "X-DTLS-Master-Secret", 20) == 0)))
+		oclog(ws, LOG_HTTP_DEBUG, "HTTP processing: %.*s: (censored)", (int)req->header.length,
+		      req->header.data);
+	else
+		oclog(ws, LOG_HTTP_DEBUG, "HTTP processing: %.*s: %.*s", (int)req->header.length,
+		      req->header.data, (int)req->value.length, req->value.data);
 
 	value = talloc_size(ws, req->value.length + 1);
 	if (value == NULL)
@@ -340,6 +352,9 @@ void header_value_check(struct worker_st *ws, struct http_req_st *req)
 			ws->full_ipv6 = 1;
 		break;
 	case HEADER_COOKIE:
+		/* don't bother parsing cookies if we are already authenticated */
+		if (ws->auth_state > S_AUTH_COOKIE)
+			break;
 
 		str = (char *)value;
 		while ((token = strtok(str, ";")) != NULL) {
@@ -357,21 +372,26 @@ void header_value_check(struct worker_st *ws, struct http_req_st *req)
 					tmplen--;
 				}
 
-				nlen = tmplen;
-				ws->cookie = talloc_size(ws, nlen);
-				if (ws->cookie == NULL)
+				/* we allow for BASE64_DECODE_LENGTH reporting few bytes more
+				 * than the expected */
+				nlen = BASE64_DECODE_LENGTH(tmplen);
+				if (nlen < sizeof(ws->cookie) || nlen > sizeof(ws->cookie)+8)
 					return;
 
+				/* we assume that - should be build time optimized */
+				if (sizeof(ws->buffer) < sizeof(ws->cookie)+8)
+					abort();
+
 				ret =
-				    base64_decode((char *)p, tmplen,
-						  (char *)ws->cookie, &nlen);
-				if (ret == 0) {
-					oclog(ws, LOG_DEBUG,
+				    oc_base64_decode((uint8_t*)p, tmplen,
+						  ws->buffer, &nlen);
+				if (ret == 0 || nlen != sizeof(ws->cookie)) {
+					oclog(ws, LOG_INFO,
 					      "could not decode cookie: %.*s",
 					      tmplen, p);
 					ws->cookie_set = 0;
 				} else {
-					ws->cookie_size = nlen;
+					memcpy(ws->cookie, ws->buffer, sizeof(ws->cookie));
 					ws->auth_state = S_AUTH_COOKIE;
 					ws->cookie_set = 1;
 				}
@@ -383,18 +403,18 @@ void header_value_check(struct worker_st *ws, struct http_req_st *req)
 					tmplen--;
 				}
 
-				nlen = sizeof(ws->sid);
+				nlen = BASE64_DECODE_LENGTH(tmplen);
 				ret =
-				    base64_decode((char *)p, tmplen,
-						  (char *)ws->sid, &nlen);
+				    oc_base64_decode((uint8_t*)p, tmplen,
+						  ws->sid, &nlen);
 				if (ret == 0 || nlen != sizeof(ws->sid)) {
-					oclog(ws, LOG_DEBUG,
+					oclog(ws, LOG_SENSITIVE,
 					      "could not decode sid: %.*s",
 					      tmplen, p);
 					ws->sid_set = 0;
 				} else {
 					ws->sid_set = 1;
-					oclog(ws, LOG_DEBUG,
+					oclog(ws, LOG_SENSITIVE,
 					      "received sid: %.*s", tmplen, p);
 				}
 			}
