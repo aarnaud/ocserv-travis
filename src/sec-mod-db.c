@@ -37,6 +37,7 @@
 #include <common.h>
 #include <syslog.h>
 #include <vpn.h>
+#include <base64-helper.h>
 #include <tlslib.h>
 #include <sec-mod.h>
 #include <ccan/hash/hash.h>
@@ -95,8 +96,8 @@ client_entry_st *new_client_entry(sec_mod_st *sec, const char *ip, unsigned pid)
 		return NULL;
 	}
 
-	strlcpy(e->auth_info.remote_ip, ip, sizeof(e->auth_info.remote_ip));
-	e->auth_info.id = pid;
+	strlcpy(e->acct_info.remote_ip, ip, sizeof(e->acct_info.remote_ip));
+	e->acct_info.id = pid;
 
 	do {
 		ret = gnutls_rnd(GNUTLS_RND_RANDOM, e->sid, sizeof(e->sid));
@@ -115,7 +116,7 @@ client_entry_st *new_client_entry(sec_mod_st *sec, const char *ip, unsigned pid)
 		goto fail;
 	}
 
-	base64_encode((char *)e->sid, SID_SIZE, (char *)e->auth_info.psid, sizeof(e->auth_info.psid));
+	oc_base64_encode((char *)e->sid, SID_SIZE, (char *)e->acct_info.psid, sizeof(e->acct_info.psid));
 	e->time = time(0);
 
 	if (htable_add(db, rehash(e, NULL), e) == 0) {
@@ -167,8 +168,7 @@ void cleanup_client_entries(sec_mod_st *sec)
 
 	t = htable_first(db, &iter);
 	while (t != NULL) {
-		if (t->time != -1 && (now - t->time) > (sec->config->cookie_timeout + AUTH_SLACK_TIME) && 
-		    t->in_use == 0) {
+		if IS_CLIENT_ENTRY_EXPIRED_FULL(sec, t, now, 1) {
 			htable_delval(db, &iter);
 			clean_entry(sec, t);
 		}
@@ -195,11 +195,11 @@ void expire_client_entry(sec_mod_st *sec, client_entry_st * e)
 		if (sec->config->persistent_cookies == 0 && (e->discon_reason == REASON_USER_DISCONNECT
 		    || e->discon_reason == REASON_SERVER_DISCONNECT || e->discon_reason == REASON_SESSION_TIMEOUT)) {
 			seclog(sec, LOG_INFO, "invalidating session of user '%s' "SESSION_STR,
-				e->auth_info.username, e->auth_info.psid);
+				e->acct_info.username, e->acct_info.psid);
 			/* immediately disconnect the user */
 			del_client_entry(sec, e);
 		} else {
-			seclog(sec, LOG_INFO, "temporarily closing session for %s "SESSION_STR, e->auth_info.username, e->auth_info.psid);
+			seclog(sec, LOG_INFO, "temporarily closing session for %s "SESSION_STR, e->acct_info.username, e->acct_info.psid);
 		}
 	}
 }

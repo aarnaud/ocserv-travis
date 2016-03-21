@@ -1,5 +1,6 @@
 /*
- * Copyright (C) 2013, 2014 Nikos Mavrogiannopoulos
+ * Copyright (C) 2013-2016 Nikos Mavrogiannopoulos
+ * Copyright (C) 2015-2016 Red Hat, Inc.
  *
  * This file is part of ocserv.
  *
@@ -124,7 +125,7 @@ int ret;
 	while (	(len = read( fd, buf, sizeof(buf))) > 0 ||
 		(len == -1 && (errno == EINTR || errno == EAGAIN))) {
 		ret = cstp_send(ws, buf, len);
-		FATAL_ERR(ws, ret);
+		CSTP_FATAL_ERR(ws, ret);
 
 		total += ret;
 	}
@@ -132,6 +133,32 @@ int ret;
 	close(fd);
 
 	return total;
+}
+
+ssize_t cstp_recv_packet(worker_st *ws, gnutls_datum_t *data, void **p)
+{
+	int ret;
+#ifdef ZERO_COPY
+	gnutls_packet_t packet = NULL;
+
+	if (ws->session != NULL) {
+		ret = gnutls_record_recv_packet(ws->session, &packet);
+		if (ret > 0) {
+			*p = packet;
+			gnutls_packet_get(packet, data, NULL);
+		}
+	} else {
+		ret = cstp_recv_nb(ws, ws->buffer, ws->buffer_size);
+		data->data = ws->buffer;
+		data->size = ret;
+	}
+
+#else
+	ret = cstp_recv_nb(ws, ws->buffer, ws->buffer_size);
+	data->data = ws->buffer;
+	data->size = ret;
+#endif
+	return ret;
 }
 
 /* Restores gnutls_record_recv() on EAGAIN */
@@ -143,19 +170,19 @@ ssize_t cstp_recv(worker_st *ws, void *data, size_t data_size)
 	if (ws->session != NULL) {
 		do {
 			ret = gnutls_record_recv(ws->session, data, data_size);
-			if (ret == GNUTLS_E_AGAIN) {
+			if (ret == GNUTLS_E_AGAIN || ret == GNUTLS_E_INTERRUPTED) {
 				counter--;
 				ms_sleep(20);
 			}
-		} while (ret == GNUTLS_E_AGAIN && counter > 0);
+		} while ((ret == GNUTLS_E_AGAIN || ret == GNUTLS_E_INTERRUPTED) && counter > 0);
 	} else {
 		do {
 			ret = recv(ws->conn_fd, data, data_size, 0);
-			if (ret == -1 && errno == EAGAIN) {
+			if (ret == -1 && (errno == EAGAIN || errno == EINTR)) {
 				counter--;
 				ms_sleep(20);
 			}
-		} while(ret == -1 && errno == EAGAIN && counter > 0);
+		} while(ret == -1 && (errno == EINTR || errno == EAGAIN) && counter > 0);
 	}
 
 	return ret;
@@ -165,10 +192,54 @@ ssize_t cstp_recv_nb(worker_st *ws, void *data, size_t data_size)
 {
 	int ret;
 
+	/* socket is in non-blocking mode already */
+
 	if (ws->session != NULL) {
 		ret = gnutls_record_recv(ws->session, data, data_size);
 	} else {
-		ret = recv(ws->conn_fd, data, data_size, 0);
+		/* It can happen in UNIX sockets case that we receive an
+		 * incomplete CSTP packet. In that case we attempt to read
+		 * a full CSTP packet.
+		 */
+		int counter = 100; /* allow 10 seconds for a full packet */
+		unsigned pktlen;
+		unsigned total = 0;
+		int left = data_size;
+		uint8_t *p = data;
+
+ 		ret = recv(ws->conn_fd, p, left, 0);
+		if (ret > 6) {
+			total += ret;
+			/* get the actual length from headers */
+			pktlen = (p[4] << 8) + p[5];
+			if (pktlen+8 > data_size) {
+				oclog(ws, LOG_ERR, "error in CSTP packet length");
+				return GNUTLS_E_UNEXPECTED_PACKET_LENGTH;
+			}
+
+			p = p + ret;
+			left = pktlen+8 - ret;
+
+			while(left > 0) {
+				ret = recv(ws->conn_fd, p, left, 0);
+				if (ret == -1 && counter > 0 && (errno == EINTR || errno == EAGAIN)) {
+					counter--;
+					ms_sleep(100);
+					continue;
+				}
+				if (ret == 0)
+					ret = GNUTLS_E_PREMATURE_TERMINATION;
+				if (ret < 0)
+					break;
+
+				left -= ret;
+				p += ret;
+				total += ret;
+			}
+		}
+
+		ret = total;
+
 	}
 
 	return ret;
@@ -237,6 +308,29 @@ void cstp_fatal_close(worker_st *ws,
 	} else {
 		close(ws->conn_fd);
 	}
+}
+
+ssize_t dtls_recv_packet(worker_st *ws, gnutls_datum_t *data, void **p)
+{
+	int ret;
+#ifdef ZERO_COPY
+	gnutls_packet_t packet = NULL;
+
+	ret = gnutls_record_recv_packet(ws->dtls_session, &packet);
+	if (ret > 0) {
+		gnutls_packet_get(packet, data, NULL);
+		*p = packet;
+	} else {
+		data->size = 0;
+	}
+#else
+	ret =
+	    gnutls_record_recv(ws->dtls_session, ws->buffer, ws->buffer_size);
+	data->data = ws->buffer;
+	data->size = ret;
+#endif
+
+	return ret;
 }
 
 ssize_t dtls_send(worker_st *ws, const void *data,
@@ -532,7 +626,7 @@ int key_cb_common_func (gnutls_privkey_t key, void* userdata, const gnutls_datum
 	ret = connect(sd, (struct sockaddr *)&cdata->sa, cdata->sa_len);
 	if (ret == -1) {
 		e = errno;
-		syslog(LOG_ERR, "error connecting to sec-mod socket '%s': %s", 
+		syslog(LOG_ERR, "error connecting to sec-mod socket '%s': %s",
 			cdata->sa.sun_path, strerror(e));
 		goto error;
 	}
@@ -554,7 +648,7 @@ int key_cb_common_func (gnutls_privkey_t key, void* userdata, const gnutls_datum
 		       DEFAULT_SOCKET_TIMEOUT);
 	if (ret < 0) {
 		e = errno;
-		syslog(LOG_ERR, "error receiving sec-mod reply: %s", 
+		syslog(LOG_ERR, "error receiving sec-mod reply: %s",
 				strerror(e));
 		goto error;
 	}
@@ -587,13 +681,13 @@ static
 int key_cb_sign_func (gnutls_privkey_t key, void* userdata, const gnutls_datum_t * raw_data,
 	gnutls_datum_t * signature)
 {
-	return key_cb_common_func(key, userdata, raw_data, signature, SM_CMD_SIGN);
+	return key_cb_common_func(key, userdata, raw_data, signature, CMD_SEC_SIGN);
 }
 
 static int key_cb_decrypt_func(gnutls_privkey_t key, void* userdata, const gnutls_datum_t * ciphertext,
 	gnutls_datum_t * plaintext)
 {
-	return key_cb_common_func(key, userdata, ciphertext, plaintext, SM_CMD_DECRYPT);
+	return key_cb_common_func(key, userdata, ciphertext, plaintext, CMD_SEC_DECRYPT);
 }
 
 static void key_cb_deinit_func(gnutls_privkey_t key, void* userdata)
@@ -604,13 +698,13 @@ static void key_cb_deinit_func(gnutls_privkey_t key, void* userdata)
 static
 int load_cert_files(main_server_st *s, tls_st *creds)
 {
-int ret;
-gnutls_pcert_st *pcert_list;
-unsigned pcert_list_size, i;
-gnutls_privkey_t key;
-gnutls_datum_t data;
-struct key_cb_data * cdata;
-unsigned flags;
+	int ret;
+	gnutls_pcert_st *pcert_list;
+	unsigned pcert_list_size, i;
+	gnutls_privkey_t key;
+	gnutls_datum_t data;
+	struct key_cb_data * cdata;
+	unsigned flags;
 
 	for (i=0;i<s->perm_config->key_size;i++) {
 		/* load the certificate */
@@ -632,7 +726,7 @@ unsigned flags;
 			}
 
 			flags = GNUTLS_X509_CRT_LIST_FAIL_IF_UNSORTED|GNUTLS_X509_CRT_LIST_IMPORT_FAIL_IF_EXCEED;
-#if GNUTLS_VERSION_NUMBER >= 0x030400
+#if GNUTLS_VERSION_NUMBER > 0x030409
 			flags |= GNUTLS_X509_CRT_LIST_SORT;
 #endif
 
@@ -676,16 +770,65 @@ unsigned flags;
 	return 0;
 }
 
-/* reload key files etc. */
-void tls_load_certs(main_server_st *s, tls_st *creds)
+unsigned need_file_reload(const char *file, time_t last_access)
 {
-int ret;
-const char* perr;
+	struct stat st;
+	int ret, e;
 
-	if (s->config->debug >= DEBUG_TLS) {
+	if (file == NULL || file[0] == 0)
+		return 0;
+
+	if (last_access == 0)
+		return 1;
+
+	ret = stat(file, &st);
+	if (ret == -1) {
+		e = errno;
+		syslog(LOG_INFO, "file %s (to be reloaded) was not found: %s",
+		      file, strerror(e));
+		return 0;
+	}
+
+	/* reload only if it is a newer file */
+	if (st.st_mtime > last_access)
+		return 1;
+	return 0;
+}
+
+/* reload key files etc. */
+void tls_load_files(main_server_st *s, tls_st *creds)
+{
+	int ret;
+	unsigned i;
+	static time_t last_access = 0;
+	unsigned need_reload = 0;
+
+	if (last_access != 0) {
+		for (i=0;i<s->perm_config->key_size;i++) {
+			if (need_file_reload(s->perm_config->cert[i], last_access) != 0) {
+				need_reload = 1;
+				break;
+			}
+		}
+
+		if (need_file_reload(s->perm_config->ca, last_access) ||
+		    need_file_reload(s->config->ocsp_response, last_access) ||
+		    need_file_reload(s->perm_config->dh_params_file, last_access)) {
+			need_reload = 1;
+		}
+
+		if (need_reload == 0)
+			return;
+
+		mslog(s, NULL, LOG_INFO, "reloading server certificates");
+	}
+
+	if (s->perm_config->debug >= DEBUG_TLS) {
 		gnutls_global_set_log_function(tls_log_func);
 		gnutls_global_set_log_level(9);
 	}
+
+ 	last_access = time(0);
 
 	if (creds->xcred != NULL)
 		gnutls_certificate_free_credentials(creds->xcred);
@@ -696,11 +839,17 @@ const char* perr;
 	set_dh_params(s, creds);
 
 	if (s->perm_config->key_size == 0 || s->perm_config->cert_size == 0) {
-		mslog(s, NULL, LOG_ERR, "no certificate or key files were specified"); 
+		mslog(s, NULL, LOG_ERR, "no certificate or key files were specified");
 		exit(1);
 	}
 
-	certificate_check(s);
+	/* on reload reduce any checks done */
+	if (need_reload) {
+#if GNUTLS_VERSION_NUMBER >= 0x030407
+		gnutls_certificate_set_flags(creds->xcred, GNUTLS_CERTIFICATE_SKIP_KEY_CERT_MATCH);
+#endif
+		certificate_check(s);
+	}
 
 	ret = load_cert_files(s, creds);
 	if (ret < 0) {
@@ -729,11 +878,6 @@ const char* perr;
 						       verify_certificate_cb);
 	}
 
-	ret = gnutls_priority_init(&creds->cprio, s->config->priorities, &perr);
-	if (ret == GNUTLS_E_PARSING_ERROR)
-		mslog(s, NULL, LOG_ERR, "error in TLS priority string: %s", perr);
-	GNUTLS_FATAL_ERR(ret);
-
 	if (s->config->ocsp_response != NULL) {
 		ret = gnutls_certificate_set_ocsp_status_request_file(creds->xcred,
 			s->config->ocsp_response, 0);
@@ -743,52 +887,57 @@ const char* perr;
 	return;
 }
 
+void tls_load_prio(main_server_st *s, tls_st *creds)
+{
+int ret;
+const char* perr;
+
+	ret = gnutls_priority_init(&creds->cprio, s->config->priorities, &perr);
+	if (ret == GNUTLS_E_PARSING_ERROR)
+		mslog(s, NULL, LOG_ERR, "error in TLS priority string: %s", perr);
+	GNUTLS_FATAL_ERR(ret);
+
+	return;
+}
+
 void tls_reload_crl(main_server_st* s, tls_st *creds, unsigned force)
 {
-int ret, e, saved_ret;
-static time_t old_mtime = 0;
+int ret, saved_ret;
+static time_t last_access = 0;
 static unsigned crl_type = GNUTLS_X509_FMT_PEM;
-struct stat st;
 
 	if (force)
-		old_mtime = 0;
+		last_access = 0;
 
 	if (s->config->cert_req != GNUTLS_CERT_IGNORE && s->config->crl != NULL) {
-		ret = stat(s->config->crl, &st);
-		if (ret == -1) {
-			e = errno;
-			mslog(s, NULL, LOG_INFO, "CRL file (%s) not found: %s; check documentation to generate an empty CRL",
-				s->config->crl, strerror(e));
+		if (need_file_reload(s->config->crl, last_access) == 0) {
+			mslog(s, NULL, LOG_DEBUG, "skipping already loaded CRL: %s", s->config->crl);
 			return;
 		}
 
-		/* reload only if it is a newer file */
-		if (st.st_mtime > old_mtime) {
+		last_access = time(0);
+
+		ret =
+		    gnutls_certificate_set_x509_crl_file(creds->xcred,
+							 s->config->crl,
+							 crl_type);
+		if (ret == GNUTLS_E_BASE64_DECODING_ERROR && crl_type == GNUTLS_X509_FMT_PEM) {
+			crl_type = GNUTLS_X509_FMT_DER;
+			saved_ret = ret;
 			ret =
 			    gnutls_certificate_set_x509_crl_file(creds->xcred,
 								 s->config->crl,
 								 crl_type);
-			if (ret == GNUTLS_E_BASE64_DECODING_ERROR && crl_type == GNUTLS_X509_FMT_PEM) {
-				crl_type = GNUTLS_X509_FMT_DER;
-				saved_ret = ret;
-				ret =
-				    gnutls_certificate_set_x509_crl_file(creds->xcred,
-									 s->config->crl,
-									 crl_type);
-				if (ret < 0)
-					ret = saved_ret;
-			}
-			if (ret < 0) {
-				/* ignore the CRL file when empty */
-				mslog(s, NULL, LOG_ERR, "error reading the CRL (%s) file: %s",
-					s->config->crl, gnutls_strerror(ret));
-				exit(1);
-			}
-			mslog(s, NULL, LOG_INFO, "loaded CRL: %s", s->config->crl);
-			old_mtime = st.st_mtime;
-		} else {
-			mslog(s, NULL, LOG_DEBUG, "skipping already loaded CRL: %s", s->config->crl);
+			if (ret < 0)
+				ret = saved_ret;
 		}
+		if (ret < 0) {
+			/* ignore the CRL file when empty */
+			mslog(s, NULL, LOG_ERR, "error reading the CRL (%s) file: %s",
+				s->config->crl, gnutls_strerror(ret));
+			exit(1);
+		}
+		mslog(s, NULL, LOG_INFO, "loaded CRL: %s", s->config->crl);
 	}
 }
 

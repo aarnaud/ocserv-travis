@@ -87,25 +87,28 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
-@LOCAL_TALLOC_TRUE@am__append_1 = -I$(srcdir)/../src/ccan/talloc
+@HAVE_CWRAP_TRUE@am__append_1 = test-pass test-pass-cert test-cert test-group-pass \
+@HAVE_CWRAP_TRUE@	test-pass-group-cert test-pass-group-cert-no-pass test-sighup \
+@HAVE_CWRAP_TRUE@	test-enc-key test-sighup-key-change
+
+@LOCAL_TALLOC_TRUE@am__append_2 = -I$(srcdir)/../src/ccan/talloc
+@LOCAL_HTTP_PARSER_TRUE@am__append_3 = -I$(srcdir)/../src/http-parser/
+@LOCAL_PROTOBUF_C_TRUE@am__append_4 = -I$(srcdir)/../src/protobuf/
 check_PROGRAMS = str-test$(EXEEXT) ipv4-prefix$(EXEEXT) \
 	ipv6-prefix$(EXEEXT) kkdcp-parsing$(EXEEXT) \
-	json-escape$(EXEEXT) ban-ips$(EXEEXT)
+	json-escape$(EXEEXT) ban-ips$(EXEEXT) port-parsing$(EXEEXT) \
+	human_addr$(EXEEXT)
 subdir = tests
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/libopts/m4/libopts.m4 \
 	$(top_srcdir)/libopts/m4/stdnoreturn.m4 \
 	$(top_srcdir)/gl/m4/00gnulib.m4 \
 	$(top_srcdir)/gl/m4/absolute-header.m4 \
-	$(top_srcdir)/gl/m4/base64.m4 $(top_srcdir)/gl/m4/close.m4 \
-	$(top_srcdir)/gl/m4/dup2.m4 $(top_srcdir)/gl/m4/errno_h.m4 \
+	$(top_srcdir)/gl/m4/errno_h.m4 \
 	$(top_srcdir)/gl/m4/extensions.m4 \
 	$(top_srcdir)/gl/m4/extern-inline.m4 \
-	$(top_srcdir)/gl/m4/fcntl-o.m4 $(top_srcdir)/gl/m4/fcntl.m4 \
-	$(top_srcdir)/gl/m4/fcntl_h.m4 $(top_srcdir)/gl/m4/fseek.m4 \
-	$(top_srcdir)/gl/m4/fseeko.m4 $(top_srcdir)/gl/m4/fstat.m4 \
-	$(top_srcdir)/gl/m4/getdelim.m4 \
-	$(top_srcdir)/gl/m4/getdtablesize.m4 \
+	$(top_srcdir)/gl/m4/fseek.m4 $(top_srcdir)/gl/m4/fseeko.m4 \
+	$(top_srcdir)/gl/m4/fstat.m4 $(top_srcdir)/gl/m4/getdelim.m4 \
 	$(top_srcdir)/gl/m4/getline.m4 $(top_srcdir)/gl/m4/getpass.m4 \
 	$(top_srcdir)/gl/m4/gettimeofday.m4 \
 	$(top_srcdir)/gl/m4/gnulib-common.m4 \
@@ -137,7 +140,7 @@ am__aclocal_m4_deps = $(top_srcdir)/libopts/m4/libopts.m4 \
 	$(top_srcdir)/gl/m4/wchar_t.m4 $(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
-DIST_COMMON = $(srcdir)/Makefile.am $(dist_check_SCRIPTS) \
+DIST_COMMON = $(srcdir)/Makefile.am $(am__dist_check_SCRIPTS_DIST) \
 	$(am__DIST_COMMON)
 mkinstalldirs = $(install_sh) -d
 CONFIG_HEADER = $(top_builddir)/config.h
@@ -147,6 +150,10 @@ am_ban_ips_OBJECTS = ban_ips-ban-ips.$(OBJEXT)
 ban_ips_OBJECTS = $(am_ban_ips_OBJECTS)
 am__DEPENDENCIES_1 =
 ban_ips_DEPENDENCIES = ../gl/libgnu.a $(am__DEPENDENCIES_1) \
+	../src/ccan/libccan.a
+am_human_addr_OBJECTS = human_addr-human_addr.$(OBJEXT)
+human_addr_OBJECTS = $(am_human_addr_OBJECTS)
+human_addr_DEPENDENCIES = ../gl/libgnu.a $(am__DEPENDENCIES_1) \
 	../src/ccan/libccan.a
 am_ipv4_prefix_OBJECTS = ipv4-prefix.$(OBJEXT)
 ipv4_prefix_OBJECTS = $(am_ipv4_prefix_OBJECTS)
@@ -164,10 +171,25 @@ am_kkdcp_parsing_OBJECTS = kkdcp-parsing.$(OBJEXT)
 kkdcp_parsing_OBJECTS = $(am_kkdcp_parsing_OBJECTS)
 kkdcp_parsing_DEPENDENCIES = ../gl/libgnu.a $(am__DEPENDENCIES_1) \
 	../src/ccan/libccan.a
+port_parsing_SOURCES = port-parsing.c
+port_parsing_OBJECTS = port-parsing.$(OBJEXT)
+port_parsing_DEPENDENCIES = ../gl/libgnu.a $(am__DEPENDENCIES_1) \
+	../src/ccan/libccan.a
 am_str_test_OBJECTS = str-test.$(OBJEXT)
 str_test_OBJECTS = $(am_str_test_OBJECTS)
 str_test_DEPENDENCIES = ../gl/libgnu.a $(am__DEPENDENCIES_1) \
 	../src/ccan/libccan.a
+am__dist_check_SCRIPTS_DIST = test-iroute test-pass-script \
+	test-multi-cookie full-test ocpasswd-test unix-test \
+	test-pass-opt-cert test-cookie-timeout test-cookie-timeout-2 \
+	radius-test test-explicit-ip test-gssapi kerberos-test \
+	pam-test test-ban test-cookie-invalidation radius-test-config \
+	proxyproto-test proxyproto-unix-test pam-noauth-test otp-test \
+	test-user-config firewall-test test-append-routes \
+	reload-info-test firewall-neg-test test-pass test-pass-cert \
+	test-cert test-group-pass test-pass-group-cert \
+	test-pass-group-cert-no-pass test-sighup test-enc-key \
+	test-sighup-key-change
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -200,12 +222,14 @@ AM_V_CCLD = $(am__v_CCLD_@AM_V@)
 am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
-SOURCES = $(ban_ips_SOURCES) $(ipv4_prefix_SOURCES) \
-	$(ipv6_prefix_SOURCES) $(json_escape_SOURCES) \
-	$(kkdcp_parsing_SOURCES) $(str_test_SOURCES)
-DIST_SOURCES = $(ban_ips_SOURCES) $(ipv4_prefix_SOURCES) \
-	$(ipv6_prefix_SOURCES) $(json_escape_SOURCES) \
-	$(kkdcp_parsing_SOURCES) $(str_test_SOURCES)
+SOURCES = $(ban_ips_SOURCES) $(human_addr_SOURCES) \
+	$(ipv4_prefix_SOURCES) $(ipv6_prefix_SOURCES) \
+	$(json_escape_SOURCES) $(kkdcp_parsing_SOURCES) port-parsing.c \
+	$(str_test_SOURCES)
+DIST_SOURCES = $(ban_ips_SOURCES) $(human_addr_SOURCES) \
+	$(ipv4_prefix_SOURCES) $(ipv6_prefix_SOURCES) \
+	$(json_escape_SOURCES) $(kkdcp_parsing_SOURCES) port-parsing.c \
+	$(str_test_SOURCES)
 RECURSIVE_TARGETS = all-recursive check-recursive cscopelist-recursive \
 	ctags-recursive dvi-recursive html-recursive info-recursive \
 	install-data-recursive install-dvi-recursive \
@@ -501,6 +525,8 @@ CPP = @CPP@
 CPPFLAGS = @CPPFLAGS@
 CSCOPE = @CSCOPE@
 CTAGS = @CTAGS@
+CWRAP_CFLAGS = @CWRAP_CFLAGS@
+CWRAP_LIBS = @CWRAP_LIBS@
 CYGPATH_W = @CYGPATH_W@
 DEFS = @DEFS@
 DEPDIR = @DEPDIR@
@@ -533,7 +559,6 @@ GNULIB_FCHDIR = @GNULIB_FCHDIR@
 GNULIB_FCHMODAT = @GNULIB_FCHMODAT@
 GNULIB_FCHOWNAT = @GNULIB_FCHOWNAT@
 GNULIB_FCLOSE = @GNULIB_FCLOSE@
-GNULIB_FCNTL = @GNULIB_FCNTL@
 GNULIB_FDATASYNC = @GNULIB_FDATASYNC@
 GNULIB_FDOPEN = @GNULIB_FDOPEN@
 GNULIB_FFLUSH = @GNULIB_FFLUSH@
@@ -618,11 +643,8 @@ GNULIB_MKSTEMP = @GNULIB_MKSTEMP@
 GNULIB_MKSTEMPS = @GNULIB_MKSTEMPS@
 GNULIB_MKTIME = @GNULIB_MKTIME@
 GNULIB_NANOSLEEP = @GNULIB_NANOSLEEP@
-GNULIB_NONBLOCKING = @GNULIB_NONBLOCKING@
 GNULIB_OBSTACK_PRINTF = @GNULIB_OBSTACK_PRINTF@
 GNULIB_OBSTACK_PRINTF_POSIX = @GNULIB_OBSTACK_PRINTF_POSIX@
-GNULIB_OPEN = @GNULIB_OPEN@
-GNULIB_OPENAT = @GNULIB_OPENAT@
 GNULIB_PCLOSE = @GNULIB_PCLOSE@
 GNULIB_PERROR = @GNULIB_PERROR@
 GNULIB_PIPE = @GNULIB_PIPE@
@@ -639,6 +661,7 @@ GNULIB_PUTCHAR = @GNULIB_PUTCHAR@
 GNULIB_PUTENV = @GNULIB_PUTENV@
 GNULIB_PUTS = @GNULIB_PUTS@
 GNULIB_PWRITE = @GNULIB_PWRITE@
+GNULIB_QSORT_R = @GNULIB_QSORT_R@
 GNULIB_RANDOM = @GNULIB_RANDOM@
 GNULIB_RANDOM_R = @GNULIB_RANDOM_R@
 GNULIB_RAWMEMCHR = @GNULIB_RAWMEMCHR@
@@ -687,6 +710,7 @@ GNULIB_SYMLINKAT = @GNULIB_SYMLINKAT@
 GNULIB_SYSTEM_POSIX = @GNULIB_SYSTEM_POSIX@
 GNULIB_TIMEGM = @GNULIB_TIMEGM@
 GNULIB_TIME_R = @GNULIB_TIME_R@
+GNULIB_TIME_RZ = @GNULIB_TIME_RZ@
 GNULIB_TMPFILE = @GNULIB_TMPFILE@
 GNULIB_TTYNAME_R = @GNULIB_TTYNAME_R@
 GNULIB_UNISTD_H_NONBLOCKING = @GNULIB_UNISTD_H_NONBLOCKING@
@@ -752,7 +776,6 @@ HAVE_FACCESSAT = @HAVE_FACCESSAT@
 HAVE_FCHDIR = @HAVE_FCHDIR@
 HAVE_FCHMODAT = @HAVE_FCHMODAT@
 HAVE_FCHOWNAT = @HAVE_FCHOWNAT@
-HAVE_FCNTL = @HAVE_FCNTL@
 HAVE_FDATASYNC = @HAVE_FDATASYNC@
 HAVE_FFS = @HAVE_FFS@
 HAVE_FFSL = @HAVE_FFSL@
@@ -777,6 +800,7 @@ HAVE_LCHMOD = @HAVE_LCHMOD@
 HAVE_LCHOWN = @HAVE_LCHOWN@
 HAVE_LIBC = @HAVE_LIBC@
 HAVE_LIBCRYPT = @HAVE_LIBCRYPT@
+HAVE_LIBEV = @HAVE_LIBEV@
 HAVE_LIBPROTOBUF_C = @HAVE_LIBPROTOBUF_C@
 HAVE_LIBREADLINE = @HAVE_LIBREADLINE@
 HAVE_LIBSECCOMP = @HAVE_LIBSECCOMP@
@@ -788,6 +812,7 @@ HAVE_LINK = @HAVE_LINK@
 HAVE_LINKAT = @HAVE_LINKAT@
 HAVE_LONG_LONG_INT = @HAVE_LONG_LONG_INT@
 HAVE_LSTAT = @HAVE_LSTAT@
+HAVE_MAX_ALIGN_T = @HAVE_MAX_ALIGN_T@
 HAVE_MBSLEN = @HAVE_MBSLEN@
 HAVE_MEMCHR = @HAVE_MEMCHR@
 HAVE_MEMPCPY = @HAVE_MEMPCPY@
@@ -803,7 +828,6 @@ HAVE_MKSTEMP = @HAVE_MKSTEMP@
 HAVE_MKSTEMPS = @HAVE_MKSTEMPS@
 HAVE_MSVC_INVALID_PARAMETER_HANDLER = @HAVE_MSVC_INVALID_PARAMETER_HANDLER@
 HAVE_NANOSLEEP = @HAVE_NANOSLEEP@
-HAVE_OPENAT = @HAVE_OPENAT@
 HAVE_OS_H = @HAVE_OS_H@
 HAVE_PCLOSE = @HAVE_PCLOSE@
 HAVE_PIPE = @HAVE_PIPE@
@@ -855,6 +879,7 @@ HAVE_SYS_PARAM_H = @HAVE_SYS_PARAM_H@
 HAVE_SYS_TIME_H = @HAVE_SYS_TIME_H@
 HAVE_SYS_TYPES_H = @HAVE_SYS_TYPES_H@
 HAVE_TIMEGM = @HAVE_TIMEGM@
+HAVE_TIMEZONE_T = @HAVE_TIMEZONE_T@
 HAVE_UNISTD_H = @HAVE_UNISTD_H@
 HAVE_UNLINKAT = @HAVE_UNLINKAT@
 HAVE_UNLOCKPT = @HAVE_UNLOCKPT@
@@ -882,6 +907,9 @@ LIBC = @LIBC@
 LIBCRYPT = @LIBCRYPT@
 LIBCRYPT_PREFIX = @LIBCRYPT_PREFIX@
 LIBC_PREFIX = @LIBC_PREFIX@
+LIBEV = @LIBEV@
+LIBEV_LIBS = @LIBEV_LIBS@
+LIBEV_PREFIX = @LIBEV_PREFIX@
 LIBGNUTLS_CFLAGS = @LIBGNUTLS_CFLAGS@
 LIBGNUTLS_LIBS = @LIBGNUTLS_LIBS@
 LIBGNU_LIBDEPS = @LIBGNU_LIBDEPS@
@@ -890,6 +918,8 @@ LIBKRB5_CFLAGS = @LIBKRB5_CFLAGS@
 LIBKRB5_LIBS = @LIBKRB5_LIBS@
 LIBLZ4_CFLAGS = @LIBLZ4_CFLAGS@
 LIBLZ4_LIBS = @LIBLZ4_LIBS@
+LIBNETTLE_CFLAGS = @LIBNETTLE_CFLAGS@
+LIBNETTLE_LIBS = @LIBNETTLE_LIBS@
 LIBNL3_CFLAGS = @LIBNL3_CFLAGS@
 LIBNL3_LIBS = @LIBNL3_LIBS@
 LIBOATH_CFLAGS = @LIBOATH_CFLAGS@
@@ -923,6 +953,7 @@ LIBWRAP = @LIBWRAP@
 LIBWRAP_PREFIX = @LIBWRAP_PREFIX@
 LTLIBC = @LTLIBC@
 LTLIBCRYPT = @LTLIBCRYPT@
+LTLIBEV = @LTLIBEV@
 LTLIBOBJS = @LTLIBOBJS@
 LTLIBPROTOBUF_C = @LTLIBPROTOBUF_C@
 LTLIBREADLINE = @LTLIBREADLINE@
@@ -934,7 +965,6 @@ LTLIBWRAP = @LTLIBWRAP@
 MAKEINFO = @MAKEINFO@
 MKDIR_P = @MKDIR_P@
 NEXT_AS_FIRST_DIRECTIVE_ERRNO_H = @NEXT_AS_FIRST_DIRECTIVE_ERRNO_H@
-NEXT_AS_FIRST_DIRECTIVE_FCNTL_H = @NEXT_AS_FIRST_DIRECTIVE_FCNTL_H@
 NEXT_AS_FIRST_DIRECTIVE_STDDEF_H = @NEXT_AS_FIRST_DIRECTIVE_STDDEF_H@
 NEXT_AS_FIRST_DIRECTIVE_STDINT_H = @NEXT_AS_FIRST_DIRECTIVE_STDINT_H@
 NEXT_AS_FIRST_DIRECTIVE_STDIO_H = @NEXT_AS_FIRST_DIRECTIVE_STDIO_H@
@@ -947,7 +977,6 @@ NEXT_AS_FIRST_DIRECTIVE_SYS_TYPES_H = @NEXT_AS_FIRST_DIRECTIVE_SYS_TYPES_H@
 NEXT_AS_FIRST_DIRECTIVE_TIME_H = @NEXT_AS_FIRST_DIRECTIVE_TIME_H@
 NEXT_AS_FIRST_DIRECTIVE_UNISTD_H = @NEXT_AS_FIRST_DIRECTIVE_UNISTD_H@
 NEXT_ERRNO_H = @NEXT_ERRNO_H@
-NEXT_FCNTL_H = @NEXT_FCNTL_H@
 NEXT_STDDEF_H = @NEXT_STDDEF_H@
 NEXT_STDINT_H = @NEXT_STDINT_H@
 NEXT_STDIO_H = @NEXT_STDIO_H@
@@ -992,7 +1021,6 @@ REPLACE_DUP = @REPLACE_DUP@
 REPLACE_DUP2 = @REPLACE_DUP2@
 REPLACE_FCHOWNAT = @REPLACE_FCHOWNAT@
 REPLACE_FCLOSE = @REPLACE_FCLOSE@
-REPLACE_FCNTL = @REPLACE_FCNTL@
 REPLACE_FDOPEN = @REPLACE_FDOPEN@
 REPLACE_FFLUSH = @REPLACE_FFLUSH@
 REPLACE_FOPEN = @REPLACE_FOPEN@
@@ -1037,8 +1065,6 @@ REPLACE_MKTIME = @REPLACE_MKTIME@
 REPLACE_NANOSLEEP = @REPLACE_NANOSLEEP@
 REPLACE_NULL = @REPLACE_NULL@
 REPLACE_OBSTACK_PRINTF = @REPLACE_OBSTACK_PRINTF@
-REPLACE_OPEN = @REPLACE_OPEN@
-REPLACE_OPENAT = @REPLACE_OPENAT@
 REPLACE_PERROR = @REPLACE_PERROR@
 REPLACE_POPEN = @REPLACE_POPEN@
 REPLACE_PREAD = @REPLACE_PREAD@
@@ -1047,9 +1073,11 @@ REPLACE_PTSNAME = @REPLACE_PTSNAME@
 REPLACE_PTSNAME_R = @REPLACE_PTSNAME_R@
 REPLACE_PUTENV = @REPLACE_PUTENV@
 REPLACE_PWRITE = @REPLACE_PWRITE@
+REPLACE_QSORT_R = @REPLACE_QSORT_R@
 REPLACE_RANDOM_R = @REPLACE_RANDOM_R@
 REPLACE_READ = @REPLACE_READ@
 REPLACE_READLINK = @REPLACE_READLINK@
+REPLACE_READLINKAT = @REPLACE_READLINKAT@
 REPLACE_REALLOC = @REPLACE_REALLOC@
 REPLACE_REALPATH = @REPLACE_REALPATH@
 REPLACE_REMOVE = @REPLACE_REMOVE@
@@ -1078,6 +1106,7 @@ REPLACE_STRTOD = @REPLACE_STRTOD@
 REPLACE_STRTOK_R = @REPLACE_STRTOK_R@
 REPLACE_STRUCT_TIMEVAL = @REPLACE_STRUCT_TIMEVAL@
 REPLACE_SYMLINK = @REPLACE_SYMLINK@
+REPLACE_SYMLINKAT = @REPLACE_SYMLINKAT@
 REPLACE_TIMEGM = @REPLACE_TIMEGM@
 REPLACE_TMPFILE = @REPLACE_TMPFILE@
 REPLACE_TTYNAME_R = @REPLACE_TTYNAME_R@
@@ -1107,6 +1136,7 @@ STRIP = @STRIP@
 SYS_TIME_H_DEFINES_STRUCT_TIMESPEC = @SYS_TIME_H_DEFINES_STRUCT_TIMESPEC@
 TIME_H_DEFINES_STRUCT_TIMESPEC = @TIME_H_DEFINES_STRUCT_TIMESPEC@
 UNDEFINE_STRTOK_R = @UNDEFINE_STRTOK_R@
+UNISTD_H_DEFINES_STRUCT_TIMESPEC = @UNISTD_H_DEFINES_STRUCT_TIMESPEC@
 UNISTD_H_HAVE_WINSOCK2_H = @UNISTD_H_HAVE_WINSOCK2_H@
 UNISTD_H_HAVE_WINSOCK2_H_AND_USE_SOCKETS = @UNISTD_H_HAVE_WINSOCK2_H_AND_USE_SOCKETS@
 VERSION = @VERSION@
@@ -1183,21 +1213,25 @@ EXTRA_DIST = ca-key.pem ca.pem common.sh server-cert.pem server-key.pem test1.co
 	test-ban.config test-sighup.config test-gssapi-local-map.config \
 	test-cookie-invalidation.config test-enc-key2.config test-enc-key.config \
 	server-key-ossl.pem server-key-p8.pem proxyproto-unix-test user-cn.pem \
-	user-cert-testuser.pem test-stress test-user-config.config user-config/testuser
+	user-cert-testuser.pem test-stress test-user-config.config user-config/testuser \
+	test-sighup-key-change.config test-sighup-key-change.config user-config/testipnet \
+	user-cert-testipnet.pem
 
 SUBDIRS = docker-ocserv docker-kerberos
-dist_check_SCRIPTS = test-pass test-pass-cert test-cert test-iroute test-pass-script \
-	test-multi-cookie full-test test-group-pass test-pass-group-cert \
-	ocpasswd-test test-pass-group-cert-no-pass unix-test test-pass-opt-cert \
-	test-cookie-timeout test-cookie-timeout-2 radius-test test-explicit-ip \
-	radius-test test-gssapi kerberos-test pam-test test-ban test-sighup \
-	test-cookie-invalidation radius-test-config test-enc-key proxyproto-test \
-	proxyproto-unix-test pam-noauth-test otp-test test-user-config firewall-test
-
+dist_check_SCRIPTS = test-iroute test-pass-script test-multi-cookie \
+	full-test ocpasswd-test unix-test test-pass-opt-cert \
+	test-cookie-timeout test-cookie-timeout-2 radius-test \
+	test-explicit-ip radius-test test-gssapi kerberos-test \
+	pam-test test-ban test-cookie-invalidation radius-test-config \
+	proxyproto-test proxyproto-unix-test pam-noauth-test otp-test \
+	test-user-config firewall-test test-append-routes \
+	reload-info-test firewall-neg-test $(am__append_1)
 AM_CPPFLAGS = $(LIBOPTS_CFLAGS) $(LIBTALLOC_CFLAGS) \
 	-I$(top_srcdir)/src/ -I$(top_builddir)/src/ \
+	-I$(top_srcdir)/src/common/ -I$(top_builddir)/src/common/ \
 	-I$(top_srcdir)/gl/ -I$(top_builddir)/gl/ -I$(top_srcdir)/ \
-	-I$(top_builddir)/ $(am__append_1)
+	-I$(top_builddir)/ $(am__append_2) $(am__append_3) \
+	$(am__append_4)
 kkdcp_parsing_SOURCES = kkdcp-parsing.c
 kkdcp_parsing_LDADD = ../gl/libgnu.a $(LIBTALLOC_LIBS) ../src/ccan/libccan.a
 json_escape_SOURCES = json-escape.c
@@ -1211,6 +1245,10 @@ str_test_SOURCES = str-test.c
 str_test_LDADD = ../gl/libgnu.a $(LIBTALLOC_LIBS) ../src/ccan/libccan.a
 ipv6_prefix_SOURCES = ipv6-prefix.c
 ipv6_prefix_LDADD = ../gl/libgnu.a $(LIBTALLOC_LIBS) ../src/ccan/libccan.a
+human_addr_CPPFLAGS = $(AM_CPPFLAGS) 
+human_addr_SOURCES = human_addr.c
+human_addr_LDADD = ../gl/libgnu.a $(LIBTALLOC_LIBS) ../src/ccan/libccan.a
+port_parsing_LDADD = ../gl/libgnu.a $(LIBTALLOC_LIBS) ../src/ccan/libccan.a
 TESTS = $(dist_check_SCRIPTS) $(check_PROGRAMS)
 TESTS_ENVIRONMENT = srcdir="$(srcdir)" \
 	top_builddir="$(top_builddir)"
@@ -1256,6 +1294,10 @@ ban-ips$(EXEEXT): $(ban_ips_OBJECTS) $(ban_ips_DEPENDENCIES) $(EXTRA_ban_ips_DEP
 	@rm -f ban-ips$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(ban_ips_OBJECTS) $(ban_ips_LDADD) $(LIBS)
 
+human_addr$(EXEEXT): $(human_addr_OBJECTS) $(human_addr_DEPENDENCIES) $(EXTRA_human_addr_DEPENDENCIES) 
+	@rm -f human_addr$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(human_addr_OBJECTS) $(human_addr_LDADD) $(LIBS)
+
 ipv4-prefix$(EXEEXT): $(ipv4_prefix_OBJECTS) $(ipv4_prefix_DEPENDENCIES) $(EXTRA_ipv4_prefix_DEPENDENCIES) 
 	@rm -f ipv4-prefix$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(ipv4_prefix_OBJECTS) $(ipv4_prefix_LDADD) $(LIBS)
@@ -1272,6 +1314,10 @@ kkdcp-parsing$(EXEEXT): $(kkdcp_parsing_OBJECTS) $(kkdcp_parsing_DEPENDENCIES) $
 	@rm -f kkdcp-parsing$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(kkdcp_parsing_OBJECTS) $(kkdcp_parsing_LDADD) $(LIBS)
 
+port-parsing$(EXEEXT): $(port_parsing_OBJECTS) $(port_parsing_DEPENDENCIES) $(EXTRA_port_parsing_DEPENDENCIES) 
+	@rm -f port-parsing$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(port_parsing_OBJECTS) $(port_parsing_LDADD) $(LIBS)
+
 str-test$(EXEEXT): $(str_test_OBJECTS) $(str_test_DEPENDENCIES) $(EXTRA_str_test_DEPENDENCIES) 
 	@rm -f str-test$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(str_test_OBJECTS) $(str_test_LDADD) $(LIBS)
@@ -1283,10 +1329,12 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ban_ips-ban-ips.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/human_addr-human_addr.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ipv4-prefix.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ipv6-prefix.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/json-escape.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/kkdcp-parsing.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/port-parsing.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/str-test.Po@am__quote@
 
 .c.o:
@@ -1318,6 +1366,20 @@ ban_ips-ban-ips.obj: ban-ips.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='ban-ips.c' object='ban_ips-ban-ips.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ban_ips_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ban_ips-ban-ips.obj `if test -f 'ban-ips.c'; then $(CYGPATH_W) 'ban-ips.c'; else $(CYGPATH_W) '$(srcdir)/ban-ips.c'; fi`
+
+human_addr-human_addr.o: human_addr.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(human_addr_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT human_addr-human_addr.o -MD -MP -MF $(DEPDIR)/human_addr-human_addr.Tpo -c -o human_addr-human_addr.o `test -f 'human_addr.c' || echo '$(srcdir)/'`human_addr.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/human_addr-human_addr.Tpo $(DEPDIR)/human_addr-human_addr.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='human_addr.c' object='human_addr-human_addr.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(human_addr_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o human_addr-human_addr.o `test -f 'human_addr.c' || echo '$(srcdir)/'`human_addr.c
+
+human_addr-human_addr.obj: human_addr.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(human_addr_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT human_addr-human_addr.obj -MD -MP -MF $(DEPDIR)/human_addr-human_addr.Tpo -c -o human_addr-human_addr.obj `if test -f 'human_addr.c'; then $(CYGPATH_W) 'human_addr.c'; else $(CYGPATH_W) '$(srcdir)/human_addr.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/human_addr-human_addr.Tpo $(DEPDIR)/human_addr-human_addr.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='human_addr.c' object='human_addr-human_addr.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(human_addr_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o human_addr-human_addr.obj `if test -f 'human_addr.c'; then $(CYGPATH_W) 'human_addr.c'; else $(CYGPATH_W) '$(srcdir)/human_addr.c'; fi`
 
 # This directory's subdirectories are mostly independent; you can cd
 # into them and run 'make' without going through this Makefile.
@@ -1559,27 +1621,6 @@ recheck: all $(check_PROGRAMS) $(dist_check_SCRIPTS)
 	        am__force_recheck=am--force-recheck \
 	        TEST_LOGS="$$log_list"; \
 	exit $$?
-test-pass.log: test-pass
-	@p='test-pass'; \
-	b='test-pass'; \
-	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
-	--log-file $$b.log --trs-file $$b.trs \
-	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
-	"$$tst" $(AM_TESTS_FD_REDIRECT)
-test-pass-cert.log: test-pass-cert
-	@p='test-pass-cert'; \
-	b='test-pass-cert'; \
-	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
-	--log-file $$b.log --trs-file $$b.trs \
-	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
-	"$$tst" $(AM_TESTS_FD_REDIRECT)
-test-cert.log: test-cert
-	@p='test-cert'; \
-	b='test-cert'; \
-	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
-	--log-file $$b.log --trs-file $$b.trs \
-	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
-	"$$tst" $(AM_TESTS_FD_REDIRECT)
 test-iroute.log: test-iroute
 	@p='test-iroute'; \
 	b='test-iroute'; \
@@ -1608,30 +1649,9 @@ full-test.log: full-test
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
-test-group-pass.log: test-group-pass
-	@p='test-group-pass'; \
-	b='test-group-pass'; \
-	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
-	--log-file $$b.log --trs-file $$b.trs \
-	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
-	"$$tst" $(AM_TESTS_FD_REDIRECT)
-test-pass-group-cert.log: test-pass-group-cert
-	@p='test-pass-group-cert'; \
-	b='test-pass-group-cert'; \
-	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
-	--log-file $$b.log --trs-file $$b.trs \
-	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
-	"$$tst" $(AM_TESTS_FD_REDIRECT)
 ocpasswd-test.log: ocpasswd-test
 	@p='ocpasswd-test'; \
 	b='ocpasswd-test'; \
-	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
-	--log-file $$b.log --trs-file $$b.trs \
-	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
-	"$$tst" $(AM_TESTS_FD_REDIRECT)
-test-pass-group-cert-no-pass.log: test-pass-group-cert-no-pass
-	@p='test-pass-group-cert-no-pass'; \
-	b='test-pass-group-cert-no-pass'; \
 	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
@@ -1706,13 +1726,6 @@ test-ban.log: test-ban
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
-test-sighup.log: test-sighup
-	@p='test-sighup'; \
-	b='test-sighup'; \
-	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
-	--log-file $$b.log --trs-file $$b.trs \
-	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
-	"$$tst" $(AM_TESTS_FD_REDIRECT)
 test-cookie-invalidation.log: test-cookie-invalidation
 	@p='test-cookie-invalidation'; \
 	b='test-cookie-invalidation'; \
@@ -1723,13 +1736,6 @@ test-cookie-invalidation.log: test-cookie-invalidation
 radius-test-config.log: radius-test-config
 	@p='radius-test-config'; \
 	b='radius-test-config'; \
-	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
-	--log-file $$b.log --trs-file $$b.trs \
-	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
-	"$$tst" $(AM_TESTS_FD_REDIRECT)
-test-enc-key.log: test-enc-key
-	@p='test-enc-key'; \
-	b='test-enc-key'; \
 	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
@@ -1776,6 +1782,90 @@ firewall-test.log: firewall-test
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
+test-append-routes.log: test-append-routes
+	@p='test-append-routes'; \
+	b='test-append-routes'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+reload-info-test.log: reload-info-test
+	@p='reload-info-test'; \
+	b='reload-info-test'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+firewall-neg-test.log: firewall-neg-test
+	@p='firewall-neg-test'; \
+	b='firewall-neg-test'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+test-pass.log: test-pass
+	@p='test-pass'; \
+	b='test-pass'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+test-pass-cert.log: test-pass-cert
+	@p='test-pass-cert'; \
+	b='test-pass-cert'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+test-cert.log: test-cert
+	@p='test-cert'; \
+	b='test-cert'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+test-group-pass.log: test-group-pass
+	@p='test-group-pass'; \
+	b='test-group-pass'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+test-pass-group-cert.log: test-pass-group-cert
+	@p='test-pass-group-cert'; \
+	b='test-pass-group-cert'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+test-pass-group-cert-no-pass.log: test-pass-group-cert-no-pass
+	@p='test-pass-group-cert-no-pass'; \
+	b='test-pass-group-cert-no-pass'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+test-sighup.log: test-sighup
+	@p='test-sighup'; \
+	b='test-sighup'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+test-enc-key.log: test-enc-key
+	@p='test-enc-key'; \
+	b='test-enc-key'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+test-sighup-key-change.log: test-sighup-key-change
+	@p='test-sighup-key-change'; \
+	b='test-sighup-key-change'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
 str-test.log: str-test$(EXEEXT)
 	@p='str-test$(EXEEXT)'; \
 	b='str-test'; \
@@ -1814,6 +1904,20 @@ json-escape.log: json-escape$(EXEEXT)
 ban-ips.log: ban-ips$(EXEEXT)
 	@p='ban-ips$(EXEEXT)'; \
 	b='ban-ips'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+port-parsing.log: port-parsing$(EXEEXT)
+	@p='port-parsing$(EXEEXT)'; \
+	b='port-parsing'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+human_addr.log: human_addr$(EXEEXT)
+	@p='human_addr$(EXEEXT)'; \
+	b='human_addr'; \
 	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \

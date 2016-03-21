@@ -23,9 +23,8 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netdb.h>
-
-#include "../src/common-json.h"
-#include "../src/common-json.c"
+#include "../src/occtl/json.h"
+#include "../src/occtl/json.c"
 
 static char *strings[] = 
 {

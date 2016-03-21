@@ -40,9 +40,9 @@
 
 #include <vpn.h>
 #include <str.h>
-#include <cookies.h>
 #include <tun.h>
 #include <main.h>
+#include <main-ctl.h>
 #include <ip-lease.h>
 #include <script-list.h>
 #include <ccan/list/list.h>
@@ -56,12 +56,12 @@
 				exit(1); \
 			}
 
-static void export_dns_route_info(main_server_st *s, struct proc_st* proc)
+static void export_fw_info(main_server_st *s, struct proc_st* proc)
 {
 	str_st str4;
 	str_st str6;
 	str_st str_common;
-	unsigned i;
+	unsigned i, negate = 0;
 	int ret;
 
 	str_init(&str4, proc);
@@ -71,30 +71,16 @@ static void export_dns_route_info(main_server_st *s, struct proc_st* proc)
 	/* We use different export strings for IPv4 and IPv6 to ease handling
 	 * with legacy software such as iptables and ip6tables. */
 
-	/* append generic routes to str */
-	for (i=0;i<s->config->network.routes_size;i++) {
-		APPEND_TO_STR(&str_common, s->config->network.routes[i]);
-		APPEND_TO_STR(&str_common, " ");
-
-		if (strchr(s->config->network.routes[i], ':') != 0) {
-			APPEND_TO_STR(&str6, s->config->network.routes[i]);
-			APPEND_TO_STR(&str6, " ");
-		} else {
-			APPEND_TO_STR(&str4, s->config->network.routes[i]);
-			APPEND_TO_STR(&str4, " ");
-		}
-	}
-
 	/* append custom routes to str */
-	for (i=0;i<proc->config.routes_size;i++) {
-		APPEND_TO_STR(&str_common, proc->config.routes[i]);
+	for (i=0;i<proc->config->n_routes;i++) {
+		APPEND_TO_STR(&str_common, proc->config->routes[i]);
 		APPEND_TO_STR(&str_common, " ");
 
-		if (strchr(proc->config.routes[i], ':') != 0) {
-			APPEND_TO_STR(&str6, proc->config.routes[i]);
+		if (strchr(proc->config->routes[i], ':') != 0) {
+			APPEND_TO_STR(&str6, proc->config->routes[i]);
 			APPEND_TO_STR(&str6, " ");
 		} else {
-			APPEND_TO_STR(&str4, proc->config.routes[i]);
+			APPEND_TO_STR(&str4, proc->config->routes[i]);
 			APPEND_TO_STR(&str4, " ");
 		}
 	}
@@ -120,30 +106,16 @@ static void export_dns_route_info(main_server_st *s, struct proc_st* proc)
 	str_reset(&str6);
 	str_reset(&str_common);
 
-	/* append generic no_routes to str */
-	for (i=0;i<s->config->network.no_routes_size;i++) {
-		APPEND_TO_STR(&str_common, s->config->network.no_routes[i]);
-		APPEND_TO_STR(&str_common, " ");
-
-		if (strchr(s->config->network.no_routes[i], ':') != 0) {
-			APPEND_TO_STR(&str6, s->config->network.no_routes[i]);
-			APPEND_TO_STR(&str6, " ");
-		} else {
-			APPEND_TO_STR(&str4, s->config->network.no_routes[i]);
-			APPEND_TO_STR(&str4, " ");
-		}
-	}
-
 	/* append custom no_routes to str */
-	for (i=0;i<proc->config.no_routes_size;i++) {
-		APPEND_TO_STR(&str_common, proc->config.no_routes[i]);
+	for (i=0;i<proc->config->n_no_routes;i++) {
+		APPEND_TO_STR(&str_common, proc->config->no_routes[i]);
 		APPEND_TO_STR(&str_common, " ");
 
-		if (strchr(proc->config.no_routes[i], ':') != 0) {
-			APPEND_TO_STR(&str6, proc->config.no_routes[i]);
+		if (strchr(proc->config->no_routes[i], ':') != 0) {
+			APPEND_TO_STR(&str6, proc->config->no_routes[i]);
 			APPEND_TO_STR(&str6, " ");
 		} else {
-			APPEND_TO_STR(&str4, proc->config.no_routes[i]);
+			APPEND_TO_STR(&str4, proc->config->no_routes[i]);
 			APPEND_TO_STR(&str4, " ");
 		}
 	}
@@ -163,35 +135,28 @@ static void export_dns_route_info(main_server_st *s, struct proc_st* proc)
 		exit(1);
 	}
 
+	if (proc->config->restrict_user_to_routes) {
+		if (setenv("OCSERV_RESTRICT_TO_ROUTES", "1", 1) == -1) {
+			mslog(s, proc, LOG_ERR, "could not export OCSERV_RESTRICT_TO_ROUTES\n");
+			exit(1);
+		}
+	}
 	/* export the DNS servers */
 
 	str_reset(&str4);
 	str_reset(&str6);
 	str_reset(&str_common);
 
-	if (proc->config.dns_size > 0) {
-		for (i=0;i<proc->config.dns_size;i++) {
-			APPEND_TO_STR(&str_common, proc->config.dns[i]);
+	if (proc->config->n_dns > 0) {
+		for (i=0;i<proc->config->n_dns;i++) {
+			APPEND_TO_STR(&str_common, proc->config->dns[i]);
 			APPEND_TO_STR(&str_common, " ");
 
-			if (strchr(proc->config.dns[i], ':') != 0) {
-				APPEND_TO_STR(&str6, proc->config.dns[i]);
+			if (strchr(proc->config->dns[i], ':') != 0) {
+				APPEND_TO_STR(&str6, proc->config->dns[i]);
 				APPEND_TO_STR(&str6, " ");
 			} else {
-				APPEND_TO_STR(&str4, proc->config.dns[i]);
-				APPEND_TO_STR(&str4, " ");
-			}
-		}
-	} else {
-		for (i=0;i<s->config->network.dns_size;i++) {
-			APPEND_TO_STR(&str_common, s->config->network.dns[i]);
-			APPEND_TO_STR(&str_common, " ");
-
-			if (strchr(s->config->network.dns[i], ':') != 0) {
-				APPEND_TO_STR(&str6, s->config->network.dns[i]);
-				APPEND_TO_STR(&str6, " ");
-			} else {
-				APPEND_TO_STR(&str4, s->config->network.dns[i]);
+				APPEND_TO_STR(&str4, proc->config->dns[i]);
 				APPEND_TO_STR(&str4, " ");
 			}
 		}
@@ -215,6 +180,61 @@ static void export_dns_route_info(main_server_st *s, struct proc_st* proc)
 	str_clear(&str4);
 	str_clear(&str6);
 	str_clear(&str_common);
+
+	/* export the ports to reject */
+
+	str_reset(&str_common);
+
+	if (proc->config->n_fw_ports > 0) {
+		for (i=0;i<proc->config->n_fw_ports;i++) {
+			if (proc->config->fw_ports[i]->negate)
+				negate = 1;
+
+			switch(proc->config->fw_ports[i]->proto) {
+				case PROTO_UDP:
+					ret = str_append_printf(&str_common, "udp %u ", proc->config->fw_ports[i]->port);
+					break;
+				case PROTO_TCP:
+					ret = str_append_printf(&str_common, "tcp %u ", proc->config->fw_ports[i]->port);
+					break;
+				case PROTO_SCTP:
+					ret = str_append_printf(&str_common, "sctp %u ", proc->config->fw_ports[i]->port);
+					break;
+				case PROTO_ICMP:
+					ret = str_append_printf(&str_common, "icmp all ");
+					break;
+				case PROTO_ESP:
+					ret = str_append_printf(&str_common, "esp all ");
+					break;
+				case PROTO_ICMPv6:
+					ret = str_append_printf(&str_common, "icmpv6 all ");
+					break;
+				default:
+					ret = -1;
+			}
+
+			if (ret < 0) {
+				mslog(s, proc, LOG_ERR, "could not append value to environment\n");
+				exit(1);
+			}
+		}
+	}
+
+	if (str_common.length > 0) {
+		if (negate) {
+			if (setenv("OCSERV_DENY_PORTS", (char*)str_common.data, 1) == -1) {
+				mslog(s, proc, LOG_ERR, "could not export DENY_PORTS\n");
+				exit(1);
+			}
+		} else {
+			if (setenv("OCSERV_ALLOW_PORTS", (char*)str_common.data, 1) == -1) {
+				mslog(s, proc, LOG_ERR, "could not export ALLOW_PORTS\n");
+				exit(1);
+			}
+		}
+	}
+
+	str_clear(&str_common);
 }
 
 static
@@ -229,7 +249,7 @@ const char* script, *next_script = NULL;
 	else
 		script = s->config->disconnect_script;
 
-	if (proc->config.restrict_user_to_routes) {
+	if (proc->config->restrict_user_to_routes || proc->config->n_fw_ports > 0) {
 		next_script = script;
 		script = OCSERV_FW_SCRIPT;
 	}
@@ -324,7 +344,7 @@ const char* script, *next_script = NULL;
 		}
 
 		/* export DNS and route info */
-		export_dns_route_info(s, proc);
+		export_fw_info(s, proc);
 
 		/* set stdout to be stderr to avoid confusing scripts - note we have stdout closed */
 		if (dup2(STDERR_FILENO, STDOUT_FILENO) < 0) {
@@ -430,6 +450,7 @@ int user_connected(main_server_st *s, struct proc_st* proc)
 {
 int ret;
 
+	ctl_handler_notify(s,proc, 1);
 	add_utmp_entry(s, proc);
 
 	ret = call_script(s, proc, 1);
@@ -441,6 +462,7 @@ int ret;
 
 void user_disconnected(main_server_st *s, struct proc_st* proc)
 {
+	ctl_handler_notify(s,proc, 0);
 	remove_utmp_entry(s, proc);
 	call_script(s, proc, 0);
 }

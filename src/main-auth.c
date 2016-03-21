@@ -40,17 +40,68 @@
 #include "str.h"
 
 #include <vpn.h>
-#include <cookies.h>
 #include <tun.h>
 #include <main.h>
 #include <ccan/list/list.h>
 #include <common.h>
 
+/* Puts the provided PIN into the config's cgroup */
+void put_into_cgroup(main_server_st * s, const char *_cgroup, pid_t pid)
+{
+	char *name, *p, *savep;
+	char cgroup[128];
+	char file[_POSIX_PATH_MAX];
+	FILE *fd;
+
+	if (_cgroup == NULL)
+		return;
+
+#ifdef __linux__
+	/* format: cpu,memory:cgroup-name */
+	strlcpy(cgroup, _cgroup, sizeof(cgroup));
+
+	name = strchr(cgroup, ':');
+	if (name == NULL) {
+		mslog(s, NULL, LOG_ERR, "error parsing cgroup name: %s",
+		      cgroup);
+		return;
+	}
+	name[0] = 0;
+	name++;
+
+	p = strtok_r(cgroup, ",", &savep);
+	while (p != NULL) {
+		mslog(s, NULL, LOG_DEBUG,
+		      "putting process %u to cgroup '%s:%s'", (unsigned)pid, p,
+		      name);
+
+		snprintf(file, sizeof(file), "/sys/fs/cgroup/%s/%s/tasks", p,
+			 name);
+
+		fd = fopen(file, "w");
+		if (fd == NULL) {
+			mslog(s, NULL, LOG_ERR, "cannot open: %s", file);
+			return;
+		}
+
+		if (fprintf(fd, "%u", (unsigned)pid) <= 0) {
+			mslog(s, NULL, LOG_ERR, "could not write to: %s", file);
+		}
+		fclose(fd);
+		p = strtok_r(NULL, ",", &savep);
+	}
+
+	return;
+#else
+	mslog(s, NULL, LOG_DEBUG,
+	      "Ignoring cgroup option as it is not supported on this system");
+#endif
+}
+
 int send_cookie_auth_reply(main_server_st* s, struct proc_st* proc,
 			AUTHREP r)
 {
-	AuthReplyMsg msg = AUTH_REPLY_MSG__INIT;
-	unsigned i;
+	AuthCookieReplyMsg msg = AUTH_COOKIE_REPLY_MSG__INIT;
 	int ret;
 
 	if (r == AUTH__REP__OK && proc->tun_lease.name[0] != 0) {
@@ -87,106 +138,19 @@ int send_cookie_auth_reply(main_server_st* s, struct proc_st* proc,
 					ipv6_local, sizeof(ipv6_local), 0);
 		}
 
-		msg.ipv4_netmask = proc->config.ipv4_netmask;
-
-		msg.ipv4_network = proc->config.ipv4_network;
-		msg.ipv6_network = proc->config.ipv6_network;
-		msg.ipv6_subnet_prefix = proc->config.ipv6_subnet_prefix;
-
-		if (proc->ipv6) {
-			msg.ipv6_prefix = proc->ipv6->prefix;
-			msg.has_ipv6_prefix = 1;
-		}
-
-		if (proc->config.interim_update_secs) {
-			msg.has_interim_update_secs = 1;
-			msg.interim_update_secs = proc->config.interim_update_secs;
-		}
-
-		if (proc->config.session_timeout_secs) {
-			msg.has_session_timeout_secs = 1;
-			msg.session_timeout_secs = proc->config.session_timeout_secs;
-		}
-
-		if (proc->config.dpd != 0) {
-			msg.has_dpd = 1;
-			msg.dpd = proc->config.dpd;
-		}
-
-		if (proc->config.keepalive != 0) {
-			msg.has_keepalive = 1;
-			msg.keepalive = proc->config.keepalive;
-		}
-
-		if (proc->config.mobile_dpd != 0) {
-			msg.has_mobile_dpd = 1;
-			msg.mobile_dpd = proc->config.mobile_dpd;
-		}
-
-		if (proc->config.rx_per_sec != 0) {
-			msg.has_rx_per_sec = 1;
-			msg.rx_per_sec = proc->config.rx_per_sec;
-		}
-
-		if (proc->config.tx_per_sec != 0) {
-			msg.has_tx_per_sec = 1;
-			msg.tx_per_sec = proc->config.tx_per_sec;
-		}
-
-		if (proc->config.net_priority != 0) {
-			msg.has_net_priority = 1;
-			msg.net_priority = proc->config.net_priority;
-		}
-
-		if (proc->config.no_udp != 0) {
-			msg.has_no_udp = 1;
-			msg.no_udp = proc->config.no_udp;
-		}
-
-		if (proc->config.tunnel_all_dns != 0) {
-			msg.has_tunnel_all_dns = 1;
-			msg.tunnel_all_dns = proc->config.tunnel_all_dns;
-		}
-
-		if (proc->config.xml_config_file != NULL) {
-			msg.xml_config_file = proc->config.xml_config_file;
-		}
-
-		msg.n_dns = proc->config.dns_size;
-		for (i=0;i<proc->config.dns_size;i++) {
-			mslog(s, proc, LOG_DEBUG, "sending dns '%s'", proc->config.dns[i]);
-			msg.dns = proc->config.dns;
-		}
-
-		msg.n_nbns = proc->config.nbns_size;
-		for (i=0;i<proc->config.nbns_size;i++) {
-			mslog(s, proc, LOG_DEBUG, "sending nbns '%s'", proc->config.nbns[i]);
-			msg.nbns = proc->config.nbns;
-		}
-
-		msg.n_routes = proc->config.routes_size;
-		for (i=0;i<proc->config.routes_size;i++) {
-			mslog(s, proc, LOG_DEBUG, "sending route '%s'", proc->config.routes[i]);
-			msg.routes = proc->config.routes;
-		}
-
-		msg.n_no_routes = proc->config.no_routes_size;
-		for (i=0;i<proc->config.no_routes_size;i++) {
-			mslog(s, proc, LOG_DEBUG, "sending no-route '%s'", proc->config.no_routes[i]);
-			msg.no_routes = proc->config.no_routes;
-		}
+		msg.config = proc->config;
 
 		ret = send_socket_msg_to_worker(s, proc, AUTH_COOKIE_REP, proc->tun_lease.fd,
 			 &msg,
-			 (pack_size_func)auth_reply_msg__get_packed_size,
-			 (pack_func)auth_reply_msg__pack);
+			 (pack_size_func)auth_cookie_reply_msg__get_packed_size,
+			 (pack_func)auth_cookie_reply_msg__pack);
 	} else {
 		msg.reply = AUTH__REP__FAILED;
 
 		ret = send_msg_to_worker(s, proc, AUTH_COOKIE_REP,
 			 &msg,
-			 (pack_size_func)auth_reply_msg__get_packed_size,
-			 (pack_func)auth_reply_msg__pack);
+			 (pack_size_func)auth_cookie_reply_msg__get_packed_size,
+			 (pack_func)auth_cookie_reply_msg__pack);
 	}
 
 	if (ret < 0) {
@@ -198,47 +162,13 @@ int send_cookie_auth_reply(main_server_st* s, struct proc_st* proc,
 	return 0;
 }
 
-static void apply_default_sup_config(struct perm_cfg_st *config, struct proc_st *proc)
-{
-	proc->config.deny_roaming = config->config->deny_roaming;
-	proc->config.no_udp = (config->udp_port!=0)?0:1;
-}
-
 int handle_auth_cookie_req(main_server_st* s, struct proc_st* proc,
  			   const AuthCookieRequestMsg * req)
 {
 int ret;
-Cookie *cmsg;
-gnutls_datum_t key = {s->cookie_key, sizeof(s->cookie_key)};
-char str_ip[MAX_IP_STR+1];
-PROTOBUF_ALLOCATOR(pa, proc);
 struct proc_st *old_proc;
 
-	if (req->cookie.len == 0) {
-		mslog(s, proc, LOG_INFO, "error in cookie size");
-		return -1;
-	}
-
-	ret = decrypt_cookie(&pa, &key, req->cookie.data, req->cookie.len, &cmsg);
-	if (ret < 0 && s->prev_cookie_key_active) {
-		/* try the old key */
-		key.data = s->prev_cookie_key;
-		key.size = sizeof(s->prev_cookie_key);
-		ret = decrypt_cookie(&pa, &key, req->cookie.data, req->cookie.len, &cmsg);
-		if (ret == 0)
-			mslog(s, proc, LOG_INFO, "decrypted cookie with previous key");
-	}
-
-	if (ret < 0) {
-		mslog(s, proc, LOG_INFO, "error decrypting cookie");
-		return -1;
-	}
-
-	if (cmsg->username == NULL)
-		return -1;
-	strlcpy(proc->username, cmsg->username, sizeof(proc->username));
-
-	if (cmsg->sid.len != sizeof(proc->sid))
+	if (req->cookie.data == NULL || req->cookie.len != sizeof(proc->sid))
 		return -1;
 
 	/* generate a new DTLS session ID for each connection, to allow
@@ -248,51 +178,20 @@ struct proc_st *old_proc;
 		return -1;
 	proc->dtls_session_id_size = sizeof(proc->dtls_session_id);
 
-	memcpy(proc->sid, cmsg->sid.data, cmsg->sid.len);
-
-	/* override the group name in order to load the correct configuration in
-	 * case his group is specified in the certificate */
-	if (cmsg->groupname)
-		strlcpy(proc->groupname, cmsg->groupname, sizeof(proc->groupname));
-
-	/* cookie is good so far, now read config (in order to know
-	 * whether roaming is allowed or not */
-	memset(&proc->config, 0, sizeof(proc->config));
-	apply_default_sup_config(s->perm_config, proc);
-
-	/* loads sup config */
+	/* loads sup config and basic proc info (e.g., username) */
 	ret = session_open(s, proc, req->cookie.data, req->cookie.len);
 	if (ret < 0) {
 		mslog(s, proc, LOG_INFO, "could not open session");
 		return -1;
 	}
-	/* this hints to call session_close() */
-	proc->active_sid = 1;
 
 	/* Put into right cgroup */
-        if (proc->config.cgroup != NULL) {
-        	put_into_cgroup(s, proc->config.cgroup, proc->pid);
-	}
-
-	/* check whether the cookie IP matches */
-	if (proc->config.deny_roaming != 0) {
-		if (cmsg->ip == NULL) {
-			return -1;
-		}
-
-		if (human_addr2((struct sockaddr *)&proc->remote_addr, proc->remote_addr_len,
-					    str_ip, sizeof(str_ip), 0) == NULL)
-			return -1;
-
-		if (strcmp(str_ip, cmsg->ip) != 0) {
-			mslog(s, proc, LOG_INFO, "user '%s' is re-using cookie from different IP (prev: %s, current: %s); rejecting",
-				cmsg->username, cmsg->ip, str_ip);
-			return -1;
-		}
+        if (proc->config->cgroup != NULL) {
+        	put_into_cgroup(s, proc->config->cgroup, proc->pid);
 	}
 
 	/* check for a user with the same sid as in the cookie */
-	old_proc = proc_search_sid(s, cmsg->sid.data);
+	old_proc = proc_search_sid(s, req->cookie.data);
 	if (old_proc != NULL) {
 		mslog(s, old_proc, LOG_DEBUG, "disconnecting previous user session (%u) due to session re-use",
 			(unsigned)old_proc->pid);
@@ -313,10 +212,10 @@ struct proc_st *old_proc;
 		mslog(s, proc, LOG_INFO, "new user session");
 	}
 
-	if (cmsg->hostname)
-		strlcpy(proc->hostname, cmsg->hostname, sizeof(proc->hostname));
-
-	memcpy(proc->ipv4_seed, &cmsg->ipv4_seed, sizeof(proc->ipv4_seed));
+	/* update the SID */
+	memcpy(proc->sid, req->cookie.data, req->cookie.len);
+	/* this also hints to call session_close() */
+	proc->active_sid = 1;
 
 	/* add the links to proc hash */
 	if (proc_table_add(s, proc) < 0) {
@@ -342,7 +241,7 @@ struct proc_st *ctmp = NULL, *cpos;
 unsigned int entries = 1; /* that one */
 unsigned max;
 
-	if (s->config->max_same_clients == 0 && proc->config.max_same_clients == 0)
+	if (proc->config->max_same_clients == 0)
 		return 0;
 
 	list_for_each_safe(&s->proc_list.head, ctmp, cpos, list) {
@@ -353,10 +252,7 @@ unsigned max;
 		}
 	}
 
-	if (proc->config.max_same_clients > 0)
-		max = proc->config.max_same_clients;
-	else
-		max = s->config->max_same_clients;
+	max = proc->config->max_same_clients;
 
 	if (max && entries > max)
 		return -1;

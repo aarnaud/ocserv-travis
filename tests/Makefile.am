@@ -10,23 +10,34 @@ EXTRA_DIST = ca-key.pem ca.pem common.sh server-cert.pem server-key.pem test1.co
 	test-ban.config test-sighup.config test-gssapi-local-map.config \
 	test-cookie-invalidation.config test-enc-key2.config test-enc-key.config \
 	server-key-ossl.pem server-key-p8.pem proxyproto-unix-test user-cn.pem \
-	user-cert-testuser.pem test-stress test-user-config.config user-config/testuser
+	user-cert-testuser.pem test-stress test-user-config.config user-config/testuser \
+	test-sighup-key-change.config test-sighup-key-change.config user-config/testipnet \
+	user-cert-testipnet.pem
 
 SUBDIRS = docker-ocserv docker-kerberos
 
-dist_check_SCRIPTS = test-pass test-pass-cert test-cert test-iroute test-pass-script \
-	test-multi-cookie full-test test-group-pass test-pass-group-cert \
-	ocpasswd-test test-pass-group-cert-no-pass unix-test test-pass-opt-cert \
+dist_check_SCRIPTS = test-iroute test-pass-script \
+	test-multi-cookie full-test ocpasswd-test unix-test test-pass-opt-cert \
 	test-cookie-timeout test-cookie-timeout-2 radius-test test-explicit-ip \
-	radius-test test-gssapi kerberos-test pam-test test-ban test-sighup \
-	test-cookie-invalidation radius-test-config test-enc-key proxyproto-test \
-	proxyproto-unix-test pam-noauth-test otp-test test-user-config firewall-test
+	radius-test test-gssapi kerberos-test pam-test test-ban \
+	test-cookie-invalidation radius-test-config proxyproto-test \
+	proxyproto-unix-test pam-noauth-test otp-test test-user-config \
+	firewall-test test-append-routes reload-info-test \
+	firewall-neg-test
+
+if HAVE_CWRAP
+dist_check_SCRIPTS += test-pass test-pass-cert test-cert test-group-pass \
+	test-pass-group-cert test-pass-group-cert-no-pass test-sighup \
+	test-enc-key test-sighup-key-change
+endif
 
 AM_CPPFLAGS = \
 	$(LIBOPTS_CFLAGS) \
 	$(LIBTALLOC_CFLAGS) \
 	-I$(top_srcdir)/src/ \
 	-I$(top_builddir)/src/ \
+	-I$(top_srcdir)/src/common/ \
+	-I$(top_builddir)/src/common/ \
 	-I$(top_srcdir)/gl/ \
 	-I$(top_builddir)/gl/ \
 	-I$(top_srcdir)/ \
@@ -34,6 +45,14 @@ AM_CPPFLAGS = \
 
 if LOCAL_TALLOC
 AM_CPPFLAGS += -I$(srcdir)/../src/ccan/talloc
+endif
+
+if LOCAL_HTTP_PARSER
+AM_CPPFLAGS += -I$(srcdir)/../src/http-parser/
+endif
+
+if LOCAL_PROTOBUF_C
+AM_CPPFLAGS += -I$(srcdir)/../src/protobuf/
 endif
 
 kkdcp_parsing_SOURCES = kkdcp-parsing.c
@@ -55,7 +74,14 @@ str_test_LDADD = ../gl/libgnu.a $(LIBTALLOC_LIBS) ../src/ccan/libccan.a
 ipv6_prefix_SOURCES = ipv6-prefix.c
 ipv6_prefix_LDADD = ../gl/libgnu.a $(LIBTALLOC_LIBS) ../src/ccan/libccan.a
 
-check_PROGRAMS = str-test ipv4-prefix ipv6-prefix kkdcp-parsing json-escape ban-ips
+human_addr_CPPFLAGS = $(AM_CPPFLAGS) 
+human_addr_SOURCES = human_addr.c
+human_addr_LDADD = ../gl/libgnu.a $(LIBTALLOC_LIBS) ../src/ccan/libccan.a
+
+port_parsing_LDADD = ../gl/libgnu.a $(LIBTALLOC_LIBS) ../src/ccan/libccan.a
+
+check_PROGRAMS = str-test ipv4-prefix ipv6-prefix kkdcp-parsing json-escape ban-ips \
+	port-parsing human_addr
 
 TESTS = $(dist_check_SCRIPTS) $(check_PROGRAMS)
 

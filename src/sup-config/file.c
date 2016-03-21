@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2013 Nikos Mavrogiannopoulos
- * Copyright (C) 2014 Red Hat, Inc.
+ * Copyright (C) 2014, 2015 Red Hat, Inc.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -32,6 +32,7 @@
 #include <common.h>
 #include <ip-util.h>
 #include <c-strcase.h>
+#include <c-ctype.h>
 
 #include <vpn.h>
 #include <main.h>
@@ -64,11 +65,15 @@ static struct cfg_options available_options[] = {
 	{ .name = "ipv6-subnet-prefix", .type = OPTION_NUMERIC },
 	{ .name = "explicit-ipv4", .type = OPTION_STRING },
 	{ .name = "explicit-ipv6", .type = OPTION_STRING },
+	{ .name = "restrict-user-to-ports", .type = OPTION_STRING },
 	{ .name = "rx-data-per-sec", .type = OPTION_NUMERIC },
 	{ .name = "tx-data-per-sec", .type = OPTION_NUMERIC },
 	{ .name = "net-priority", .type = OPTION_STRING },
+	{ .name = "mtu", .type = OPTION_NUMERIC },
 	{ .name = "dpd", .type = OPTION_NUMERIC },
 	{ .name = "mobile-dpd", .type = OPTION_NUMERIC },
+	{ .name = "idle-timeout", .type = OPTION_NUMERIC },
+	{ .name = "mobile-idle-timeout", .type = OPTION_NUMERIC },
 	{ .name = "keepalive", .type = OPTION_NUMERIC },
 	{ .name = "cgroup", .type = OPTION_STRING },
 	{ .name = "user-profile", .type = OPTION_STRING },
@@ -135,7 +140,7 @@ static struct cfg_options available_options[] = {
 
 static int handle_option(const tOptionValue* val)
 {
-unsigned j;
+	unsigned j;
 
 	for (j=0;j<sizeof(available_options)/sizeof(available_options[0]);j++) {
 		if (strcasecmp(val->pzName, available_options[j].name) == 0) {
@@ -146,18 +151,20 @@ unsigned j;
 	return 0;
 }
 
+
 /* This will parse the configuration file and append/replace data into
  * config. The provided config must either be memset to zero, or be
  * already allocated using this function.
  */
 static
 int parse_group_cfg_file(struct cfg_st *global_config,
-			 SecAuthSessionReplyMsg *msg, void *pool,
+			 SecmSessionReplyMsg *msg, void *pool,
 			 const char* file)
 {
 tOptionValue const * pov;
 const tOptionValue* val, *prev;
-unsigned prefix = 0;
+char *tmp;
+unsigned prefix = 0, prefix4 = 0;
 int ret;
 unsigned j;
 
@@ -181,90 +188,109 @@ unsigned j;
 		prev = val;
 	} while((val = optionNextValue(pov, prev)) != NULL);
 
-	READ_TF("no-udp", msg->no_udp, msg->has_no_udp);
-	READ_TF("restrict-user-to-routes", msg->restrict_user_to_routes, msg->has_restrict_user_to_routes);
-	READ_TF("tunnel_all_dns", msg->tunnel_all_dns, msg->has_tunnel_all_dns);
-	READ_TF("deny-roaming", msg->deny_roaming, msg->has_deny_roaming);
+	READ_TF("no-udp", msg->config->no_udp, msg->config->has_no_udp);
+	READ_TF("restrict-user-to-routes", msg->config->restrict_user_to_routes, msg->config->has_restrict_user_to_routes);
+	READ_TF("tunnel_all_dns", msg->config->tunnel_all_dns, msg->config->has_tunnel_all_dns);
+	READ_TF("deny-roaming", msg->config->deny_roaming, msg->config->has_deny_roaming);
 
-	READ_RAW_MULTI_LINE("route", msg->routes, msg->n_routes);
-	READ_RAW_MULTI_LINE("no-route", msg->no_routes, msg->n_no_routes);
-	READ_RAW_MULTI_LINE("iroute", msg->iroutes, msg->n_iroutes);
+	READ_RAW_MULTI_LINE("route", msg->config->routes, msg->config->n_routes);
+	READ_RAW_MULTI_LINE("no-route", msg->config->no_routes, msg->config->n_no_routes);
+	READ_RAW_MULTI_LINE("iroute", msg->config->iroutes, msg->config->n_iroutes);
 
-	for (j=0;j<msg->n_routes;j++) {
-		if (ip_route_sanity_check(msg->routes, &msg->routes[j]) != 0) {
+	for (j=0;j<msg->config->n_routes;j++) {
+		if (ip_route_sanity_check(msg->config->routes, &msg->config->routes[j]) != 0) {
 			ret = ERR_READ_CONFIG;
 			goto fail;
 		}
 	}
 
-	for (j=0;j<msg->n_iroutes;j++) {
-		if (ip_route_sanity_check(msg->iroutes, &msg->iroutes[j]) != 0) {
+	for (j=0;j<msg->config->n_iroutes;j++) {
+		if (ip_route_sanity_check(msg->config->iroutes, &msg->config->iroutes[j]) != 0) {
 			ret = ERR_READ_CONFIG;
 			goto fail;
 		}
 	}
 
-	for (j=0;j<msg->n_no_routes;j++) {
-		if (ip_route_sanity_check(msg->no_routes, &msg->no_routes[j]) != 0) {
+	for (j=0;j<msg->config->n_no_routes;j++) {
+		if (ip_route_sanity_check(msg->config->no_routes, &msg->config->no_routes[j]) != 0) {
 			ret = ERR_READ_CONFIG;
 			goto fail;
 		}
 	}
 
-	READ_RAW_MULTI_LINE("dns", msg->dns, msg->n_dns);
-	if (msg->n_dns == 0) {
+	READ_RAW_MULTI_LINE("dns", msg->config->dns, msg->config->n_dns);
+	if (msg->config->n_dns == 0) {
 		/* try aliases */
-		READ_RAW_MULTI_LINE("ipv6-dns", msg->dns, msg->n_dns);
-		READ_RAW_MULTI_LINE("ipv4-dns", msg->dns, msg->n_dns);
+		READ_RAW_MULTI_LINE("ipv6-dns", msg->config->dns, msg->config->n_dns);
+		READ_RAW_MULTI_LINE("ipv4-dns", msg->config->dns, msg->config->n_dns);
 	}
 
-	READ_RAW_MULTI_LINE("nbns", msg->nbns, msg->n_nbns);
-	if (msg->n_nbns == 0) {
+	READ_RAW_MULTI_LINE("nbns", msg->config->nbns, msg->config->n_nbns);
+	if (msg->config->n_nbns == 0) {
 		/* try aliases */
-		READ_RAW_MULTI_LINE("ipv6-nbns", msg->nbns, msg->n_nbns);
-		READ_RAW_MULTI_LINE("ipv4-nbns", msg->nbns, msg->n_nbns);
+		READ_RAW_MULTI_LINE("ipv6-nbns", msg->config->nbns, msg->config->n_nbns);
+		READ_RAW_MULTI_LINE("ipv4-nbns", msg->config->nbns, msg->config->n_nbns);
 	}
 
-	READ_RAW_STRING("cgroup", msg->cgroup);
-	READ_RAW_STRING("ipv4-network", msg->ipv4_net);
-	READ_RAW_STRING("ipv6-network", msg->ipv6_net);
-	READ_RAW_STRING("ipv4-netmask", msg->ipv4_netmask);
-	READ_RAW_STRING("explicit-ipv4", msg->explicit_ipv4);
-	READ_RAW_STRING("explicit-ipv6", msg->explicit_ipv6);
+	READ_RAW_STRING("cgroup", msg->config->cgroup);
+	READ_RAW_STRING("ipv4-network", msg->config->ipv4_net);
+	READ_RAW_STRING("explicit-ipv4", msg->config->explicit_ipv4);
 
-	READ_RAW_NUMERIC("ipv6-subnet-prefix", msg->ipv6_subnet_prefix, msg->has_ipv6_subnet_prefix);
-
-	msg->ipv6_prefix = extract_prefix(msg->ipv6_net);
-	if (msg->ipv6_prefix == 0) {
-		READ_RAW_NUMERIC("ipv6-prefix", msg->ipv6_prefix, msg->has_ipv6_prefix);
+	prefix4 = extract_prefix(msg->config->ipv4_net);
+	if (prefix4 == 0) {
+		READ_RAW_STRING("ipv4-netmask", msg->config->ipv4_netmask);
 	} else {
-		msg->has_ipv6_prefix = 1;
+		msg->config->ipv4_netmask = ipv4_prefix_to_strmask(pool, prefix4);
 	}
 
-	if (msg->has_ipv6_prefix != 0) {
-		if (valid_ipv6_prefix(msg->ipv6_prefix) == 0) {
+	READ_RAW_STRING("ipv6-network", msg->config->ipv6_net);
+	READ_RAW_STRING("explicit-ipv6", msg->config->explicit_ipv6);
+	READ_RAW_NUMERIC("ipv6-subnet-prefix", msg->config->ipv6_subnet_prefix, msg->config->has_ipv6_subnet_prefix);
+
+	msg->config->ipv6_prefix = extract_prefix(msg->config->ipv6_net);
+	if (msg->config->ipv6_prefix == 0) {
+		READ_RAW_NUMERIC("ipv6-prefix", msg->config->ipv6_prefix, msg->config->has_ipv6_prefix);
+	} else {
+		msg->config->has_ipv6_prefix = 1;
+	}
+
+	if (msg->config->has_ipv6_prefix != 0) {
+		if (valid_ipv6_prefix(msg->config->ipv6_prefix) == 0) {
 			syslog(LOG_ERR, "unknown ipv6-prefix '%u' in %s", prefix, file);
 		}
 	}
 
-	READ_RAW_NUMERIC("rx-data-per-sec", msg->rx_per_sec, msg->has_rx_per_sec);
-	READ_RAW_NUMERIC("tx-data-per-sec", msg->tx_per_sec, msg->has_tx_per_sec);
-	msg->rx_per_sec /= 1000; /* in kb */
-	msg->tx_per_sec /= 1000; /* in kb */
+	READ_RAW_NUMERIC("rx-data-per-sec", msg->config->rx_per_sec, msg->config->has_rx_per_sec);
+	READ_RAW_NUMERIC("tx-data-per-sec", msg->config->tx_per_sec, msg->config->has_tx_per_sec);
+	msg->config->rx_per_sec /= 1000; /* in kb */
+	msg->config->tx_per_sec /= 1000; /* in kb */
 
-	READ_RAW_NUMERIC("stats-report-time", msg->interim_update_secs, msg->has_interim_update_secs);
-	READ_RAW_NUMERIC("session-timeout", msg->session_timeout_secs, msg->has_session_timeout_secs);
+	READ_RAW_NUMERIC("stats-report-time", msg->config->interim_update_secs, msg->config->has_interim_update_secs);
+	READ_RAW_NUMERIC("session-timeout", msg->config->session_timeout_secs, msg->config->has_session_timeout_secs);
 
-	READ_RAW_NUMERIC("dpd", msg->dpd, msg->has_dpd);
-	READ_RAW_NUMERIC("mobile-dpd", msg->mobile_dpd, msg->has_mobile_dpd);
-	READ_RAW_NUMERIC("keepalive", msg->keepalive, msg->has_keepalive);
-	READ_RAW_NUMERIC("max-same-clients", msg->max_same_clients, msg->has_max_same_clients);
+	READ_RAW_NUMERIC("mtu", msg->config->mtu, msg->config->has_mtu);
+	READ_RAW_NUMERIC("dpd", msg->config->dpd, msg->config->has_dpd);
+	READ_RAW_NUMERIC("mobile-dpd", msg->config->mobile_dpd, msg->config->has_mobile_dpd);
+	READ_RAW_NUMERIC("idle-timeout", msg->config->idle_timeout, msg->config->has_idle_timeout);
+	READ_RAW_NUMERIC("mobile-idle-timeout", msg->config->mobile_idle_timeout, msg->config->has_mobile_idle_timeout);
+	READ_RAW_NUMERIC("keepalive", msg->config->keepalive, msg->config->has_keepalive);
+	READ_RAW_NUMERIC("max-same-clients", msg->config->max_same_clients, msg->config->has_max_same_clients);
 	
 	/* net-priority will contain the actual priority + 1,
 	 * to allow having zero as uninitialized. */
-	READ_RAW_PRIO_TOS("net-priority", msg->net_priority, msg->has_net_priority);
+	READ_RAW_PRIO_TOS("net-priority", msg->config->net_priority, msg->config->has_net_priority);
 
-	READ_RAW_STRING("user-profile", msg->xml_config_file);
+	READ_RAW_STRING("user-profile", msg->config->xml_config_file);
+
+	tmp = NULL;
+	READ_RAW_STRING("restrict-user-to-ports", tmp);
+	if (tmp) {
+		ret = cfg_parse_ports(pool, &msg->config->fw_ports, &msg->config->n_fw_ports, tmp);
+		if (ret < 0) {
+			goto fail;
+		}
+		talloc_free(tmp);
+	}
 
 	ret = 0;
  fail:
@@ -274,7 +300,7 @@ unsigned j;
 }
 
 static int read_sup_config_file(struct cfg_st *global_config,
-				SecAuthSessionReplyMsg *msg, void *pool,
+				SecmSessionReplyMsg *msg, void *pool,
 				const char *file, const char *fallback, const char *type)
 {
 	int ret;
@@ -300,14 +326,14 @@ static int read_sup_config_file(struct cfg_st *global_config,
 }
 
 static int get_sup_config(struct cfg_st *cfg, client_entry_st *entry,
-			  SecAuthSessionReplyMsg *msg, void *pool)
+			  SecmSessionReplyMsg *msg, void *pool)
 {
 	char file[_POSIX_PATH_MAX];
 	int ret;
 
-	if (cfg->per_group_dir != NULL && entry->auth_info.groupname[0] != 0) {
+	if (cfg->per_group_dir != NULL && entry->acct_info.groupname[0] != 0) {
 		snprintf(file, sizeof(file), "%s/%s", cfg->per_group_dir,
-			 entry->auth_info.groupname);
+			 entry->acct_info.groupname);
 
 		ret = read_sup_config_file(cfg, msg, pool, file, cfg->default_group_conf, "group");
 		if (ret < 0)
@@ -316,7 +342,7 @@ static int get_sup_config(struct cfg_st *cfg, client_entry_st *entry,
 
 	if (cfg->per_user_dir != NULL) {
 		snprintf(file, sizeof(file), "%s/%s", cfg->per_user_dir,
-			 entry->auth_info.username);
+			 entry->acct_info.username);
 		ret = read_sup_config_file(cfg, msg, pool, file, cfg->default_user_conf, "user");
 		if (ret < 0)
 			return ret;

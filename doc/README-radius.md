@@ -65,6 +65,8 @@ ATTRIBUTE	Acct-Session-Id		44	string
 ATTRIBUTE	Acct-Input-Gigawords	52	integer
 ATTRIBUTE	Acct-Output-Gigawords	53	integer
 ATTRIBUTE	Acct-Interim-Interval	85	integer
+ATTRIBUTE	Connect-Info		77	string
+
 
 ###########################
 #	IPv4 attributes   #
@@ -76,7 +78,8 @@ ATTRIBUTE	NAS-IP-Address		4	ipaddr
 ATTRIBUTE	Framed-IP-Address	8	ipaddr
 ATTRIBUTE	Framed-IP-Netmask	9	ipaddr
 
-# sets routes (quite a kludge)
+# sets routes (quite a kludge as it requires to have
+# a CIDR string)
 ATTRIBUTE	Framed-Route		22	string
 
 # sets DNS servers
@@ -88,6 +91,7 @@ ATTRIBUTE	MS-Primary-DNS-Server 	28 	ipaddr
 ATTRIBUTE 	MS-Secondary-DNS-Server 29 	ipaddr
 
 END-VENDOR Microsoft
+
 
 ############################
 #	IPv6 attributes    #

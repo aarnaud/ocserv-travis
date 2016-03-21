@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014 Red Hat
+ * Copyright (C) 2014-2016 Red Hat
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -28,12 +28,14 @@
 #include <sys/un.h>
 #include <main.h>
 #include <vpn.h>
+#include <cloexec.h>
 #include <ip-lease.h>
 
 #include <errno.h>
 #include <system.h>
 #include <main-ctl.h>
 #include <main-ban.h>
+#include <ccan/container_of/container_of.h>
 
 #include <ctl.pb-c.h>
 #include <str.h>
@@ -43,6 +45,8 @@ typedef struct method_ctx {
 	void *pool;
 } method_ctx;
 
+static void method_top(method_ctx *ctx, int cfd, uint8_t * msg,
+			      unsigned msg_size);
 static void method_status(method_ctx *ctx, int cfd, uint8_t * msg,
 			  unsigned msg_size);
 static void method_list_users(method_ctx *ctx, int cfd, uint8_t * msg,
@@ -63,6 +67,8 @@ static void method_id_info(method_ctx *ctx, int cfd, uint8_t * msg,
 			   unsigned msg_size);
 static void method_list_banned(method_ctx *ctx, int cfd, uint8_t * msg,
 			   unsigned msg_size);
+static void method_list_cookies(method_ctx *ctx, int cfd, uint8_t * msg,
+			   unsigned msg_size);
 
 typedef void (*method_func) (method_ctx *ctx, int cfd, uint8_t * msg,
 			     unsigned msg_size);
@@ -71,17 +77,23 @@ typedef struct {
 	char *name;
 	unsigned cmd;
 	method_func func;
+	unsigned indefinite; /* session remains open */
 } ctl_method_st;
 
 #define ENTRY(cmd, func) \
-	{#cmd, cmd, func}
+	{#cmd, cmd, func, 0}
+
+#define ENTRY_INDEF(cmd, func) \
+	{#cmd, cmd, func, 1}
 
 static const ctl_method_st methods[] = {
+	ENTRY_INDEF(CTL_CMD_TOP, method_top),
 	ENTRY(CTL_CMD_STATUS, method_status),
 	ENTRY(CTL_CMD_RELOAD, method_reload),
 	ENTRY(CTL_CMD_STOP, method_stop),
 	ENTRY(CTL_CMD_LIST, method_list_users),
 	ENTRY(CTL_CMD_LIST_BANNED, method_list_banned),
+	ENTRY(CTL_CMD_LIST_COOKIES, method_list_cookies),
 	ENTRY(CTL_CMD_USER_INFO, method_user_info),
 	ENTRY(CTL_CMD_ID_INFO, method_id_info),
 	ENTRY(CTL_CMD_UNBAN_IP, method_unban_ip),
@@ -171,7 +183,7 @@ static void method_status(method_ctx *ctx, int cfd, uint8_t * msg,
 	rep.sec_mod_pid = ctx->s->sec_mod_pid;
 	rep.active_clients = ctx->s->active_clients;
 	rep.secmod_client_entries = ctx->s->secmod_client_entries;
-	rep.stored_tls_sessions = ctx->s->tls_db.entries;
+	rep.stored_tls_sessions = ctx->s->tlsdb_entries;
 	rep.banned_ips = main_ban_db_elems(ctx->s);
 
 	ret = send_msg(ctx->pool, cfd, CTL_CMD_STATUS_REP, &rep,
@@ -192,7 +204,7 @@ static void method_reload(method_ctx *ctx, int cfd, uint8_t * msg,
 
 	mslog(ctx->s, NULL, LOG_DEBUG, "ctl: reload");
 
-	request_reload(0);
+	ev_feed_signal_event (loop, SIGHUP);
 
 	rep.status = 1;
 
@@ -214,7 +226,7 @@ static void method_stop(method_ctx *ctx, int cfd, uint8_t * msg,
 
 	mslog(ctx->s, NULL, LOG_DEBUG, "ctl: stop");
 
-	request_stop(0);
+	ev_feed_signal_event (loop, SIGTERM);
 
 	rep.status = 1;
 
@@ -243,9 +255,11 @@ static int append_user_info(method_ctx *ctx,
 	if (list->user == NULL)
 		return -1;
 
-	rep = list->user[list->n_user] = talloc(ctx->pool, UserInfoRep);
+	rep = talloc(ctx->pool, UserInfoRep);
 	if (rep == NULL)
 		return -1;
+
+	list->user[list->n_user] = rep;
 	list->n_user++;
 
 	user_info_rep__init(rep);
@@ -336,19 +350,8 @@ static int append_user_info(method_ctx *ctx,
 	rep->conn_time = ctmp->conn_time;
 	rep->hostname = ctmp->hostname;
 	rep->user_agent = ctmp->user_agent;
-	rep->restrict_to_routes = ctmp->config.restrict_user_to_routes;
 
-	if (ctmp->status == PS_AUTH_COMPLETED)
-		strtmp = "connected";
-	else if (ctmp->status == PS_AUTH_INIT)
-		strtmp = "auth";
-	else if (ctmp->status == PS_AUTH_INACTIVE)
-		strtmp = "pre-auth";
-	else if (ctmp->status == PS_AUTH_FAILED)
-		strtmp = "auth failed";
-	else
-		strtmp = "unknown";
-	rep->status = strtmp;
+	rep->status = ctmp->status;
 
 	rep->tls_ciphersuite = ctmp->tls_ciphersuite;
 	rep->dtls_ciphersuite = ctmp->dtls_ciphersuite;
@@ -360,70 +363,40 @@ static int append_user_info(method_ctx *ctx,
 		rep->has_mtu = 1;
 	}
 
-	if (ctmp->config.rx_per_sec > 0)
-		tmp = ctmp->config.rx_per_sec;
-	else
-		tmp = ctx->s->config->rx_per_sec;
-	tmp *= 1000;
-	rep->rx_per_sec = tmp;
+	if (ctmp->config) {
+		rep->restrict_to_routes = ctmp->config->restrict_user_to_routes;
 
-	if (ctmp->config.tx_per_sec > 0)
-		tmp = ctmp->config.tx_per_sec;
-	else
-		tmp = ctx->s->config->tx_per_sec;
-	tmp *= 1000;
-	rep->tx_per_sec = tmp;
+		tmp = ctmp->config->rx_per_sec;
+		tmp *= 1000;
+		rep->rx_per_sec = tmp;
 
-	if (ctmp->config.dpd)
-		rep->dpd = ctmp->config.dpd;
-	else
-		rep->dpd = ctx->s->config->dpd;
+		tmp = ctmp->config->tx_per_sec;
+		tmp *= 1000;
+		rep->tx_per_sec = tmp;
 
-	if (ctmp->config.keepalive)
-		rep->keepalive = ctmp->config.keepalive;
-	else
-		rep->keepalive = ctx->s->config->keepalive;
+		rep->dpd = ctmp->config->dpd;
 
-	rep->domains = ctx->s->config->split_dns;
-	rep->n_domains = ctx->s->config->split_dns_size;
+		rep->keepalive = ctmp->config->keepalive;
+		rep->domains = ctx->s->config->split_dns;
+		rep->n_domains = ctx->s->config->split_dns_size;
 
-	if (ctmp->config.dns_size > 0) {
-		rep->dns = ctmp->config.dns;
-		rep->n_dns = ctmp->config.dns_size;
-	} else {
-		rep->dns = ctx->s->config->network.dns;
-		rep->n_dns = ctx->s->config->network.dns_size;
-	}
+		rep->dns = ctmp->config->dns;
+		rep->n_dns = ctmp->config->n_dns;
 
-	if (ctmp->config.nbns_size > 0) {
-		rep->nbns = ctmp->config.nbns;
-		rep->n_nbns = ctmp->config.nbns_size;
-	} else {
-		rep->nbns = ctx->s->config->network.nbns;
-		rep->n_nbns = ctx->s->config->network.nbns_size;
-	}
+		rep->nbns = ctmp->config->nbns;
+		rep->n_nbns = ctmp->config->n_nbns;
 
-	rep->n_routes = ctmp->config.routes_size + ctx->s->config->network.routes_size;
-	rep->routes = talloc_size(rep, sizeof(char*)*rep->n_routes);
-	if (rep->routes != NULL) {
-		memcpy(rep->routes, ctmp->config.routes, sizeof(char*)*ctmp->config.routes_size);
-		memcpy(&rep->routes[ctmp->config.routes_size], ctx->s->config->network.routes, sizeof(char*)*ctx->s->config->network.routes_size);
-	} else {
-		rep->n_routes = 0;
-	}
+		rep->n_routes = ctmp->config->n_routes;
+		rep->routes = ctmp->config->routes;
 
-	rep->n_no_routes = ctmp->config.no_routes_size + ctx->s->config->network.no_routes_size;
-	rep->no_routes = talloc_size(rep, sizeof(char*)*rep->n_no_routes);
-	if (rep->no_routes != NULL) {
-		memcpy(rep->no_routes, ctmp->config.no_routes, sizeof(char*)*ctmp->config.no_routes_size);
-		memcpy(&rep->no_routes[ctmp->config.no_routes_size], ctx->s->config->network.no_routes, sizeof(char*)*ctx->s->config->network.no_routes_size);
-	} else {
-		rep->n_no_routes = 0;
-	}
+		rep->n_no_routes = ctmp->config->n_no_routes;
+		rep->no_routes = ctmp->config->no_routes;
 
-	if (ctmp->config.iroutes_size > 0) {
-		rep->iroutes = ctmp->config.iroutes;
-		rep->n_iroutes = ctmp->config.iroutes_size;
+		rep->iroutes = ctmp->config->iroutes;
+		rep->n_iroutes = ctmp->config->n_iroutes;
+
+		rep->n_fw_ports = ctmp->config->n_fw_ports;
+		rep->fw_ports = ctmp->config->fw_ports;
 	}
 
 	return 0;
@@ -437,7 +410,6 @@ static void method_list_users(method_ctx *ctx, int cfd, uint8_t * msg,
 	int ret;
 
 	mslog(ctx->s, NULL, LOG_DEBUG, "ctl: list-users");
-
 
 	list_for_each(&ctx->s->proc_list.head, ctmp, list) {
 		ret = append_user_info(ctx, &rep, ctmp);
@@ -457,6 +429,21 @@ static void method_list_users(method_ctx *ctx, int cfd, uint8_t * msg,
 
  error:
 	return;
+}
+
+static void method_top(method_ctx *ctx, int cfd, uint8_t * msg,
+			      unsigned msg_size)
+{
+	/* we send the initial user list, and the we send a TOP reply message
+	 * once a user connects/disconnects. */
+
+	mslog(ctx->s, NULL, LOG_DEBUG, "ctl: top");
+
+	/* we can only have a single top listener */
+	if (ctx->s->top_fd == -1)
+		ctx->s->top_fd = cfd;
+
+	method_list_users(ctx, cfd, msg, msg_size);
 }
 
 static int append_ban_info(method_ctx *ctx,
@@ -520,6 +507,27 @@ static void method_list_banned(method_ctx *ctx, int cfd, uint8_t * msg,
 
  error:
 	return;
+}
+
+static void method_list_cookies(method_ctx *ctx, int cfd, uint8_t * msg,
+			      unsigned msg_size)
+{
+	int ret;
+
+	mslog(ctx->s, NULL, LOG_DEBUG, "ctl: list-cookies");
+
+	ret = send_msg(ctx->pool, ctx->s->sec_mod_fd_sync, CMD_SECM_LIST_COOKIES,
+			 NULL, NULL, NULL);
+	if (ret < 0) {
+		mslog(ctx->s, NULL, LOG_ERR, "error sending list cookies to sec-mod!");
+	}
+
+	ret = forward_msg(ctx->pool, ctx->s->sec_mod_fd_sync, CMD_SECM_LIST_COOKIES_REPLY,
+			  cfd, CTL_CMD_LIST_COOKIES_REP, MAIN_SEC_MOD_TIMEOUT);
+	if (ret < 0) {
+		mslog(ctx->s, NULL, LOG_ERR, "error sending list cookies reply");
+	}
+
 }
 
 static void single_info_common(method_ctx *ctx, int cfd, uint8_t * msg,
@@ -728,25 +736,69 @@ static void method_disconnect_user_id(method_ctx *ctx, int cfd,
 	return;
 }
 
+struct ctl_watcher_st {
+	int fd;
+	struct ev_io ctl_cmd_io;
+};
+
+static void ctl_cmd_wacher_cb(EV_P_ ev_io *w, int revents)
+{
+	main_server_st *s = ev_userdata(loop);
+	int ret;
+	size_t length;
+	uint8_t cmd;
+	uint8_t buffer[256];
+	method_ctx ctx;
+	struct ctl_watcher_st *wst = container_of(w, struct ctl_watcher_st, ctl_cmd_io);
+	unsigned i, indef = 0;
+
+	ctx.s = s;
+	ctx.pool = talloc_new(wst);
+
+	if (ctx.pool == NULL)
+		goto fail;
+
+	/* read request */
+	ret = recv_msg_data(wst->fd, &cmd, buffer, sizeof(buffer), NULL);
+	if (ret < 0) {
+		mslog(s, NULL, LOG_ERR, "error receiving ctl data");
+		goto fail;
+	}
+
+	length = ret;
+
+	for (i = 0;; i++) {
+		if (methods[i].cmd == 0) {
+			mslog(s, NULL, LOG_INFO,
+			      "unknown unix ctl message: 0x%.1x",
+			      (unsigned)cmd);
+			break;
+		} else if (methods[i].cmd == cmd) {
+			indef = methods[i].indefinite;
+			methods[i].func(&ctx, wst->fd, buffer, length);
+			break;
+		}
+	}
+
+	if (indef) {
+		talloc_free(ctx.pool);
+		return;
+	}
+ fail:
+ 	if (s->top_fd == wst->fd)
+ 		s->top_fd = -1;
+ 	close(wst->fd);
+ 	ev_io_stop(EV_A_ w);
+ 	talloc_free(wst);
+ 	return;
+}
+
 static void ctl_handle_commands(main_server_st * s)
 {
 	int cfd = -1, e, ret;
-	unsigned i;
 	struct sockaddr_un sa;
 	socklen_t sa_len;
-	uint16_t length;
-	uint8_t buffer[256];
-	unsigned buffer_size;
-	method_ctx ctx;
-	void *pool = talloc_new(s);
-
-	if (pool == NULL) {
-		mslog(s, NULL, LOG_ERR, "memory allocation error");
-		return;
-	}
-
-	ctx.s = s;
-	ctx.pool = pool;
+	struct ctl_watcher_st *wst;
 
 	sa_len = sizeof(sa);
 	cfd = accept(s->ctl_fd, (struct sockaddr *)&sa, &sa_len);
@@ -754,70 +806,94 @@ static void ctl_handle_commands(main_server_st * s)
 		e = errno;
 		mslog(s, NULL, LOG_ERR,
 		      "error accepting control connection: %s", strerror(e));
-		goto cleanup;
+		goto fail;
 	}
 
-	ret = check_upeer_id("ctl", s->config->debug, cfd, 0, 0, NULL, NULL);
+	ret = check_upeer_id("ctl", s->perm_config->debug, cfd, 0, 0, NULL, NULL);
 	if (ret < 0) {
 		mslog(s, NULL, LOG_ERR, "ctl: unauthorized connection");
-		goto cleanup;
+		goto fail;
 	}
 
-	/* read request */
-	ret = recv(cfd, buffer, sizeof(buffer), 0);
-	if (ret < 3) {
-		if (ret == -1) {
-			e = errno;
-			mslog(s, NULL, LOG_ERR, "error receiving ctl data: %s",
-			      strerror(e));
-		} else {
-			mslog(s, NULL, LOG_ERR, "received ctl data: %d bytes",
-			      ret);
-		}
-		goto cleanup;
-	}
-	memcpy(&length, &buffer[1], 2);
-	buffer_size = ret - 3;
+	set_cloexec_flag(cfd, 1);
 
-	if (length != buffer_size) {
-		mslog(s, NULL, LOG_ERR,
-		      "received data length doesn't match received data (%d/%d)",
-		      buffer_size, (int)length);
-		goto cleanup;
-	}
+	wst = talloc(s, struct ctl_watcher_st);
+	if (wst == NULL)
+		goto fail;
 
-	for (i = 0;; i++) {
-		if (methods[i].cmd == 0) {
-			mslog(s, NULL, LOG_INFO,
-			      "unknown unix ctl message: 0x%.1x",
-			      (unsigned)buffer[0]);
-			break;
-		} else if (methods[i].cmd == buffer[0]) {
-			methods[i].func(&ctx, cfd, buffer + 3, buffer_size);
-			break;
-		}
-	}
- cleanup:
- 	talloc_free(pool);
+	wst->fd = cfd;
+
+	ev_io_init(&wst->ctl_cmd_io, ctl_cmd_wacher_cb, wst->fd, EV_READ);
+	ev_io_start(loop, &wst->ctl_cmd_io);
+
+	return;
+ fail:
 	if (cfd != -1)
 		close(cfd);
 }
 
-int ctl_handler_set_fds(main_server_st * s, fd_set * rd_set, fd_set * wr_set)
-{
-	if (s->config->use_occtl == 0)
-		return -1;
-
-	FD_SET(s->ctl_fd, rd_set);
-	return s->ctl_fd;
-}
-
-void ctl_handler_run_pending(main_server_st* s, fd_set *rd_set, fd_set *wr_set)
+void ctl_handler_set_fds(main_server_st * s, ev_io *watcher)
 {
 	if (s->config->use_occtl == 0)
 		return;
 
-	if (FD_ISSET(s->ctl_fd, rd_set)) {
-		ctl_handle_commands(s);
+	ev_io_set(watcher, s->ctl_fd, EV_READ);
+}
+
+void ctl_handler_run_pending(main_server_st* s, ev_io *watcher)
+{
+	if (s->config->use_occtl == 0)
+		return;
+
+	ctl_handle_commands(s);
+}
+
+void ctl_handler_notify (main_server_st* s, struct proc_st *proc, unsigned connect)
+{
+	TopUpdateRep rep = TOP_UPDATE_REP__INIT;
+	UserListRep list = USER_LIST_REP__INIT;
+	int ret;
+	method_ctx ctx;
+	void *pool = talloc_new(proc);
+
+	if (s->top_fd == -1)
+		return;
+
+	if (pool == NULL) {
+		goto fail;
 	}
+
+	ctx.s = s;
+	ctx.pool = pool;
+
+	mslog(s, NULL, LOG_DEBUG, "ctl: top update");
+
+	rep.connected = connect;
+	if (connect == 0 && proc->discon_reason) {
+		rep.has_discon_reason = 1;
+		rep.discon_reason = proc->discon_reason;
+		rep.discon_reason_txt = (char*)discon_reason_to_str(proc->discon_reason);
+	}
+
+	ret = append_user_info(&ctx, &list, proc);
+	if (ret < 0) {
+		mslog(s, NULL, LOG_ERR,
+		      "error appending user info to reply");
+		goto fail;
+	}
+	rep.user = &list;
+
+	ret = send_msg(pool, s->top_fd, CTL_CMD_TOP_UPDATE_REP, &rep,
+		       (pack_size_func) top_update_rep__get_packed_size,
+		       (pack_func) top_update_rep__pack);
+	if (ret < 0) {
+		mslog(s, NULL, LOG_ERR, "error sending ctl reply");
+		goto fail;
+	}
+
+	talloc_free(pool);
+	return;
+ fail:
+	talloc_free(pool);
+ 	s->top_fd = -1;
 }

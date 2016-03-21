@@ -25,6 +25,7 @@
 #include <gnutls/gnutls.h>
 #include <http_parser.h>
 #include <ccan/htable/htable.h>
+#include <ccan/list/list.h>
 #include <syslog.h>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -33,6 +34,8 @@
 #include <netinet/in.h>
 #include <minmax.h>
 #include <auth/common.h>
+
+#include <ipc.pb-c.h>
 
 #ifdef __GNUC__
 # define _OCSERV_GCC_VERSION (__GNUC__ * 10000 + __GNUC_MINOR__ * 100 + __GNUC_PATCHLEVEL__)
@@ -47,6 +50,14 @@
 
 #define MAX_MSG_SIZE 16*1024
 
+enum {
+	PS_AUTH_INACTIVE, /* no comm with worker */
+	PS_AUTH_FAILED, /* no tried authenticated but failed */
+	PS_AUTH_INIT, /* worker has sent an auth init msg */
+	PS_AUTH_CONT, /* worker has sent an auth cont msg */
+	PS_AUTH_COMPLETED /* successful authentication */
+};
+
 typedef enum {
 	SOCK_TYPE_TCP,
 	SOCK_TYPE_UDP,
@@ -58,6 +69,35 @@ typedef enum {
 	OC_COMP_LZ4,
 	OC_COMP_LZS,
 } comp_type_t;
+
+typedef enum fw_proto_t {
+	PROTO_UDP,
+	PROTO_TCP,
+	PROTO_SCTP,
+	PROTO_ESP,
+	PROTO_ICMP,
+	PROTO_ICMPv6,
+
+	/* fix proto2str below if anything is added */
+	PROTO_MAX
+} fw_proto_t;
+
+
+inline static const char *proto_to_str(fw_proto_t proto)
+{
+	const char *proto2str[] = {
+		"udp",
+		"tcp",
+		"sctp",
+		"esp",
+		"icmp",
+		"icmpv6"
+	};
+
+	if (proto < 0 || proto >= PROTO_MAX)
+		return "unknown";
+	return proto2str[proto];
+}
 
 /* Banning works with a point system. A wrong password
  * attempt gives you PASSWORD_POINTS, and you are banned
@@ -72,12 +112,18 @@ typedef enum {
 #define MIN_NO_COMPRESS_LIMIT 64
 #define DEFAULT_NO_COMPRESS_LIMIT 256
 
+/* The time after a disconnection the cookie is valid */
+#define DEFAULT_COOKIE_RECON_TIMEOUT 120
+
 /* Timeout (secs) for communication between main and sec-mod */
 #define MAIN_SEC_MOD_TIMEOUT 120
+#define MAX_WAIT_SECS 3
 
 #define DEBUG_BASIC 1
+#define DEBUG_INFO  3
 #define DEBUG_HTTP  4
 #define DEBUG_TRANSFERRED 5
+#define DEBUG_SENSITIVE 8
 #define DEBUG_TLS   9
 
 #define DEFAULT_DPD_TIME 600
@@ -136,6 +182,7 @@ extern int syslog_open;
 
 #define LOG_HTTP_DEBUG 2048
 #define LOG_TRANSFER_DEBUG 2049
+#define LOG_SENSITIVE 2050
 
 /* Allow few seconds prior to cleaning up entries, to avoid any race
  * conditions when session control is enabled.
@@ -144,7 +191,7 @@ extern int syslog_open;
 
 
 #define MAX_CIPHERSUITE_NAME 64
-#define SID_SIZE 16
+#define SID_SIZE 32
 
 typedef enum {
 	AUTH_COOKIE_REP = 2,
@@ -161,77 +208,26 @@ typedef enum {
 	CMD_BAN_IP_REPLY = 17,
 
 	/* from worker to sec-mod */
-	SM_CMD_AUTH_INIT = 120,
-	SM_CMD_AUTH_CONT,
-	SM_CMD_AUTH_REP,
-	SM_CMD_DECRYPT,
-	SM_CMD_SIGN,
-	SM_CMD_CLI_STATS,
+	CMD_SEC_AUTH_INIT = 120,
+	CMD_SEC_AUTH_CONT,
+	CMD_SEC_AUTH_REPLY,
+	CMD_SEC_DECRYPT,
+	CMD_SEC_SIGN,
+	CMD_SEC_CLI_STATS,
 
 	/* from main to sec-mod and vice versa */
-	MIN_SM_MAIN_CMD=239,
-	SM_CMD_AUTH_SESSION_OPEN, /* sync: reply is SM_CMD_AUTH_SESSION_REPLY */
-	SM_CMD_AUTH_SESSION_CLOSE, /* sync: reply is SM_CMD_AUTH_CLI_STATS */
-	SM_CMD_AUTH_SESSION_REPLY,
-	SM_CMD_AUTH_BAN_IP,
-	SM_CMD_AUTH_BAN_IP_REPLY,
-	SM_CMD_AUTH_CLI_STATS,
-	SM_CMD_REFRESH_COOKIE_KEY,
+	MIN_SECM_CMD=239,
+	CMD_SECM_SESSION_OPEN, /* sync: reply is CMD_SECM_SESSION_REPLY */
+	CMD_SECM_SESSION_CLOSE, /* sync: reply is CMD_SECM_CLI_STATS */
+	CMD_SECM_SESSION_REPLY,
+	CMD_SECM_BAN_IP,
+	CMD_SECM_BAN_IP_REPLY,
+	CMD_SECM_CLI_STATS,
+	CMD_SECM_LIST_COOKIES,
+	CMD_SECM_LIST_COOKIES_REPLY,
 
-	MAX_SM_MAIN_CMD,
+	MAX_SECM_CMD,
 } cmd_request_t;
-
-struct group_cfg_st {
-	/* routes to be forwarded to the client */
-	char **routes;
-	size_t routes_size;
-
-	/* routes that are excluded */
-	char **no_routes;
-	size_t no_routes_size;
-
-	/* routes to be applied to the server */
-	char **iroutes;
-	size_t iroutes_size;
-
-	char **dns;
-	size_t dns_size;
-
-	char **nbns;
-	size_t nbns_size;
-
-	char *ipv4_network;
-	char *ipv6_network;
-	unsigned ipv6_prefix;
-	unsigned ipv6_subnet_prefix;
-	char *ipv4_netmask;
-
-	char *explicit_ipv4;
-	char *explicit_ipv6;
-
-	char *cgroup;
-
-	char *xml_config_file;
-
-	size_t rx_per_sec;
-	size_t tx_per_sec;
-
-	unsigned max_same_clients;
-	unsigned tunnel_all_dns;
-	unsigned dpd;
-	unsigned keepalive;
-	unsigned mobile_dpd;
-
-	/* the number of secs to send interim updates. If set, it overrides
-	 * stats-report-time. */
-	unsigned interim_update_secs;
-	unsigned session_timeout_secs;
-
-	unsigned deny_roaming; /* whether the user is allowed to re-use cookies from another IP */
-	unsigned net_priority;
-	unsigned no_udp; /* whether to disable UDP for this user */
-	unsigned restrict_user_to_routes;
-};
 
 struct vpn_st {
 	char name[IFNAMSIZ];
@@ -328,10 +324,10 @@ struct cfg_st {
 	char **split_dns;
 	size_t split_dns_size;;
 
+	unsigned int append_routes; /* whether to append global routes to per-user config */
 	unsigned restrict_user_to_routes; /* whether the firewall script will be run for the user */
 	unsigned deny_roaming; /* whether a cookie is restricted to a single IP */
 	time_t cookie_timeout;	/* in seconds */
-	time_t cookie_rekey_time;	/* in seconds */
 	time_t session_timeout;	/* in seconds */
 	unsigned persistent_cookies; /* whether cookies stay valid after disconnect */
 
@@ -354,8 +350,6 @@ struct cfg_st {
 	unsigned keepalive;
 	unsigned dpd;
 	unsigned mobile_dpd;
-	unsigned foreground;
-	unsigned debug;
 	unsigned max_clients;
 	unsigned max_same_clients;
 	unsigned use_utmp;
@@ -407,8 +401,14 @@ struct cfg_st {
 	char **known_iroutes;
 	size_t known_iroutes_size;
 
+	FwPortSt **fw_ports;
+	size_t n_fw_ports;
+
 	/* the tun network */
 	struct vpn_st network;
+
+	/* holds a usage count of holders of pointers in this struct */
+	int *usage_count;
 };
 
 struct perm_cfg_st {
@@ -441,6 +441,9 @@ struct perm_cfg_st {
 	char *cert_hash;
 #endif
 
+	unsigned foreground;
+	unsigned debug;
+
 	char *ca;
 	char *dh_params_file;
 
@@ -448,7 +451,16 @@ struct perm_cfg_st {
 	char* unix_conn_file;
 	unsigned int port;
 	unsigned int udp_port;
+
+	/* attic, where old config allocated values are stored */
+	struct list_head attic;
 };
+
+typedef struct attic_entry_st {
+	struct list_node list;
+	int *usage_count;
+} attic_entry_st;
+
 
 /* generic thing to stop complaints */
 struct worker_st;
@@ -468,10 +480,6 @@ struct main_server_st;
 #include <tun.h>
 
 unsigned extract_prefix(char *network);
-char *human_addr2(const struct sockaddr *sa, socklen_t salen,
-		       void *buf, size_t buflen, unsigned full);
-
-#define human_addr(x, y, z, w) human_addr2(x, y, z, w, 1)
 
 /* macros */
 #define TOS_PACK(x) (x<<4)
@@ -482,5 +490,13 @@ char *human_addr2(const struct sockaddr *sa, socklen_t salen,
 enum option_types { OPTION_NUMERIC, OPTION_STRING, OPTION_BOOLEAN, OPTION_MULTI_LINE };
 
 #include <ip-util.h>
+
+void reload_cfg_file(void *pool, struct perm_cfg_st* config, unsigned archive);
+void clear_old_configs(struct perm_cfg_st* config);
+void clear_cfg(struct perm_cfg_st* config);
+void write_pid_file(void);
+void remove_pid_file(void);
+
+extern sigset_t sig_default_set;
 
 #endif

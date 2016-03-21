@@ -29,7 +29,6 @@
 #include <unistd.h>
 #include <net/if.h>
 #include <vpn.h>
-#include <cookies.h>
 #include <tlslib.h>
 #include <common.h>
 #include <str.h>
@@ -100,6 +99,7 @@ typedef struct dtls_ciphersuite_st {
 	const char* gnutls_name; /* the gnutls priority string to set */
 	unsigned server_prio; /* the highest the more we want to negotiate that */
 	unsigned gnutls_cipher;
+	unsigned gnutls_kx;
 	unsigned gnutls_mac;
 	unsigned gnutls_version;
 	const char *txt_version;
@@ -120,7 +120,7 @@ struct http_req_st {
 
 	char hostname[MAX_HOSTNAME_SIZE];
 	char user_agent[MAX_AGENT_NAME];
-	unsigned user_agent_type;;
+	unsigned user_agent_type;
 
 	unsigned int next_header;
 
@@ -252,10 +252,11 @@ typedef struct worker_st {
 	unsigned cert_groups_size;
 
 	char hostname[MAX_HOSTNAME_SIZE];
-	uint8_t *cookie;
-	unsigned cookie_size;
+	uint8_t cookie[SID_SIZE];
 
 	unsigned int cookie_set;
+
+	GroupCfgSt *user_config;
 
 	uint8_t master_secret[TLS_MASTER_SIZE];
 	uint8_t session_id[GNUTLS_MAX_SESSION_ID];
@@ -273,17 +274,6 @@ typedef struct worker_st {
 	struct vpn_st vinfo;
 	unsigned default_route;
 	
-	/* additional data - received per user or per group */
-	unsigned routes_size;
-	char** routes;
-	unsigned no_routes_size;
-	char** no_routes;
-
-	unsigned dns_size;
-	char** dns;
-	unsigned nbns_size;
-	char** nbns;
-
 	void *main_pool; /* to be used only on deinitialization */
 } worker_st;
 
@@ -296,6 +286,7 @@ int get_auth_handler(worker_st *server, unsigned http_ver);
 int post_auth_handler(worker_st *server, unsigned http_ver);
 int post_kkdcp_handler(worker_st *server, unsigned http_ver);
 
+int response_404(worker_st *ws, unsigned http_ver);
 int get_empty_handler(worker_st *server, unsigned http_ver);
 int get_config_handler(worker_st *ws, unsigned http_ver);
 int get_string_handler(worker_st *ws, unsigned http_ver);
@@ -335,14 +326,14 @@ url_handler_fn http_post_url_handler(worker_st * ws, const char *url);
 
 int complete_vpn_info(worker_st * ws,
                     struct vpn_st* vinfo);
-unsigned check_if_default_route(char **routes, unsigned routes_size);
 
 int send_tun_mtu(worker_st *ws, unsigned int mtu);
-int handle_worker_commands(struct worker_st *ws);
+int handle_commands_from_main(struct worker_st *ws);
 int disable_system_calls(struct worker_st *ws);
 void ocsigaltstack(struct worker_st *ws);
 
 void exit_worker(worker_st * ws);
+void exit_worker_reason(worker_st * ws, unsigned reason);
 
 int ws_switch_auth_to(struct worker_st *ws, unsigned auth);
 void ws_disable_auth(struct worker_st *ws, unsigned auth);
@@ -369,10 +360,11 @@ int send_msg_to_main(worker_st *ws, uint8_t cmd,
 
 int parse_proxy_proto_header(struct worker_st *ws, int fd);
 
+void cookie_authenticate_or_exit(worker_st *ws);
+
 /* after that time (secs) of inactivity in the UDP part, connection switches to 
  * TCP (if activity occurs there).
  */
 #define UDP_SWITCH_TIME 15
-#define ACTIVE_SESSION_TIMEOUT 30
 
 #endif

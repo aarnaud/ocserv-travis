@@ -16,7 +16,9 @@ PROTOBUF_C__BEGIN_DECLS
 
 
 typedef struct _AuthCookieRequestMsg AuthCookieRequestMsg;
-typedef struct _AuthReplyMsg AuthReplyMsg;
+typedef struct _FwPortSt FwPortSt;
+typedef struct _GroupCfgSt GroupCfgSt;
+typedef struct _AuthCookieReplyMsg AuthCookieReplyMsg;
 typedef struct _SessionResumeFetchMsg SessionResumeFetchMsg;
 typedef struct _SessionResumeStoreReqMsg SessionResumeStoreReqMsg;
 typedef struct _SessionResumeReplyMsg SessionResumeReplyMsg;
@@ -30,10 +32,11 @@ typedef struct _SecAuthInitMsg SecAuthInitMsg;
 typedef struct _SecAuthContMsg SecAuthContMsg;
 typedef struct _SecAuthReplyMsg SecAuthReplyMsg;
 typedef struct _SecOpMsg SecOpMsg;
-typedef struct _Cookie Cookie;
-typedef struct _SecAuthSessionMsg SecAuthSessionMsg;
-typedef struct _SecAuthSessionReplyMsg SecAuthSessionReplyMsg;
-typedef struct _SecRefreshCookieKey SecRefreshCookieKey;
+typedef struct _SecmSessionOpenMsg SecmSessionOpenMsg;
+typedef struct _SecmSessionCloseMsg SecmSessionCloseMsg;
+typedef struct _SecmSessionReplyMsg SecmSessionReplyMsg;
+typedef struct _CookieIntMsg CookieIntMsg;
+typedef struct _SecmListCookiesReplyMsg SecmListCookiesReplyMsg;
 
 
 /* --- enums --- */
@@ -62,286 +65,21 @@ struct  _AuthCookieRequestMsg
     , {0,NULL} }
 
 
-struct  _AuthReplyMsg
+struct  _FwPortSt
 {
   ProtobufCMessage base;
-  AUTHREP reply;
-  protobuf_c_boolean has_session_id;
-  ProtobufCBinaryData session_id;
-  char *vname;
-  char *user_name;
-  char *group_name;
-  char *ipv4;
-  char *ipv6;
-  char *ipv4_local;
-  char *ipv6_local;
-  char *ipv4_netmask;
-  char *ipv6_netmask;
-  protobuf_c_boolean has_ipv6_prefix;
-  uint32_t ipv6_prefix;
-  protobuf_c_boolean has_rx_per_sec;
-  uint32_t rx_per_sec;
-  protobuf_c_boolean has_tx_per_sec;
-  uint32_t tx_per_sec;
-  protobuf_c_boolean has_net_priority;
-  uint32_t net_priority;
-  size_t n_routes;
-  char **routes;
-  size_t n_dns;
-  char **dns;
-  size_t n_nbns;
-  char **nbns;
-  protobuf_c_boolean has_no_udp;
-  protobuf_c_boolean no_udp;
-  char *xml_config_file;
-  char *ipv4_network;
-  char *ipv6_network;
-  size_t n_no_routes;
-  char **no_routes;
-  ProtobufCBinaryData sid;
-  protobuf_c_boolean has_interim_update_secs;
-  uint32_t interim_update_secs;
-  protobuf_c_boolean has_session_timeout_secs;
-  uint32_t session_timeout_secs;
-  protobuf_c_boolean has_ipv6_subnet_prefix;
-  uint32_t ipv6_subnet_prefix;
-  protobuf_c_boolean has_dpd;
-  uint32_t dpd;
-  protobuf_c_boolean has_mobile_dpd;
-  uint32_t mobile_dpd;
-  protobuf_c_boolean has_keepalive;
-  uint32_t keepalive;
-  protobuf_c_boolean has_tunnel_all_dns;
-  uint32_t tunnel_all_dns;
+  uint32_t port;
+  uint32_t proto;
+  uint32_t negate;
 };
-#define AUTH_REPLY_MSG__INIT \
- { PROTOBUF_C_MESSAGE_INIT (&auth_reply_msg__descriptor) \
-    , 0, 0,{0,NULL}, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0,0, 0,0, 0,0, 0,0, 0,NULL, 0,NULL, 0,NULL, 0,0, NULL, NULL, NULL, 0,NULL, {0,NULL}, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0 }
+#define FW_PORT_ST__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&fw_port_st__descriptor) \
+    , 0, 0, 0 }
 
 
-struct  _SessionResumeFetchMsg
+struct  _GroupCfgSt
 {
   ProtobufCMessage base;
-  ProtobufCBinaryData session_id;
-};
-#define SESSION_RESUME_FETCH_MSG__INIT \
- { PROTOBUF_C_MESSAGE_INIT (&session_resume_fetch_msg__descriptor) \
-    , {0,NULL} }
-
-
-struct  _SessionResumeStoreReqMsg
-{
-  ProtobufCMessage base;
-  ProtobufCBinaryData session_id;
-  ProtobufCBinaryData session_data;
-};
-#define SESSION_RESUME_STORE_REQ_MSG__INIT \
- { PROTOBUF_C_MESSAGE_INIT (&session_resume_store_req_msg__descriptor) \
-    , {0,NULL}, {0,NULL} }
-
-
-struct  _SessionResumeReplyMsg
-{
-  ProtobufCMessage base;
-  SessionResumeReplyMsg__RESUMEREP reply;
-  protobuf_c_boolean has_session_data;
-  ProtobufCBinaryData session_data;
-};
-#define SESSION_RESUME_REPLY_MSG__INIT \
- { PROTOBUF_C_MESSAGE_INIT (&session_resume_reply_msg__descriptor) \
-    , 0, 0,{0,NULL} }
-
-
-struct  _TunMtuMsg
-{
-  ProtobufCMessage base;
-  uint32_t mtu;
-};
-#define TUN_MTU_MSG__INIT \
- { PROTOBUF_C_MESSAGE_INIT (&tun_mtu_msg__descriptor) \
-    , 0 }
-
-
-struct  _CliStatsMsg
-{
-  ProtobufCMessage base;
-  uint64_t bytes_in;
-  uint64_t bytes_out;
-  protobuf_c_boolean has_sid;
-  ProtobufCBinaryData sid;
-  uint32_t uptime;
-  char *remote_ip;
-  char *ipv4;
-  char *ipv6;
-  protobuf_c_boolean has_discon_reason;
-  uint32_t discon_reason;
-  protobuf_c_boolean has_secmod_client_entries;
-  uint32_t secmod_client_entries;
-};
-#define CLI_STATS_MSG__INIT \
- { PROTOBUF_C_MESSAGE_INIT (&cli_stats_msg__descriptor) \
-    , 0, 0, 0,{0,NULL}, 0, NULL, NULL, NULL, 0,0, 0,0 }
-
-
-struct  _UdpFdMsg
-{
-  ProtobufCMessage base;
-  protobuf_c_boolean hello;
-  protobuf_c_boolean has_data;
-  ProtobufCBinaryData data;
-};
-#define UDP_FD_MSG__INIT \
- { PROTOBUF_C_MESSAGE_INIT (&udp_fd_msg__descriptor) \
-    , 1, 0,{0,NULL} }
-
-
-struct  _SessionInfoMsg
-{
-  ProtobufCMessage base;
-  char *tls_ciphersuite;
-  char *dtls_ciphersuite;
-  char *user_agent;
-  char *cstp_compr;
-  char *dtls_compr;
-  protobuf_c_boolean has_our_addr;
-  ProtobufCBinaryData our_addr;
-  protobuf_c_boolean has_remote_addr;
-  ProtobufCBinaryData remote_addr;
-};
-#define SESSION_INFO_MSG__INIT \
- { PROTOBUF_C_MESSAGE_INIT (&session_info_msg__descriptor) \
-    , NULL, NULL, NULL, NULL, NULL, 0,{0,NULL}, 0,{0,NULL} }
-
-
-struct  _BanIpMsg
-{
-  ProtobufCMessage base;
-  char *ip;
-  uint32_t score;
-  protobuf_c_boolean has_sid;
-  ProtobufCBinaryData sid;
-};
-#define BAN_IP_MSG__INIT \
- { PROTOBUF_C_MESSAGE_INIT (&ban_ip_msg__descriptor) \
-    , NULL, 0, 0,{0,NULL} }
-
-
-struct  _BanIpReplyMsg
-{
-  ProtobufCMessage base;
-  AUTHREP reply;
-  protobuf_c_boolean has_sid;
-  ProtobufCBinaryData sid;
-};
-#define BAN_IP_REPLY_MSG__INIT \
- { PROTOBUF_C_MESSAGE_INIT (&ban_ip_reply_msg__descriptor) \
-    , 0, 0,{0,NULL} }
-
-
-struct  _SecAuthInitMsg
-{
-  ProtobufCMessage base;
-  protobuf_c_boolean tls_auth_ok;
-  char *user_name;
-  char *group_name;
-  char *cert_user_name;
-  size_t n_cert_group_names;
-  char **cert_group_names;
-  char *hostname;
-  char *ip;
-  uint32_t auth_type;
-  char *our_ip;
-};
-#define SEC_AUTH_INIT_MSG__INIT \
- { PROTOBUF_C_MESSAGE_INIT (&sec_auth_init_msg__descriptor) \
-    , 0, NULL, NULL, NULL, 0,NULL, NULL, NULL, 0u, NULL }
-
-
-struct  _SecAuthContMsg
-{
-  ProtobufCMessage base;
-  char *password;
-  ProtobufCBinaryData sid;
-  char *ip;
-};
-#define SEC_AUTH_CONT_MSG__INIT \
- { PROTOBUF_C_MESSAGE_INIT (&sec_auth_cont_msg__descriptor) \
-    , NULL, {0,NULL}, NULL }
-
-
-struct  _SecAuthReplyMsg
-{
-  ProtobufCMessage base;
-  AUTHREP reply;
-  protobuf_c_boolean has_cookie;
-  ProtobufCBinaryData cookie;
-  char *user_name;
-  char *msg;
-  protobuf_c_boolean has_dtls_session_id;
-  ProtobufCBinaryData dtls_session_id;
-  protobuf_c_boolean has_sid;
-  ProtobufCBinaryData sid;
-  protobuf_c_boolean has_passwd_counter;
-  uint32_t passwd_counter;
-};
-#define SEC_AUTH_REPLY_MSG__INIT \
- { PROTOBUF_C_MESSAGE_INIT (&sec_auth_reply_msg__descriptor) \
-    , 0, 0,{0,NULL}, NULL, NULL, 0,{0,NULL}, 0,{0,NULL}, 0,0 }
-
-
-struct  _SecOpMsg
-{
-  ProtobufCMessage base;
-  protobuf_c_boolean has_key_idx;
-  uint32_t key_idx;
-  ProtobufCBinaryData data;
-};
-#define SEC_OP_MSG__INIT \
- { PROTOBUF_C_MESSAGE_INIT (&sec_op_msg__descriptor) \
-    , 0,0, {0,NULL} }
-
-
-struct  _Cookie
-{
-  ProtobufCMessage base;
-  char *username;
-  char *groupname;
-  char *hostname;
-  char *ip;
-  uint32_t expiration;
-  uint32_t ipv4_seed;
-  ProtobufCBinaryData sid;
-  protobuf_c_boolean tls_auth_ok;
-};
-#define COOKIE__INIT \
- { PROTOBUF_C_MESSAGE_INIT (&cookie__descriptor) \
-    , NULL, NULL, NULL, NULL, 0, 0, {0,NULL}, 0 }
-
-
-struct  _SecAuthSessionMsg
-{
-  ProtobufCMessage base;
-  ProtobufCBinaryData sid;
-  protobuf_c_boolean has_cookie;
-  ProtobufCBinaryData cookie;
-  protobuf_c_boolean has_uptime;
-  uint32_t uptime;
-  protobuf_c_boolean has_bytes_in;
-  uint64_t bytes_in;
-  protobuf_c_boolean has_bytes_out;
-  uint64_t bytes_out;
-  char *ipv4;
-  char *ipv6;
-};
-#define SEC_AUTH_SESSION_MSG__INIT \
- { PROTOBUF_C_MESSAGE_INIT (&sec_auth_session_msg__descriptor) \
-    , {0,NULL}, 0,{0,NULL}, 0,0, 0,0, 0,0, NULL, NULL }
-
-
-struct  _SecAuthSessionReplyMsg
-{
-  ProtobufCMessage base;
-  AUTHREP reply;
   protobuf_c_boolean has_interim_update_secs;
   uint32_t interim_update_secs;
   protobuf_c_boolean has_session_timeout_secs;
@@ -389,20 +127,300 @@ struct  _SecAuthSessionReplyMsg
   uint32_t tunnel_all_dns;
   protobuf_c_boolean has_restrict_user_to_routes;
   protobuf_c_boolean restrict_user_to_routes;
+  protobuf_c_boolean has_mtu;
+  uint32_t mtu;
+  protobuf_c_boolean has_idle_timeout;
+  uint32_t idle_timeout;
+  protobuf_c_boolean has_mobile_idle_timeout;
+  uint32_t mobile_idle_timeout;
+  size_t n_fw_ports;
+  FwPortSt **fw_ports;
 };
-#define SEC_AUTH_SESSION_REPLY_MSG__INIT \
- { PROTOBUF_C_MESSAGE_INIT (&sec_auth_session_reply_msg__descriptor) \
-    , 0, 0,0, 0,0, 0,0, 0,0, 0,NULL, 0,NULL, 0,NULL, 0,NULL, NULL, NULL, NULL, 0,0, NULL, NULL, 0,0, 0,0, 0,0, NULL, NULL, 0,NULL, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0 }
+#define GROUP_CFG_ST__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&group_cfg_st__descriptor) \
+    , 0,0, 0,0, 0,0, 0,0, 0,NULL, 0,NULL, 0,NULL, 0,NULL, NULL, NULL, NULL, 0,0, NULL, NULL, 0,0, 0,0, 0,0, NULL, NULL, 0,NULL, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,NULL }
 
 
-struct  _SecRefreshCookieKey
+struct  _AuthCookieReplyMsg
 {
   ProtobufCMessage base;
-  ProtobufCBinaryData key;
+  AUTHREP reply;
+  protobuf_c_boolean has_session_id;
+  ProtobufCBinaryData session_id;
+  char *vname;
+  char *user_name;
+  char *group_name;
+  char *ipv4;
+  char *ipv6;
+  char *ipv4_local;
+  char *ipv6_local;
+  ProtobufCBinaryData sid;
+  GroupCfgSt *config;
 };
-#define SEC_REFRESH_COOKIE_KEY__INIT \
- { PROTOBUF_C_MESSAGE_INIT (&sec_refresh_cookie_key__descriptor) \
-    , {0,NULL} }
+#define AUTH_COOKIE_REPLY_MSG__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&auth_cookie_reply_msg__descriptor) \
+    , 0, 0,{0,NULL}, NULL, NULL, NULL, NULL, NULL, NULL, NULL, {0,NULL}, NULL }
+
+
+struct  _SessionResumeFetchMsg
+{
+  ProtobufCMessage base;
+  ProtobufCBinaryData session_id;
+  ProtobufCBinaryData cli_addr;
+};
+#define SESSION_RESUME_FETCH_MSG__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&session_resume_fetch_msg__descriptor) \
+    , {0,NULL}, {0,NULL} }
+
+
+struct  _SessionResumeStoreReqMsg
+{
+  ProtobufCMessage base;
+  ProtobufCBinaryData session_id;
+  ProtobufCBinaryData session_data;
+  ProtobufCBinaryData cli_addr;
+};
+#define SESSION_RESUME_STORE_REQ_MSG__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&session_resume_store_req_msg__descriptor) \
+    , {0,NULL}, {0,NULL}, {0,NULL} }
+
+
+struct  _SessionResumeReplyMsg
+{
+  ProtobufCMessage base;
+  SessionResumeReplyMsg__RESUMEREP reply;
+  protobuf_c_boolean has_session_data;
+  ProtobufCBinaryData session_data;
+};
+#define SESSION_RESUME_REPLY_MSG__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&session_resume_reply_msg__descriptor) \
+    , 0, 0,{0,NULL} }
+
+
+struct  _TunMtuMsg
+{
+  ProtobufCMessage base;
+  uint32_t mtu;
+};
+#define TUN_MTU_MSG__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&tun_mtu_msg__descriptor) \
+    , 0 }
+
+
+struct  _CliStatsMsg
+{
+  ProtobufCMessage base;
+  uint64_t bytes_in;
+  uint64_t bytes_out;
+  protobuf_c_boolean has_sid;
+  ProtobufCBinaryData sid;
+  uint32_t uptime;
+  char *remote_ip;
+  char *ipv4;
+  char *ipv6;
+  protobuf_c_boolean has_discon_reason;
+  uint32_t discon_reason;
+  protobuf_c_boolean has_secmod_client_entries;
+  uint32_t secmod_client_entries;
+  protobuf_c_boolean has_secmod_tlsdb_entries;
+  uint32_t secmod_tlsdb_entries;
+};
+#define CLI_STATS_MSG__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&cli_stats_msg__descriptor) \
+    , 0, 0, 0,{0,NULL}, 0, NULL, NULL, NULL, 0,0, 0,0, 0,0 }
+
+
+struct  _UdpFdMsg
+{
+  ProtobufCMessage base;
+  protobuf_c_boolean hello;
+  ProtobufCBinaryData data;
+};
+#define UDP_FD_MSG__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&udp_fd_msg__descriptor) \
+    , 1, {0,NULL} }
+
+
+struct  _SessionInfoMsg
+{
+  ProtobufCMessage base;
+  char *tls_ciphersuite;
+  char *dtls_ciphersuite;
+  char *user_agent;
+  char *cstp_compr;
+  char *dtls_compr;
+  protobuf_c_boolean has_our_addr;
+  ProtobufCBinaryData our_addr;
+  protobuf_c_boolean has_remote_addr;
+  ProtobufCBinaryData remote_addr;
+  char *hostname;
+};
+#define SESSION_INFO_MSG__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&session_info_msg__descriptor) \
+    , NULL, NULL, NULL, NULL, NULL, 0,{0,NULL}, 0,{0,NULL}, NULL }
+
+
+struct  _BanIpMsg
+{
+  ProtobufCMessage base;
+  char *ip;
+  uint32_t score;
+  protobuf_c_boolean has_sid;
+  ProtobufCBinaryData sid;
+};
+#define BAN_IP_MSG__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&ban_ip_msg__descriptor) \
+    , NULL, 0, 0,{0,NULL} }
+
+
+struct  _BanIpReplyMsg
+{
+  ProtobufCMessage base;
+  AUTHREP reply;
+  protobuf_c_boolean has_sid;
+  ProtobufCBinaryData sid;
+};
+#define BAN_IP_REPLY_MSG__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&ban_ip_reply_msg__descriptor) \
+    , 0, 0,{0,NULL} }
+
+
+struct  _SecAuthInitMsg
+{
+  ProtobufCMessage base;
+  protobuf_c_boolean tls_auth_ok;
+  char *user_name;
+  char *group_name;
+  char *cert_user_name;
+  size_t n_cert_group_names;
+  char **cert_group_names;
+  char *ip;
+  uint32_t auth_type;
+  char *our_ip;
+  char *user_agent;
+};
+#define SEC_AUTH_INIT_MSG__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&sec_auth_init_msg__descriptor) \
+    , 0, NULL, NULL, NULL, 0,NULL, NULL, 0u, NULL, NULL }
+
+
+struct  _SecAuthContMsg
+{
+  ProtobufCMessage base;
+  char *password;
+  ProtobufCBinaryData sid;
+  char *ip;
+};
+#define SEC_AUTH_CONT_MSG__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&sec_auth_cont_msg__descriptor) \
+    , NULL, {0,NULL}, NULL }
+
+
+struct  _SecAuthReplyMsg
+{
+  ProtobufCMessage base;
+  AUTHREP reply;
+  char *user_name;
+  char *msg;
+  protobuf_c_boolean has_dtls_session_id;
+  ProtobufCBinaryData dtls_session_id;
+  protobuf_c_boolean has_sid;
+  ProtobufCBinaryData sid;
+  protobuf_c_boolean has_passwd_counter;
+  uint32_t passwd_counter;
+};
+#define SEC_AUTH_REPLY_MSG__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&sec_auth_reply_msg__descriptor) \
+    , 0, NULL, NULL, 0,{0,NULL}, 0,{0,NULL}, 0,0 }
+
+
+struct  _SecOpMsg
+{
+  ProtobufCMessage base;
+  protobuf_c_boolean has_key_idx;
+  uint32_t key_idx;
+  ProtobufCBinaryData data;
+};
+#define SEC_OP_MSG__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&sec_op_msg__descriptor) \
+    , 0,0, {0,NULL} }
+
+
+struct  _SecmSessionOpenMsg
+{
+  ProtobufCMessage base;
+  ProtobufCBinaryData sid;
+  char *ipv4;
+  char *ipv6;
+};
+#define SECM_SESSION_OPEN_MSG__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&secm_session_open_msg__descriptor) \
+    , {0,NULL}, NULL, NULL }
+
+
+struct  _SecmSessionCloseMsg
+{
+  ProtobufCMessage base;
+  ProtobufCBinaryData sid;
+  protobuf_c_boolean has_uptime;
+  uint32_t uptime;
+  protobuf_c_boolean has_bytes_in;
+  uint64_t bytes_in;
+  protobuf_c_boolean has_bytes_out;
+  uint64_t bytes_out;
+  char *ipv4;
+  char *ipv6;
+};
+#define SECM_SESSION_CLOSE_MSG__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&secm_session_close_msg__descriptor) \
+    , {0,NULL}, 0,0, 0,0, 0,0, NULL, NULL }
+
+
+struct  _SecmSessionReplyMsg
+{
+  ProtobufCMessage base;
+  AUTHREP reply;
+  GroupCfgSt *config;
+  char *username;
+  char *groupname;
+  char *ip;
+  uint32_t ipv4_seed;
+  ProtobufCBinaryData sid;
+  protobuf_c_boolean tls_auth_ok;
+};
+#define SECM_SESSION_REPLY_MSG__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&secm_session_reply_msg__descriptor) \
+    , 0, NULL, NULL, NULL, NULL, 0, {0,NULL}, 0 }
+
+
+struct  _CookieIntMsg
+{
+  ProtobufCMessage base;
+  ProtobufCBinaryData sid;
+  protobuf_c_boolean session_is_open;
+  protobuf_c_boolean tls_auth_ok;
+  uint32_t last_modified;
+  char *username;
+  char *groupname;
+  char *user_agent;
+  char *remote_ip;
+  char *psid;
+  uint32_t status;
+};
+#define COOKIE_INT_MSG__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&cookie_int_msg__descriptor) \
+    , {0,NULL}, 0, 0, 0, NULL, NULL, NULL, NULL, NULL, 0 }
+
+
+struct  _SecmListCookiesReplyMsg
+{
+  ProtobufCMessage base;
+  size_t n_cookies;
+  CookieIntMsg **cookies;
+};
+#define SECM_LIST_COOKIES_REPLY_MSG__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&secm_list_cookies_reply_msg__descriptor) \
+    , 0,NULL }
 
 
 /* AuthCookieRequestMsg methods */
@@ -424,24 +442,62 @@ AuthCookieRequestMsg *
 void   auth_cookie_request_msg__free_unpacked
                      (AuthCookieRequestMsg *message,
                       ProtobufCAllocator *allocator);
-/* AuthReplyMsg methods */
-void   auth_reply_msg__init
-                     (AuthReplyMsg         *message);
-size_t auth_reply_msg__get_packed_size
-                     (const AuthReplyMsg   *message);
-size_t auth_reply_msg__pack
-                     (const AuthReplyMsg   *message,
+/* FwPortSt methods */
+void   fw_port_st__init
+                     (FwPortSt         *message);
+size_t fw_port_st__get_packed_size
+                     (const FwPortSt   *message);
+size_t fw_port_st__pack
+                     (const FwPortSt   *message,
                       uint8_t             *out);
-size_t auth_reply_msg__pack_to_buffer
-                     (const AuthReplyMsg   *message,
+size_t fw_port_st__pack_to_buffer
+                     (const FwPortSt   *message,
                       ProtobufCBuffer     *buffer);
-AuthReplyMsg *
-       auth_reply_msg__unpack
+FwPortSt *
+       fw_port_st__unpack
                      (ProtobufCAllocator  *allocator,
                       size_t               len,
                       const uint8_t       *data);
-void   auth_reply_msg__free_unpacked
-                     (AuthReplyMsg *message,
+void   fw_port_st__free_unpacked
+                     (FwPortSt *message,
+                      ProtobufCAllocator *allocator);
+/* GroupCfgSt methods */
+void   group_cfg_st__init
+                     (GroupCfgSt         *message);
+size_t group_cfg_st__get_packed_size
+                     (const GroupCfgSt   *message);
+size_t group_cfg_st__pack
+                     (const GroupCfgSt   *message,
+                      uint8_t             *out);
+size_t group_cfg_st__pack_to_buffer
+                     (const GroupCfgSt   *message,
+                      ProtobufCBuffer     *buffer);
+GroupCfgSt *
+       group_cfg_st__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data);
+void   group_cfg_st__free_unpacked
+                     (GroupCfgSt *message,
+                      ProtobufCAllocator *allocator);
+/* AuthCookieReplyMsg methods */
+void   auth_cookie_reply_msg__init
+                     (AuthCookieReplyMsg         *message);
+size_t auth_cookie_reply_msg__get_packed_size
+                     (const AuthCookieReplyMsg   *message);
+size_t auth_cookie_reply_msg__pack
+                     (const AuthCookieReplyMsg   *message,
+                      uint8_t             *out);
+size_t auth_cookie_reply_msg__pack_to_buffer
+                     (const AuthCookieReplyMsg   *message,
+                      ProtobufCBuffer     *buffer);
+AuthCookieReplyMsg *
+       auth_cookie_reply_msg__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data);
+void   auth_cookie_reply_msg__free_unpacked
+                     (AuthCookieReplyMsg *message,
                       ProtobufCAllocator *allocator);
 /* SessionResumeFetchMsg methods */
 void   session_resume_fetch_msg__init
@@ -690,89 +746,114 @@ SecOpMsg *
 void   sec_op_msg__free_unpacked
                      (SecOpMsg *message,
                       ProtobufCAllocator *allocator);
-/* Cookie methods */
-void   cookie__init
-                     (Cookie         *message);
-size_t cookie__get_packed_size
-                     (const Cookie   *message);
-size_t cookie__pack
-                     (const Cookie   *message,
+/* SecmSessionOpenMsg methods */
+void   secm_session_open_msg__init
+                     (SecmSessionOpenMsg         *message);
+size_t secm_session_open_msg__get_packed_size
+                     (const SecmSessionOpenMsg   *message);
+size_t secm_session_open_msg__pack
+                     (const SecmSessionOpenMsg   *message,
                       uint8_t             *out);
-size_t cookie__pack_to_buffer
-                     (const Cookie   *message,
+size_t secm_session_open_msg__pack_to_buffer
+                     (const SecmSessionOpenMsg   *message,
                       ProtobufCBuffer     *buffer);
-Cookie *
-       cookie__unpack
+SecmSessionOpenMsg *
+       secm_session_open_msg__unpack
                      (ProtobufCAllocator  *allocator,
                       size_t               len,
                       const uint8_t       *data);
-void   cookie__free_unpacked
-                     (Cookie *message,
+void   secm_session_open_msg__free_unpacked
+                     (SecmSessionOpenMsg *message,
                       ProtobufCAllocator *allocator);
-/* SecAuthSessionMsg methods */
-void   sec_auth_session_msg__init
-                     (SecAuthSessionMsg         *message);
-size_t sec_auth_session_msg__get_packed_size
-                     (const SecAuthSessionMsg   *message);
-size_t sec_auth_session_msg__pack
-                     (const SecAuthSessionMsg   *message,
+/* SecmSessionCloseMsg methods */
+void   secm_session_close_msg__init
+                     (SecmSessionCloseMsg         *message);
+size_t secm_session_close_msg__get_packed_size
+                     (const SecmSessionCloseMsg   *message);
+size_t secm_session_close_msg__pack
+                     (const SecmSessionCloseMsg   *message,
                       uint8_t             *out);
-size_t sec_auth_session_msg__pack_to_buffer
-                     (const SecAuthSessionMsg   *message,
+size_t secm_session_close_msg__pack_to_buffer
+                     (const SecmSessionCloseMsg   *message,
                       ProtobufCBuffer     *buffer);
-SecAuthSessionMsg *
-       sec_auth_session_msg__unpack
+SecmSessionCloseMsg *
+       secm_session_close_msg__unpack
                      (ProtobufCAllocator  *allocator,
                       size_t               len,
                       const uint8_t       *data);
-void   sec_auth_session_msg__free_unpacked
-                     (SecAuthSessionMsg *message,
+void   secm_session_close_msg__free_unpacked
+                     (SecmSessionCloseMsg *message,
                       ProtobufCAllocator *allocator);
-/* SecAuthSessionReplyMsg methods */
-void   sec_auth_session_reply_msg__init
-                     (SecAuthSessionReplyMsg         *message);
-size_t sec_auth_session_reply_msg__get_packed_size
-                     (const SecAuthSessionReplyMsg   *message);
-size_t sec_auth_session_reply_msg__pack
-                     (const SecAuthSessionReplyMsg   *message,
+/* SecmSessionReplyMsg methods */
+void   secm_session_reply_msg__init
+                     (SecmSessionReplyMsg         *message);
+size_t secm_session_reply_msg__get_packed_size
+                     (const SecmSessionReplyMsg   *message);
+size_t secm_session_reply_msg__pack
+                     (const SecmSessionReplyMsg   *message,
                       uint8_t             *out);
-size_t sec_auth_session_reply_msg__pack_to_buffer
-                     (const SecAuthSessionReplyMsg   *message,
+size_t secm_session_reply_msg__pack_to_buffer
+                     (const SecmSessionReplyMsg   *message,
                       ProtobufCBuffer     *buffer);
-SecAuthSessionReplyMsg *
-       sec_auth_session_reply_msg__unpack
+SecmSessionReplyMsg *
+       secm_session_reply_msg__unpack
                      (ProtobufCAllocator  *allocator,
                       size_t               len,
                       const uint8_t       *data);
-void   sec_auth_session_reply_msg__free_unpacked
-                     (SecAuthSessionReplyMsg *message,
+void   secm_session_reply_msg__free_unpacked
+                     (SecmSessionReplyMsg *message,
                       ProtobufCAllocator *allocator);
-/* SecRefreshCookieKey methods */
-void   sec_refresh_cookie_key__init
-                     (SecRefreshCookieKey         *message);
-size_t sec_refresh_cookie_key__get_packed_size
-                     (const SecRefreshCookieKey   *message);
-size_t sec_refresh_cookie_key__pack
-                     (const SecRefreshCookieKey   *message,
+/* CookieIntMsg methods */
+void   cookie_int_msg__init
+                     (CookieIntMsg         *message);
+size_t cookie_int_msg__get_packed_size
+                     (const CookieIntMsg   *message);
+size_t cookie_int_msg__pack
+                     (const CookieIntMsg   *message,
                       uint8_t             *out);
-size_t sec_refresh_cookie_key__pack_to_buffer
-                     (const SecRefreshCookieKey   *message,
+size_t cookie_int_msg__pack_to_buffer
+                     (const CookieIntMsg   *message,
                       ProtobufCBuffer     *buffer);
-SecRefreshCookieKey *
-       sec_refresh_cookie_key__unpack
+CookieIntMsg *
+       cookie_int_msg__unpack
                      (ProtobufCAllocator  *allocator,
                       size_t               len,
                       const uint8_t       *data);
-void   sec_refresh_cookie_key__free_unpacked
-                     (SecRefreshCookieKey *message,
+void   cookie_int_msg__free_unpacked
+                     (CookieIntMsg *message,
+                      ProtobufCAllocator *allocator);
+/* SecmListCookiesReplyMsg methods */
+void   secm_list_cookies_reply_msg__init
+                     (SecmListCookiesReplyMsg         *message);
+size_t secm_list_cookies_reply_msg__get_packed_size
+                     (const SecmListCookiesReplyMsg   *message);
+size_t secm_list_cookies_reply_msg__pack
+                     (const SecmListCookiesReplyMsg   *message,
+                      uint8_t             *out);
+size_t secm_list_cookies_reply_msg__pack_to_buffer
+                     (const SecmListCookiesReplyMsg   *message,
+                      ProtobufCBuffer     *buffer);
+SecmListCookiesReplyMsg *
+       secm_list_cookies_reply_msg__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data);
+void   secm_list_cookies_reply_msg__free_unpacked
+                     (SecmListCookiesReplyMsg *message,
                       ProtobufCAllocator *allocator);
 /* --- per-message closures --- */
 
 typedef void (*AuthCookieRequestMsg_Closure)
                  (const AuthCookieRequestMsg *message,
                   void *closure_data);
-typedef void (*AuthReplyMsg_Closure)
-                 (const AuthReplyMsg *message,
+typedef void (*FwPortSt_Closure)
+                 (const FwPortSt *message,
+                  void *closure_data);
+typedef void (*GroupCfgSt_Closure)
+                 (const GroupCfgSt *message,
+                  void *closure_data);
+typedef void (*AuthCookieReplyMsg_Closure)
+                 (const AuthCookieReplyMsg *message,
                   void *closure_data);
 typedef void (*SessionResumeFetchMsg_Closure)
                  (const SessionResumeFetchMsg *message,
@@ -813,17 +894,20 @@ typedef void (*SecAuthReplyMsg_Closure)
 typedef void (*SecOpMsg_Closure)
                  (const SecOpMsg *message,
                   void *closure_data);
-typedef void (*Cookie_Closure)
-                 (const Cookie *message,
+typedef void (*SecmSessionOpenMsg_Closure)
+                 (const SecmSessionOpenMsg *message,
                   void *closure_data);
-typedef void (*SecAuthSessionMsg_Closure)
-                 (const SecAuthSessionMsg *message,
+typedef void (*SecmSessionCloseMsg_Closure)
+                 (const SecmSessionCloseMsg *message,
                   void *closure_data);
-typedef void (*SecAuthSessionReplyMsg_Closure)
-                 (const SecAuthSessionReplyMsg *message,
+typedef void (*SecmSessionReplyMsg_Closure)
+                 (const SecmSessionReplyMsg *message,
                   void *closure_data);
-typedef void (*SecRefreshCookieKey_Closure)
-                 (const SecRefreshCookieKey *message,
+typedef void (*CookieIntMsg_Closure)
+                 (const CookieIntMsg *message,
+                  void *closure_data);
+typedef void (*SecmListCookiesReplyMsg_Closure)
+                 (const SecmListCookiesReplyMsg *message,
                   void *closure_data);
 
 /* --- services --- */
@@ -833,7 +917,9 @@ typedef void (*SecRefreshCookieKey_Closure)
 
 extern const ProtobufCEnumDescriptor    auth__rep__descriptor;
 extern const ProtobufCMessageDescriptor auth_cookie_request_msg__descriptor;
-extern const ProtobufCMessageDescriptor auth_reply_msg__descriptor;
+extern const ProtobufCMessageDescriptor fw_port_st__descriptor;
+extern const ProtobufCMessageDescriptor group_cfg_st__descriptor;
+extern const ProtobufCMessageDescriptor auth_cookie_reply_msg__descriptor;
 extern const ProtobufCMessageDescriptor session_resume_fetch_msg__descriptor;
 extern const ProtobufCMessageDescriptor session_resume_store_req_msg__descriptor;
 extern const ProtobufCMessageDescriptor session_resume_reply_msg__descriptor;
@@ -848,10 +934,11 @@ extern const ProtobufCMessageDescriptor sec_auth_init_msg__descriptor;
 extern const ProtobufCMessageDescriptor sec_auth_cont_msg__descriptor;
 extern const ProtobufCMessageDescriptor sec_auth_reply_msg__descriptor;
 extern const ProtobufCMessageDescriptor sec_op_msg__descriptor;
-extern const ProtobufCMessageDescriptor cookie__descriptor;
-extern const ProtobufCMessageDescriptor sec_auth_session_msg__descriptor;
-extern const ProtobufCMessageDescriptor sec_auth_session_reply_msg__descriptor;
-extern const ProtobufCMessageDescriptor sec_refresh_cookie_key__descriptor;
+extern const ProtobufCMessageDescriptor secm_session_open_msg__descriptor;
+extern const ProtobufCMessageDescriptor secm_session_close_msg__descriptor;
+extern const ProtobufCMessageDescriptor secm_session_reply_msg__descriptor;
+extern const ProtobufCMessageDescriptor cookie_int_msg__descriptor;
+extern const ProtobufCMessageDescriptor secm_list_cookies_reply_msg__descriptor;
 
 PROTOBUF_C__END_DECLS
 
