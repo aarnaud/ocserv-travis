@@ -7,7 +7,7 @@ Build-Depends: autogen,
                debhelper (>= 9),
                dh-autoreconf,
                dh-systemd,
-               libradcli-dev,
+               libradcli-dev (>= 1.2.5),
                libgnutls28-dev (>= 3.1.10),
                libhttp-parser-dev,
                libkrb5-dev,
@@ -24,7 +24,10 @@ Build-Depends: autogen,
                libtalloc-dev,
                libwrap0-dev,
                pkg-config,
-               protobuf-c-compiler
+               protobuf-c-compiler,
+               libev-dev,
+               nettle-dev,
+               liboauth-dev,
 Standards-Version: 3.9.7
 Homepage: http://www.infradead.org/ocserv/
 VCS-Git: git://anonscm.debian.org/collab-maint/ocserv.git
