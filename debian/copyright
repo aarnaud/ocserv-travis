@@ -4,10 +4,10 @@ Upstream-Contact: OpenConnect <openconnect-devel@lists.infradead.org>
 Source: http://www.infradead.org/ocserv/
 
 Files: *
-Copyright: 2013-2015 Nikos Mavrogiannopoulos
-           2014-2015 Red Hat, Inc.
+Copyright: 2013-2016 Nikos Mavrogiannopoulos
+           2014-2016 Red Hat, Inc.
            2012-2013 David Woodhouse
-           2009-2013 Free Software Foundation, Inc.
+           2009-2015 Free Software Foundation, Inc.
 License: GPL-2+
 
 Files: build-aux/snippet/* libopts/*
@@ -59,7 +59,7 @@ Copyright: 2008-2014, Dave Benson and the protobuf-c authors.
 License: BSD-2-clause
 
 Files: gl/*
-Copyright: 1991-2014 Free Software Foundation, Inc.
+Copyright: 1991-2015 Free Software Foundation, Inc.
 License: LGPL-2.1+
 
 Files: libopts/*
