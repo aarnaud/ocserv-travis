@@ -1,6 +1,6 @@
 ocserv (0.11.1-1) unstable; urgency=medium
 
-  * New upstream release
+  * New upstream release (Closes: #819124)
   * Refresh debian/copyright
   * d/control:
     - Add libev-dev, nettle-dev and liboauth-dev to B-D
