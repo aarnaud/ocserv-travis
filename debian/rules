@@ -12,7 +12,7 @@ DEB_BUILD_ARCH_OS = $(dpkg-architecture -qDEB_BUILD_ARCH_OS)
 #endif
 
 %:
-	dh $@ --with autoreconf,systemd
+	dh $@ --with autoreconf,systemd --parallel
 
 override_dh_autoreconf:
 	for f in $(AUTORECONF_SOURCES); do \
