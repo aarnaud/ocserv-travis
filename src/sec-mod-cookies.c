@@ -83,12 +83,15 @@ void handle_secm_list_cookies_reply(void *pool, int fd, sec_mod_st *sec)
 
 		cookies[msg.n_cookies].session_is_open = t->session_is_open;
 		cookies[msg.n_cookies].tls_auth_ok = t->tls_auth_ok;
-		cookies[msg.n_cookies].last_modified = t->time;
+
+		if (t->time > 0)
+			cookies[msg.n_cookies].last_modified = t->time;
+		else
+			cookies[msg.n_cookies].last_modified = 0;
 		cookies[msg.n_cookies].username = t->acct_info.username;
 		cookies[msg.n_cookies].groupname = t->acct_info.groupname;
 		cookies[msg.n_cookies].user_agent = t->acct_info.user_agent;
 		cookies[msg.n_cookies].remote_ip = t->acct_info.remote_ip;
-		cookies[msg.n_cookies].psid = t->acct_info.psid;
 		cookies[msg.n_cookies].status = t->status;
 
 		msg.cookies[msg.n_cookies] = &cookies[msg.n_cookies];

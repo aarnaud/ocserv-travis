@@ -80,7 +80,7 @@ AC_DEFUN([gl_FUNC_STRCASESTR],
 #include <string.h> /* for strcasestr */
 #include <stdlib.h> /* for malloc */
 #include <unistd.h> /* for alarm */
-static void quit (int sig) { exit (sig + 128); }
+static void quit (int sig) { _exit (sig + 128); }
 ]], [[
     int result = 0;
     size_t m = 1000000;
@@ -88,6 +88,10 @@ static void quit (int sig) { exit (sig + 128); }
     char *needle = (char *) malloc (m + 2);
     /* Failure to compile this test due to missing alarm is okay,
        since all such platforms (mingw) also lack strcasestr.  */
+    sigset_t sigs;
+    sigemptyset(&sigs);
+    sigaddset(&sigs, SIGALRM);
+    sigprocmask(SIG_UNBLOCK, &sigs, 0);
     signal (SIGALRM, quit);
     alarm (5);
     /* Check for quadratic performance.  */

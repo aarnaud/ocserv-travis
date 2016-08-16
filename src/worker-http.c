@@ -40,7 +40,6 @@
 
 #define CS_AES128_GCM "OC-DTLS1_2-AES128-GCM"
 #define CS_AES256_GCM "OC-DTLS1_2-AES256-GCM"
-#define CS_CHACHA20_POLY1305 "OC2-DTLS1_2-CHACHA20-POLY1305"
 
 struct known_urls_st {
 	const char *url;
@@ -56,6 +55,10 @@ const static struct known_urls_st known_urls[] = {
 	LL("/", get_auth_handler, post_auth_handler),
 	LL("/auth", get_auth_handler, post_auth_handler),
 	LL("/VPN", get_auth_handler, post_auth_handler),
+	LL("/cert.pem", get_cert_handler, NULL),
+	LL("/cert.cer", get_cert_der_handler, NULL),
+	LL("/ca.pem", get_ca_handler, NULL),
+	LL("/ca.cer", get_ca_der_handler, NULL),
 #ifdef ANYCONNECT_CLIENT_COMPAT
 	LL("/1/index.html", get_empty_handler, NULL),
 	LL("/1/Linux", get_empty_handler, NULL),
@@ -118,20 +121,7 @@ static const dtls_ciphersuite_st ciphersuites[] = {
 	 .gnutls_kx = GNUTLS_KX_RSA,
 	 .gnutls_cipher = GNUTLS_CIPHER_3DES_CBC,
 	 .server_prio = 1,
-	 },
-#if GNUTLS_VERSION_NUMBER >= 0x030400
-	{
-	 .oc_name = CS_CHACHA20_POLY1305,
-	 .gnutls_name =
-	 "NONE:+VERS-DTLS1.2:+COMP-NULL:+CHACHA20-POLY1305:+AEAD:+PSK:%COMPAT:+SIGN-ALL",
-	 .gnutls_version = GNUTLS_DTLS1_2,
-	 .gnutls_mac = GNUTLS_MAC_AEAD,
-	 .gnutls_kx = GNUTLS_KX_PSK,
-	 .gnutls_cipher = GNUTLS_CIPHER_CHACHA20_POLY1305,
-	 .txt_version = "3.4.8",
-	 .server_prio = 40
-	},
-#endif
+	 }
 };
 
 #ifdef HAVE_LZ4
@@ -172,7 +162,6 @@ struct compression_method_st comp_methods[] = {
 };
 #endif
 
-
 static
 void header_value_check(struct worker_st *ws, struct http_req_st *req)
 {
@@ -210,6 +199,9 @@ void header_value_check(struct worker_st *ws, struct http_req_st *req)
 
 	switch (req->next_header) {
 	case HEADER_MASTER_SECRET:
+		if (req->use_psk) /* ignored */
+			break;
+
 		if (value_length < TLS_MASTER_SIZE * 2) {
 			req->master_secret_set = 0;
 			goto cleanup;
@@ -230,6 +222,13 @@ void header_value_check(struct worker_st *ws, struct http_req_st *req)
 		}
 		memcpy(req->hostname, value, value_length);
 		req->hostname[value_length] = 0;
+
+		/* check validity */
+		if (!valid_hostname(req->hostname)) {
+			oclog(ws, LOG_HTTP_DEBUG, "Skipping invalid hostname '%s'", req->hostname);
+			req->hostname[0] = 0;
+		}
+
 		break;
 	case HEADER_DEVICE_TYPE:
 		req->is_mobile = 1;
@@ -257,8 +256,9 @@ void header_value_check(struct worker_st *ws, struct http_req_st *req)
 		oclog(ws, LOG_DEBUG,
 		      "User-agent: '%s'", req->user_agent);
 
-		if (strncasecmp(req->user_agent, "Open Any", 8) == 0) {
-			if (strncmp(req->user_agent, "Open AnyConnect VPN Agent v3", 28) == 0)
+		if (strncasecmp(req->user_agent, "Open AnyConnect VPN Agent v", 27) == 0) {
+			unsigned version = atoi(&req->user_agent[27]);
+			if (version <= 3)
 				req->user_agent_type = AGENT_OPENCONNECT_V3;
 			else
 				req->user_agent_type = AGENT_OPENCONNECT;
@@ -266,6 +266,17 @@ void header_value_check(struct worker_st *ws, struct http_req_st *req)
 		break;
 
 	case HEADER_DTLS_CIPHERSUITE:
+		req->selected_ciphersuite = NULL;
+		str = (char *)value;
+
+		p = strstr(str, "PSK");
+		if (p != NULL && (p[3] == 0 || p[3] == ':')) {
+			/* OpenConnect DTLS setup was detected. */
+			req->use_psk = 1;
+			req->master_secret_set = 1; /* we don't need it */
+			break;
+		}
+
 		if (ws->session != NULL) {
 			want_mac = gnutls_mac_get(ws->session);
 			want_cipher = gnutls_cipher_get(ws->session);
@@ -274,20 +285,19 @@ void header_value_check(struct worker_st *ws, struct http_req_st *req)
 			want_cipher = -1;
 		}
 
-		req->selected_ciphersuite = NULL;
-
-		str = (char *)value;
 		while ((token = strtok(str, ":")) != NULL) {
 			for (i = 0;
 			     i < sizeof(ciphersuites) / sizeof(ciphersuites[0]);
 			     i++) {
 				if (strcmp(token, ciphersuites[i].oc_name) == 0) {
-					if (ciphersuites[i].txt_version != NULL && gnutls_check_version(ciphersuites[i].txt_version) == NULL)
+					if (ciphersuites[i].txt_version != NULL && gnutls_check_version(ciphersuites[i].txt_version) == NULL) {
 						continue; /* not supported */
+					}
 
 					if (cand == NULL ||
-					    cand->server_prio <
-					    ciphersuites[i].server_prio) {
+					    cand->server_prio < ciphersuites[i].server_prio ||
+					    (want_cipher != -1 && want_cipher == ciphersuites[i].gnutls_cipher &&
+					     want_mac == ciphersuites[i].gnutls_mac)) {
 						cand =
 						    &ciphersuites[i];
 
@@ -296,13 +306,14 @@ void header_value_check(struct worker_st *ws, struct http_req_st *req)
 						if (want_cipher != -1) {
 							if (want_cipher == cand->gnutls_cipher &&
 							    want_mac == cand->gnutls_mac)
-							    break;
+							    goto ciphersuite_finish;
 						}
 					}
 				}
 			}
 			str = NULL;
 		}
+ ciphersuite_finish:
 	        req->selected_ciphersuite = cand;
 
 		break;
@@ -339,7 +350,10 @@ void header_value_check(struct worker_st *ws, struct http_req_st *req)
 #endif
 
 	case HEADER_CSTP_BASE_MTU:
-		req->base_mtu = atoi((char *)value);
+		req->link_mtu = atoi((char *)value);
+		break;
+	case HEADER_CSTP_MTU:
+		req->tunnel_mtu = atoi((char *)value);
 		break;
 	case HEADER_CSTP_ATYPE:
 		if (memmem(value, value_length, "IPv4", 4) == NULL)
@@ -616,3 +630,4 @@ void http_req_deinit(worker_st * ws)
 	talloc_free(ws->req.body);
 	ws->req.body = NULL;
 }
+

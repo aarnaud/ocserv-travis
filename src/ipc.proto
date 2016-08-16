@@ -59,6 +59,7 @@ message group_cfg_st
 	optional uint32 idle_timeout = 37;
 	optional uint32 mobile_idle_timeout = 38;
 	repeated fw_port_st fw_ports = 39;
+	optional string hostname = 40;
 }
 
 /* AUTH_COOKIE_REP */
@@ -290,7 +291,6 @@ message cookie_int_msg
 	optional string groupname = 6;
 	required string user_agent = 7;
 	required string remote_ip = 8;
-	required string psid = 9; /* printable form of sid */
 	required uint32 status = 10; /* the authentication status (PS_*) */
 }
 

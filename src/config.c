@@ -110,6 +110,7 @@ static struct cfg_options available_options[] = {
 	{ .name = "cert-user-oid", .type = OPTION_STRING, .mandatory = 0 },
 	{ .name = "cert-group-oid", .type = OPTION_STRING, .mandatory = 0 },
 	{ .name = "connect-script", .type = OPTION_STRING, .mandatory = 0 },
+	{ .name = "host-update-script", .type = OPTION_STRING, .mandatory = 0 },
 	{ .name = "disconnect-script", .type = OPTION_STRING, .mandatory = 0 },
 	{ .name = "pid-file", .type = OPTION_STRING, .mandatory = 0 },
 #ifdef HAVE_GSSAPI
@@ -801,6 +802,7 @@ size_t urlfw_size = 0;
 	READ_STRING("cert-group-oid", config->cert_group_oid);
 
 	READ_STRING("connect-script", config->connect_script);
+	READ_STRING("host-update-script", config->host_update_script);
 	READ_STRING("disconnect-script", config->disconnect_script);
 
 	if (reload == 0 && pid_file[0] == 0)
@@ -912,6 +914,10 @@ size_t urlfw_size = 0;
 	READ_NUMERIC("session-timeout", config->session_timeout);
 
 	READ_NUMERIC("auth-timeout", config->auth_timeout);
+	if (config->auth_timeout == 0) {
+		config->auth_timeout = DEFAULT_AUTH_TIMEOUT_SECS;
+	}
+
 	READ_NUMERIC("idle-timeout", config->idle_timeout);
 
 	config->mobile_idle_timeout = -1;
@@ -1050,6 +1056,14 @@ size_t urlfw_size = 0;
 	READ_STRING("config-per-user", config->per_user_dir);
 	READ_STRING("config-per-group", config->per_group_dir);
 
+	if (config->per_user_dir || config->per_group_dir) {
+		if (perm_config->sup_config_type != SUP_CONFIG_FILE) {
+			fprintf(stderr, "Specified config-per-user or config-per-group but supplemental config is '%s'\n",
+				sup_config_name(perm_config->sup_config_type));
+			exit(1);
+		}
+	}
+
 	if (config->per_user_dir) {
 		READ_TF("expose-iroutes", i, 0);
 		if (i != 0) {
@@ -1059,6 +1073,8 @@ size_t urlfw_size = 0;
 
 	READ_STRING("default-user-config", config->default_user_conf);
 	READ_STRING("default-group-config", config->default_group_conf);
+
+	fprintf(stderr, "Setting '%s' as supplemental config option\n", sup_config_name(perm_config->sup_config_type));
 
 	optionUnloadNested(pov);
 }

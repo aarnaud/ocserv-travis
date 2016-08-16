@@ -127,7 +127,9 @@ am__aclocal_m4_deps = $(top_srcdir)/libopts/m4/libopts.m4 \
 	$(top_srcdir)/gl/m4/sys_types_h.m4 \
 	$(top_srcdir)/gl/m4/time_h.m4 $(top_srcdir)/gl/m4/unistd_h.m4 \
 	$(top_srcdir)/gl/m4/warn-on-use.m4 \
-	$(top_srcdir)/gl/m4/wchar_t.m4 $(top_srcdir)/configure.ac
+	$(top_srcdir)/gl/m4/wchar_t.m4 \
+	$(top_srcdir)/m4/ax_code_coverage.m4 \
+	$(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
 DIST_COMMON = $(srcdir)/Makefile.am $(top_srcdir)/configure \
@@ -136,7 +138,9 @@ am__CONFIG_DISTCLEAN_FILES = config.status config.cache config.log \
  configure.lineno config.status.lineno
 mkinstalldirs = $(install_sh) -d
 CONFIG_HEADER = config.h
-CONFIG_CLEAN_FILES =
+CONFIG_CLEAN_FILES = tests/data/pam/ocserv \
+	tests/data/pam-single/ocserv tests/data/pam/nss-passwd \
+	tests/data/pam/nss-group
 CONFIG_CLEAN_VPATH_FILES =
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
@@ -199,8 +203,12 @@ am__DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/config.h.in \
 	$(top_srcdir)/build-aux/config.rpath \
 	$(top_srcdir)/build-aux/config.sub \
 	$(top_srcdir)/build-aux/install-sh \
-	$(top_srcdir)/build-aux/missing AUTHORS COPYING ChangeLog \
-	INSTALL NEWS TODO build-aux/ar-lib build-aux/compile \
+	$(top_srcdir)/build-aux/missing \
+	$(top_srcdir)/tests/data/pam-single/ocserv.in \
+	$(top_srcdir)/tests/data/pam/nss-group.in \
+	$(top_srcdir)/tests/data/pam/nss-passwd.in \
+	$(top_srcdir)/tests/data/pam/ocserv.in AUTHORS COPYING \
+	ChangeLog INSTALL NEWS TODO build-aux/ar-lib build-aux/compile \
 	build-aux/config.guess build-aux/config.rpath \
 	build-aux/config.sub build-aux/depcomp build-aux/install-sh \
 	build-aux/missing
@@ -265,12 +273,19 @@ BITSIZEOF_WINT_T = @BITSIZEOF_WINT_T@
 CC = @CC@
 CCDEPMODE = @CCDEPMODE@
 CFLAGS = @CFLAGS@
+CODE_COVERAGE_CFLAGS = @CODE_COVERAGE_CFLAGS@
+CODE_COVERAGE_CPPFLAGS = @CODE_COVERAGE_CPPFLAGS@
+CODE_COVERAGE_CXXFLAGS = @CODE_COVERAGE_CXXFLAGS@
+CODE_COVERAGE_ENABLED = @CODE_COVERAGE_ENABLED@
+CODE_COVERAGE_LDFLAGS = @CODE_COVERAGE_LDFLAGS@
 CPP = @CPP@
 CPPFLAGS = @CPPFLAGS@
 CSCOPE = @CSCOPE@
 CTAGS = @CTAGS@
 CWRAP_CFLAGS = @CWRAP_CFLAGS@
 CWRAP_LIBS = @CWRAP_LIBS@
+CWRAP_PAM_CFLAGS = @CWRAP_PAM_CFLAGS@
+CWRAP_PAM_LIBS = @CWRAP_PAM_LIBS@
 CYGPATH_W = @CYGPATH_W@
 DEFS = @DEFS@
 DEPDIR = @DEPDIR@
@@ -286,6 +301,8 @@ EOVERFLOW_HIDDEN = @EOVERFLOW_HIDDEN@
 EOVERFLOW_VALUE = @EOVERFLOW_VALUE@
 ERRNO_H = @ERRNO_H@
 EXEEXT = @EXEEXT@
+GCOV = @GCOV@
+GENHTML = @GENHTML@
 GNULIB_ATOLL = @GNULIB_ATOLL@
 GNULIB_CALLOC_POSIX = @GNULIB_CALLOC_POSIX@
 GNULIB_CANONICALIZE_FILE_NAME = @GNULIB_CANONICALIZE_FILE_NAME@
@@ -646,6 +663,7 @@ INSTALL_DATA = @INSTALL_DATA@
 INSTALL_PROGRAM = @INSTALL_PROGRAM@
 INSTALL_SCRIPT = @INSTALL_SCRIPT@
 INSTALL_STRIP_PROGRAM = @INSTALL_STRIP_PROGRAM@
+LCOV = @LCOV@
 LDFLAGS = @LDFLAGS@
 LIBC = @LIBC@
 LIBCRYPT = @LIBCRYPT@
@@ -740,6 +758,8 @@ PACKAGE_STRING = @PACKAGE_STRING@
 PACKAGE_TARNAME = @PACKAGE_TARNAME@
 PACKAGE_URL = @PACKAGE_URL@
 PACKAGE_VERSION = @PACKAGE_VERSION@
+PAMDIR = @PAMDIR@
+PAMWRAPDIR = @PAMWRAPDIR@
 PAM_CFLAGS = @PAM_CFLAGS@
 PAM_LIBS = @PAM_LIBS@
 PATH_SEPARATOR = @PATH_SEPARATOR@
@@ -867,6 +887,8 @@ REPLACE_VSNPRINTF = @REPLACE_VSNPRINTF@
 REPLACE_VSPRINTF = @REPLACE_VSPRINTF@
 REPLACE_WCTOMB = @REPLACE_WCTOMB@
 REPLACE_WRITE = @REPLACE_WRITE@
+ROOTGID = @ROOTGID@
+ROOTUID = @ROOTUID@
 SED = @SED@
 SET_MAKE = @SET_MAKE@
 SHELL = @SHELL@
@@ -936,7 +958,6 @@ pdfdir = @pdfdir@
 prefix = @prefix@
 program_transform_name = @program_transform_name@
 psdir = @psdir@
-runstatedir = @runstatedir@
 sbindir = @sbindir@
 sharedstatedir = @sharedstatedir@
 srcdir = @srcdir@
@@ -948,7 +969,7 @@ top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 EXTRA_DIST = LICENSE README.md
 SUBDIRS = gl $(am__append_1) src doc tests
-ACLOCAL_AMFLAGS = -I gl/m4 -I libopts/m4
+ACLOCAL_AMFLAGS = -I m4 -I gl/m4 -I libopts/m4
 all: config.h
 	$(MAKE) $(AM_MAKEFLAGS) all-recursive
 
@@ -1001,6 +1022,14 @@ $(srcdir)/config.h.in:  $(am__configure_deps)
 
 distclean-hdr:
 	-rm -f config.h stamp-h1
+tests/data/pam/ocserv: $(top_builddir)/config.status $(top_srcdir)/tests/data/pam/ocserv.in
+	cd $(top_builddir) && $(SHELL) ./config.status $@
+tests/data/pam-single/ocserv: $(top_builddir)/config.status $(top_srcdir)/tests/data/pam-single/ocserv.in
+	cd $(top_builddir) && $(SHELL) ./config.status $@
+tests/data/pam/nss-passwd: $(top_builddir)/config.status $(top_srcdir)/tests/data/pam/nss-passwd.in
+	cd $(top_builddir) && $(SHELL) ./config.status $@
+tests/data/pam/nss-group: $(top_builddir)/config.status $(top_srcdir)/tests/data/pam/nss-group.in
+	cd $(top_builddir) && $(SHELL) ./config.status $@
 
 # This directory's subdirectories are mostly independent; you can cd
 # into them and run 'make' without going through this Makefile.
@@ -1418,6 +1447,11 @@ uninstall-am:
 
 .PRECIOUS: Makefile
 
+
+@CODE_COVERAGE_RULES@
+
+local-code-coverage-output: code-coverage-capture
+	cat ocserv-$(VERSION)-coverage/index.html|grep headerCovTableEntryLo|head -1|sed 's/^.*>\([0-9]\+\.[0-9]\+\s*%\)<.*$$/ coverage lines: \1/'
 
 gl:
 	gnulib-tool --add-import --lgpl=2

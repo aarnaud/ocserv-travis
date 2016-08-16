@@ -31,7 +31,7 @@ if test -z "$NO_NEED_ROOT";then
 		exit 77
 	fi
 else
-	SOCKDIR=${srcdir}/sockwrap.$$.tmp
+	SOCKDIR="${srcdir}/tmp/sockwrap.$$.tmp"
 	mkdir -p $SOCKDIR
 	export SOCKET_WRAPPER_DIR=$SOCKDIR
 	export SOCKET_WRAPPER_DEFAULT_IFACE=2
@@ -46,8 +46,13 @@ fi
 
 update_config() {
 	file=$1
-	cp ${srcdir}/${file} "$file.tmp"
+	username=$(whoami)
+	group=$(groups|cut -f 1 -d ' ')
+	cp "${srcdir}/data/${file}" "$file.tmp"
+	sed -i 's|@USERNAME@|'${username}'|g' "$file.tmp"
+	sed -i 's|@GROUP@|'${group}'|g' "$file.tmp"
 	sed -i 's|@SRCDIR@|'${srcdir}'|g' "$file.tmp"
+	sed -i 's|@CRLNAME@|'${CRLNAME}'|g' "$file.tmp"
 	CONFIG="$file.tmp"
 }
 
@@ -74,6 +79,26 @@ launch_server() {
 launch_sr_server() {
        LD_PRELOAD=libsocket_wrapper.so:libuid_wrapper.so UID_WRAPPER=1 UID_WRAPPER_ROOT=1 $SERV $* &#>/dev/null 2>&1 &
        LOCALPID="$!";
+       trap "[ ! -z \"${LOCALPID}\" ] && kill ${LOCALPID};" 15
+       wait "${LOCALPID}"
+       LOCALRET="$?"
+       if [ "${LOCALRET}" != "0" ] && [ "${LOCALRET}" != "143" ] ; then
+               # Houston, we'v got a problem...
+               exit 1
+       fi
+}
+
+launch_sr_pam_server() {
+       mkdir -p "data/$PAMDIR/"
+       test -f "${srcdir}/data/$PAMDIR/users.oath.templ" && cp "${srcdir}/data/$PAMDIR/users.oath.templ" "data/$PAMDIR/users.oath"
+       test -f "${srcdir}/data/$PAMDIR/passdb.templ" && cp "${srcdir}/data/$PAMDIR/passdb.templ" "data/$PAMDIR/passdb"
+
+       export NSS_WRAPPER_PASSWD=./data/pam/nss-passwd
+       export NSS_WRAPPER_GROUP=./data/pam/nss-group
+       LD_PRELOAD=libnss_wrapper.so:libpam_wrapper.so:libsocket_wrapper.so:libuid_wrapper.so PAM_WRAPPER_SERVICE_DIR="data/$PAMDIR" PAM_WRAPPER=1  UID_WRAPPER=1 UID_WRAPPER_ROOT=1 $SERV $* & #>/dev/null 2>&1 &
+       LOCALPID="$!";
+       unset NSS_WRAPPER_PASSWD
+       unset NSS_WRAPPER_GROUP
        trap "[ ! -z \"${LOCALPID}\" ] && kill ${LOCALPID};" 15
        wait "${LOCALPID}"
        LOCALRET="$?"

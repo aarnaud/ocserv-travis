@@ -19,7 +19,7 @@
  * The ocpasswd program is copyrighted and licensed
  * under the following terms:
  *
- *  Copyright (C) 2013, 2014 Nikos Mavrogiannopoulos, all rights reserved.
+ *  Copyright (C) 2013-2016 Nikos Mavrogiannopoulos, all rights reserved.
  *  This is free software. It is licensed for use, modification and
  *  redistribution under the terms of the GNU General Public License,
  *  version 2 <http://gnu.org/licenses/gpl.html>
@@ -52,7 +52,7 @@ extern "C" {
 #endif
 extern FILE * option_usage_fp;
 #define zCopyright      (ocpasswd_opt_strs+0)
-#define zLicenseDescrip (ocpasswd_opt_strs+263)
+#define zLicenseDescrip (ocpasswd_opt_strs+262)
 
 
 #ifndef NULL
@@ -62,13 +62,13 @@ extern FILE * option_usage_fp;
 /**
  *  static const strings for ocpasswd options
  */
-static char const ocpasswd_opt_strs[1517] =
-/*     0 */ "ocpasswd 0.11.1\n"
-            "Copyright (C) 2013, 2014 Nikos Mavrogiannopoulos, all rights reserved.\n"
+static char const ocpasswd_opt_strs[1516] =
+/*     0 */ "ocpasswd 0.11.4\n"
+            "Copyright (C) 2013-2016 Nikos Mavrogiannopoulos, all rights reserved.\n"
             "This is free software. It is licensed for use, modification and\n"
             "redistribution under the terms of the GNU General Public License,\n"
             "version 2 <http://gnu.org/licenses/gpl.html>\n\0"
-/*   263 */ "ocpasswd is free software: you can redistribute it and/or modify it under\n"
+/*   262 */ "ocpasswd is free software: you can redistribute it and/or modify it under\n"
             "the terms of version 2 of the GNU General Public License, as published by\n"
             "the Free Software Foundation.\n\n"
             "ocpasswd is distributed in the hope that it will be useful, but WITHOUT ANY\n"
@@ -77,47 +77,47 @@ static char const ocpasswd_opt_strs[1517] =
             "details.\n\n"
             "You should have received a copy of the GNU General Public License, version\n"
             "2, along with this program.  If not, see <http://www.gnu.org/licenses/>.\n\0"
-/*   822 */ "Password file\0"
-/*   836 */ "PASSWD\0"
-/*   843 */ "passwd\0"
-/*   850 */ "User's group name\0"
-/*   868 */ "GROUPNAME\0"
-/*   878 */ "groupname\0"
-/*   888 */ "Delete user\0"
-/*   900 */ "DELETE\0"
-/*   907 */ "delete\0"
-/*   914 */ "Lock user\0"
-/*   924 */ "LOCK\0"
-/*   929 */ "lock\0"
-/*   934 */ "Unlock user\0"
-/*   946 */ "UNLOCK\0"
-/*   953 */ "unlock\0"
-/*   960 */ "display extended usage information and exit\0"
-/*  1004 */ "help\0"
-/*  1009 */ "extended usage information passed thru pager\0"
-/*  1054 */ "more-help\0"
-/*  1064 */ "output version information and exit\0"
-/*  1100 */ "version\0"
-/*  1108 */ "OCPASSWD\0"
-/*  1117 */ "ocpasswd - OpenConnect server password utility\n"
+/*   821 */ "Password file\0"
+/*   835 */ "PASSWD\0"
+/*   842 */ "passwd\0"
+/*   849 */ "User's group name\0"
+/*   867 */ "GROUPNAME\0"
+/*   877 */ "groupname\0"
+/*   887 */ "Delete user\0"
+/*   899 */ "DELETE\0"
+/*   906 */ "delete\0"
+/*   913 */ "Lock user\0"
+/*   923 */ "LOCK\0"
+/*   928 */ "lock\0"
+/*   933 */ "Unlock user\0"
+/*   945 */ "UNLOCK\0"
+/*   952 */ "unlock\0"
+/*   959 */ "display extended usage information and exit\0"
+/*  1003 */ "help\0"
+/*  1008 */ "extended usage information passed thru pager\0"
+/*  1053 */ "more-help\0"
+/*  1063 */ "output version information and exit\0"
+/*  1099 */ "version\0"
+/*  1107 */ "OCPASSWD\0"
+/*  1116 */ "ocpasswd - OpenConnect server password utility\n"
             "Usage:  %s [ -<flag> [<val>] | --<name>[{=| }<val>] ]... [username]\n\0"
-/*  1233 */ "openconnect-devel@lists.infradead.org\0"
-/*  1271 */ "\n\0"
-/*  1273 */ "This program is openconnect password (ocpasswd) utility.  It allows the\n"
+/*  1232 */ "openconnect-devel@lists.infradead.org\0"
+/*  1270 */ "\n\0"
+/*  1272 */ "This program is openconnect password (ocpasswd) utility.  It allows the\n"
             "generation and handling of a 'plain' password file used by ocserv.\n\0"
-/*  1413 */ "ocpasswd 0.11.1\0"
-/*  1429 */ "Usage: ocpasswd -c [passwd] [options] username\n"
+/*  1412 */ "ocpasswd 0.11.4\0"
+/*  1428 */ "Usage: ocpasswd -c [passwd] [options] username\n"
             "ocpasswd --help for usage instructions.\n";
 
 /**
  *  passwd option description:
  */
 /** Descriptive text for the passwd option */
-#define PASSWD_DESC      (ocpasswd_opt_strs+822)
+#define PASSWD_DESC      (ocpasswd_opt_strs+821)
 /** Upper-cased name for the passwd option */
-#define PASSWD_NAME      (ocpasswd_opt_strs+836)
+#define PASSWD_NAME      (ocpasswd_opt_strs+835)
 /** Name string for the passwd option */
-#define PASSWD_name      (ocpasswd_opt_strs+843)
+#define PASSWD_name      (ocpasswd_opt_strs+842)
 /** Compiled in flag settings for the passwd option */
 #define PASSWD_FLAGS     (OPTST_DISABLED \
         | OPTST_SET_ARGTYPE(OPARG_TYPE_FILE))
@@ -126,11 +126,11 @@ static char const ocpasswd_opt_strs[1517] =
  *  groupname option description:
  */
 /** Descriptive text for the groupname option */
-#define GROUPNAME_DESC      (ocpasswd_opt_strs+850)
+#define GROUPNAME_DESC      (ocpasswd_opt_strs+849)
 /** Upper-cased name for the groupname option */
-#define GROUPNAME_NAME      (ocpasswd_opt_strs+868)
+#define GROUPNAME_NAME      (ocpasswd_opt_strs+867)
 /** Name string for the groupname option */
-#define GROUPNAME_name      (ocpasswd_opt_strs+878)
+#define GROUPNAME_name      (ocpasswd_opt_strs+877)
 /** Compiled in flag settings for the groupname option */
 #define GROUPNAME_FLAGS     (OPTST_DISABLED \
         | OPTST_SET_ARGTYPE(OPARG_TYPE_STRING))
@@ -139,11 +139,11 @@ static char const ocpasswd_opt_strs[1517] =
  *  delete option description:
  */
 /** Descriptive text for the delete option */
-#define DELETE_DESC      (ocpasswd_opt_strs+888)
+#define DELETE_DESC      (ocpasswd_opt_strs+887)
 /** Upper-cased name for the delete option */
-#define DELETE_NAME      (ocpasswd_opt_strs+900)
+#define DELETE_NAME      (ocpasswd_opt_strs+899)
 /** Name string for the delete option */
-#define DELETE_name      (ocpasswd_opt_strs+907)
+#define DELETE_name      (ocpasswd_opt_strs+906)
 /** Compiled in flag settings for the delete option */
 #define DELETE_FLAGS     (OPTST_DISABLED)
 
@@ -151,11 +151,11 @@ static char const ocpasswd_opt_strs[1517] =
  *  lock option description:
  */
 /** Descriptive text for the lock option */
-#define LOCK_DESC      (ocpasswd_opt_strs+914)
+#define LOCK_DESC      (ocpasswd_opt_strs+913)
 /** Upper-cased name for the lock option */
-#define LOCK_NAME      (ocpasswd_opt_strs+924)
+#define LOCK_NAME      (ocpasswd_opt_strs+923)
 /** Name string for the lock option */
-#define LOCK_name      (ocpasswd_opt_strs+929)
+#define LOCK_name      (ocpasswd_opt_strs+928)
 /** Compiled in flag settings for the lock option */
 #define LOCK_FLAGS     (OPTST_DISABLED)
 
@@ -163,22 +163,22 @@ static char const ocpasswd_opt_strs[1517] =
  *  unlock option description:
  */
 /** Descriptive text for the unlock option */
-#define UNLOCK_DESC      (ocpasswd_opt_strs+934)
+#define UNLOCK_DESC      (ocpasswd_opt_strs+933)
 /** Upper-cased name for the unlock option */
-#define UNLOCK_NAME      (ocpasswd_opt_strs+946)
+#define UNLOCK_NAME      (ocpasswd_opt_strs+945)
 /** Name string for the unlock option */
-#define UNLOCK_name      (ocpasswd_opt_strs+953)
+#define UNLOCK_name      (ocpasswd_opt_strs+952)
 /** Compiled in flag settings for the unlock option */
 #define UNLOCK_FLAGS     (OPTST_DISABLED)
 
 /*
  *  Help/More_Help/Version option descriptions:
  */
-#define HELP_DESC       (ocpasswd_opt_strs+960)
-#define HELP_name       (ocpasswd_opt_strs+1004)
+#define HELP_DESC       (ocpasswd_opt_strs+959)
+#define HELP_name       (ocpasswd_opt_strs+1003)
 #ifdef HAVE_WORKING_FORK
-#define MORE_HELP_DESC  (ocpasswd_opt_strs+1009)
-#define MORE_HELP_name  (ocpasswd_opt_strs+1054)
+#define MORE_HELP_DESC  (ocpasswd_opt_strs+1008)
+#define MORE_HELP_name  (ocpasswd_opt_strs+1053)
 #define MORE_HELP_FLAGS (OPTST_IMM | OPTST_NO_INIT)
 #else
 #define MORE_HELP_DESC  HELP_DESC
@@ -191,8 +191,8 @@ static char const ocpasswd_opt_strs[1517] =
 #  define VER_FLAGS     (OPTST_SET_ARGTYPE(OPARG_TYPE_STRING) | \
                          OPTST_ARG_OPTIONAL | OPTST_IMM | OPTST_NO_INIT)
 #endif
-#define VER_DESC        (ocpasswd_opt_strs+1064)
-#define VER_name        (ocpasswd_opt_strs+1100)
+#define VER_DESC        (ocpasswd_opt_strs+1063)
+#define VER_name        (ocpasswd_opt_strs+1099)
 /**
  *  Declare option callback procedures
  */
@@ -314,21 +314,21 @@ static tOptDesc optDesc[OPTION_CT] = {
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 /** Reference to the upper cased version of ocpasswd. */
-#define zPROGNAME       (ocpasswd_opt_strs+1108)
+#define zPROGNAME       (ocpasswd_opt_strs+1107)
 /** Reference to the title line for ocpasswd usage. */
-#define zUsageTitle     (ocpasswd_opt_strs+1117)
+#define zUsageTitle     (ocpasswd_opt_strs+1116)
 /** There is no ocpasswd configuration file. */
 #define zRcName         NULL
 /** There are no directories to search for ocpasswd config files. */
 #define apzHomeList     NULL
 /** The ocpasswd program bug email address. */
-#define zBugsAddr       (ocpasswd_opt_strs+1233)
+#define zBugsAddr       (ocpasswd_opt_strs+1232)
 /** Clarification/explanation of what ocpasswd does. */
-#define zExplain        (ocpasswd_opt_strs+1271)
+#define zExplain        (ocpasswd_opt_strs+1270)
 /** Extra detail explaining what ocpasswd does. */
-#define zDetail         (ocpasswd_opt_strs+1273)
+#define zDetail         (ocpasswd_opt_strs+1272)
 /** The full version string for ocpasswd. */
-#define zFullVersion    (ocpasswd_opt_strs+1413)
+#define zFullVersion    (ocpasswd_opt_strs+1412)
 /* extracted from optcode.tlib near line 364 */
 
 #if defined(ENABLE_NLS)
@@ -340,7 +340,7 @@ static tOptDesc optDesc[OPTION_CT] = {
 #endif /* ENABLE_NLS */
 
 #define ocpasswd_full_usage (NULL)
-#define ocpasswd_short_usage (ocpasswd_opt_strs+1429)
+#define ocpasswd_short_usage (ocpasswd_opt_strs+1428)
 
 #endif /* not defined __doxygen__ */
 
@@ -588,8 +588,8 @@ static void bogus_function(void) {
      translate option names.
    */
   /* referenced via ocpasswdOptions.pzCopyright */
-  puts(_("ocpasswd 0.11.1\n\
-Copyright (C) 2013, 2014 Nikos Mavrogiannopoulos, all rights reserved.\n\
+  puts(_("ocpasswd 0.11.4\n\
+Copyright (C) 2013-2016 Nikos Mavrogiannopoulos, all rights reserved.\n\
 This is free software. It is licensed for use, modification and\n\
 redistribution under the terms of the GNU General Public License,\n\
 version 2 <http://gnu.org/licenses/gpl.html>\n"));
@@ -641,7 +641,7 @@ Usage:  %s [ -<flag> [<val>] | --<name>[{=| }<val>] ]... [username]\n"));
 generation and handling of a 'plain' password file used by ocserv.\n"));
 
   /* referenced via ocpasswdOptions.pzFullVersion */
-  puts(_("ocpasswd 0.11.1"));
+  puts(_("ocpasswd 0.11.4"));
 
   /* referenced via ocpasswdOptions.pzFullUsage */
   puts(_("<<<NOT-FOUND>>>"));

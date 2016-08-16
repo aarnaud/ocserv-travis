@@ -49,7 +49,7 @@
 #endif
 
 /* recv from the new file descriptor and make sure we have a valid packet */
-static int recv_from_new_fd(struct worker_st *ws, int fd, UdpFdMsg *tmsg)
+static unsigned recv_from_new_fd(struct worker_st *ws, int fd, UdpFdMsg **tmsg)
 {
 	int saved_fd, ret;
 	UdpFdMsg *saved_tmsg;
@@ -61,7 +61,7 @@ static int recv_from_new_fd(struct worker_st *ws, int fd, UdpFdMsg *tmsg)
 	saved_fd = ws->dtls_tptr.fd;
 	saved_tmsg = ws->dtls_tptr.msg;
 
-	ws->dtls_tptr.msg = tmsg;
+	ws->dtls_tptr.msg = *tmsg;
 	ws->dtls_tptr.fd = fd;
 
 	ret = gnutls_record_recv(ws->dtls_session, ws->buffer, ws->buffer_size);
@@ -73,6 +73,7 @@ static int recv_from_new_fd(struct worker_st *ws, int fd, UdpFdMsg *tmsg)
 
 	ret = 0;
  revert:
+ 	*tmsg = ws->dtls_tptr.msg;
  	ws->dtls_tptr.fd = saved_fd;
  	ws->dtls_tptr.msg = saved_tmsg;
  	return ret;
@@ -82,15 +83,14 @@ int handle_commands_from_main(struct worker_st *ws)
 {
 	uint8_t cmd;
 	size_t length;
-	uint8_t cmd_data[1536];
 	UdpFdMsg *tmsg = NULL;
 	int ret;
 	int fd = -1;
 	/*int cmd_data_len;*/
 
-	memset(&cmd_data, 0, sizeof(cmd_data));
+	memset(&ws->buffer, 0, sizeof(ws->buffer));
 
-	ret = recv_msg_data(ws->cmd_fd, &cmd, cmd_data, sizeof(cmd_data), &fd);
+	ret = recv_msg_data(ws->cmd_fd, &cmd, ws->buffer, sizeof(ws->buffer), &fd);
 	if (ret < 0) {
 		oclog(ws, LOG_DEBUG, "cannot obtain data from command socket");
 		exit_worker_reason(ws, REASON_SERVER_DISCONNECT);
@@ -117,7 +117,7 @@ int handle_commands_from_main(struct worker_st *ws)
 				oclog(ws, LOG_DEBUG, "received another a UDP fd!");
 			}
 
-			tmsg = udp_fd_msg__unpack(NULL, length, cmd_data);
+			tmsg = udp_fd_msg__unpack(NULL, length, ws->buffer);
 			if (tmsg) {
 				has_hello = tmsg->hello;
 			}
@@ -128,11 +128,10 @@ int handle_commands_from_main(struct worker_st *ws)
 			}
 
 			set_non_block(fd);
-
 			if (has_hello == 0) {
 				/* check if the first packet received is a valid one -
 				 * if not discard the new fd */
-				if (!recv_from_new_fd(ws, fd, tmsg)) {
+				if (!recv_from_new_fd(ws, fd, &tmsg)) {
 					oclog(ws, LOG_INFO, "received UDP fd message but its session has invalid data!");
 					if (tmsg)
 						udp_fd_msg__free_unpacked(tmsg, NULL);
@@ -145,11 +144,14 @@ int handle_commands_from_main(struct worker_st *ws)
 
 			if (ws->dtls_tptr.fd != -1)
 				close(ws->dtls_tptr.fd);
-			if (tmsg && ws->dtls_tptr.msg != NULL)
+			if (ws->dtls_tptr.msg != NULL)
 				udp_fd_msg__free_unpacked(ws->dtls_tptr.msg, NULL);
 
 			ws->dtls_tptr.msg = tmsg;
 			ws->dtls_tptr.fd = fd;
+
+			if (ws->config->try_mtu == 0)
+				set_mtu_disc(fd, ws->proto, 0);
 
 			oclog(ws, LOG_DEBUG, "received new UDP fd and connected to peer");
 			return 0;
@@ -185,8 +187,8 @@ int complete_vpn_info(worker_st * ws, struct vpn_st *vinfo)
 		return -1;
 	}
 
-	if (ws->config->network.mtu != 0) {
-		vinfo->mtu = ws->config->network.mtu;
+	if (ws->config->default_mtu != 0) {
+		vinfo->mtu = ws->config->default_mtu;
 	} else {
 		fd = socket(AF_INET, SOCK_STREAM, 0);
 		if (fd == -1)

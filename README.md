@@ -1,4 +1,6 @@
-[![build status](https://ci.gitlab.com/projects/7712/status.png?ref=master)](https://ci.gitlab.com/projects/7712?ref=master)
+Gitlab CI [![Build status](https://gitlab.com/ocserv/ocserv/badges/master/build.svg)](https://gitlab.com/ocserv/ocserv/commits/master)
+ Travis [![Build Status](https://travis-ci.org/openconnect/ocserv.svg?branch=master)](https://travis-ci.org/openconnect/ocserv)
+
 
 # About
 
@@ -6,6 +8,12 @@ This program is openconnect VPN server (ocserv), a server for the
 [openconnect VPN client](http://www.infradead.org/openconnect/).
 It follows the [openconnect protocol](https://github.com/openconnect/protocol)
 and is believed to be compatible with CISCO's AnyConnect SSL VPN. 
+
+The program consists of:
+ 1. ocserv, the main server application
+ 2. occtl, the server's control tool. A tool which allows to query the
+   server for information.
+ 3. ocpasswd, a tool to administer simple password files.
 
 
 # Build dependencies
@@ -43,9 +51,13 @@ protobuf-c-compiler/ protobuf-c
 gperf              / gperf
 liblockfile-bin    / lockfile-progs
 nuttcp             / nuttcp
+lcov               / lcov
                    / uid_wrapper
+                   / pam_wrapper
+                   / nss_wrapper
                    / socket_wrapper
                    / gssntlmssp
+pam-oath           / pam_oath
 ```
 
 See [README-radius](doc/README-radius.md) for more information on Radius
@@ -56,12 +68,24 @@ dependencies and its configuration.
 To build from a distributed release use:
 
 ```
-$ ./configure && make
+$ ./configure && make && make check
 ```
 
 When cross compiling it may be useful to add the --enable-local-libopts
 option to configure.
 
+
+To test the code coverage of the test suite use the following:
+```
+$ ./configure --enable-code-coverage
+$ make && make check && make code-coverage-capture
+```
+
+Note that the code coverage reported does not currently include tests which
+are run within docker.
+
+In addition to the prerequisites listed above, building from git requires
+the following packages: autoconf, automake, autogen, git2cl, and xz.
 
 To build from the git repository use:
 ```
@@ -69,8 +93,6 @@ $ autoreconf -fvi
 $ ./configure && make
 ```
 
-In addition to the prerequisites listed above, building from git requires
-the following packages: autoconf, automake, autogen, git2cl, and xz.
 
 Note that the system's autogen version must match the included libopts
 version on the development system, if the included libopts library is to
