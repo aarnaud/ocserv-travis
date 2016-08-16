@@ -7,7 +7,12 @@ SUBDIRS += libopts
 endif
 SUBDIRS += src doc tests
 
-ACLOCAL_AMFLAGS = -I gl/m4 -I libopts/m4
+ACLOCAL_AMFLAGS = -I m4 -I gl/m4 -I libopts/m4
+
+@CODE_COVERAGE_RULES@
+
+local-code-coverage-output: code-coverage-capture
+	cat ocserv-$(VERSION)-coverage/index.html|grep headerCovTableEntryLo|head -1|sed 's/^.*>\([0-9]\+\.[0-9]\+\s*%\)<.*$$/ coverage lines: \1/'
 
 gl:
 	gnulib-tool --add-import --lgpl=2

@@ -19,7 +19,7 @@
  * The ocpasswd program is copyrighted and licensed
  * under the following terms:
  *
- *  Copyright (C) 2013, 2014 Nikos Mavrogiannopoulos, all rights reserved.
+ *  Copyright (C) 2013-2016 Nikos Mavrogiannopoulos, all rights reserved.
  *  This is free software. It is licensed for use, modification and
  *  redistribution under the terms of the GNU General Public License,
  *  version 2 <http://gnu.org/licenses/gpl.html>
@@ -78,9 +78,9 @@ typedef enum {
 /** count of all options for ocpasswd */
 #define OPTION_CT    8
 /** ocpasswd version */
-#define OCPASSWD_VERSION       "0.11.1"
+#define OCPASSWD_VERSION       "0.11.4"
 /** Full ocpasswd version text */
-#define OCPASSWD_FULL_VERSION  "ocpasswd 0.11.1"
+#define OCPASSWD_FULL_VERSION  "ocpasswd 0.11.4"
 
 /**
  *  Interface defines for all options.  Replace "n" with the UPPER_CASED

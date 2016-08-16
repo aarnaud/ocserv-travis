@@ -606,7 +606,7 @@ const ProtobufCMessageDescriptor bool_msg__descriptor =
   (ProtobufCMessageInit) bool_msg__init,
   NULL,NULL,NULL    /* reserved[123] */
 };
-static const ProtobufCFieldDescriptor user_info_rep__field_descriptors[31] =
+static const ProtobufCFieldDescriptor user_info_rep__field_descriptors[32] =
 {
   {
     "id",
@@ -980,6 +980,18 @@ static const ProtobufCFieldDescriptor user_info_rep__field_descriptors[31] =
     0,             /* flags */
     0,NULL,NULL    /* reserved1,reserved2, etc */
   },
+  {
+    "sid",
+    32,
+    PROTOBUF_C_LABEL_REQUIRED,
+    PROTOBUF_C_TYPE_BYTES,
+    0,   /* quantifier_offset */
+    offsetof(UserInfoRep, sid),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
 };
 static const unsigned user_info_rep__field_indices_by_name[] = {
   9,   /* field[9] = conn_time */
@@ -1007,6 +1019,7 @@ static const unsigned user_info_rep__field_indices_by_name[] = {
   29,   /* field[29] = restrict_to_routes */
   19,   /* field[19] = routes */
   15,   /* field[15] = rx_per_sec */
+  31,   /* field[31] = sid */
   12,   /* field[12] = status */
   13,   /* field[13] = tls_ciphersuite */
   4,   /* field[4] = tun */
@@ -1017,7 +1030,7 @@ static const unsigned user_info_rep__field_indices_by_name[] = {
 static const ProtobufCIntRange user_info_rep__number_ranges[1 + 1] =
 {
   { 1, 0 },
-  { 0, 31 }
+  { 0, 32 }
 };
 const ProtobufCMessageDescriptor user_info_rep__descriptor =
 {
@@ -1027,7 +1040,7 @@ const ProtobufCMessageDescriptor user_info_rep__descriptor =
   "UserInfoRep",
   "",
   sizeof(UserInfoRep),
-  31,
+  32,
   user_info_rep__field_descriptors,
   user_info_rep__field_indices_by_name,
   1,  user_info_rep__number_ranges,

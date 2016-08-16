@@ -35,7 +35,7 @@
 #line 6 "http-heads.gperf"
 struct http_headers_st { const char *name; unsigned id; };
 
-#define TOTAL_KEYWORDS 14
+#define TOTAL_KEYWORDS 15
 #define MIN_WORD_LENGTH 6
 #define MAX_WORD_LENGTH 34
 #define MIN_HASH_VALUE 6
@@ -61,10 +61,10 @@ hash (register const char *str, register unsigned int len)
       36, 36, 36, 36, 36, 36, 36, 36, 36, 36,
       36, 36, 36, 36, 36, 36, 36, 36, 36, 36,
       36, 36, 36, 36, 36,  0, 15,  5,  0, 36,
-       0, 36, 10, 36, 36, 36, 36,  5, 36, 36,
+       0, 36,  5, 36, 36, 36, 36,  0, 36, 36,
       36, 36, 36,  0, 36, 36, 36, 36, 36, 36,
       36, 36, 36, 36, 36, 36, 36, 36, 36, 36,
-      36,  5, 36, 36, 36,  0, 36, 36, 36, 36,
+      36, 10, 36, 36, 36,  0, 36, 36, 36, 36,
        0,  0, 36, 36,  0, 36,  0, 36, 36, 36,
       36, 36,  0, 36, 36, 36, 36, 36, 36, 36,
       36, 36, 36, 36, 36, 36, 36, 36, 36, 36,
@@ -108,33 +108,36 @@ static const struct http_headers_st wordlist[] =
 #line 12 "http-heads.gperf"
     {"Connection", HEADER_CONNECTION},
     {""}, {""},
-#line 21 "http-heads.gperf"
+#line 22 "http-heads.gperf"
     {"Authorization", HEADER_AUTHORIZATION},
-    {""}, {""}, {""}, {""}, {""},
-#line 20 "http-heads.gperf"
+    {""},
+#line 16 "http-heads.gperf"
+    {"X-CSTP-MTU", HEADER_CSTP_MTU},
+    {""}, {""}, {""},
+#line 21 "http-heads.gperf"
     {"X-Support-HTTP-Auth", HEADER_SUPPORT_SPNEGO},
-#line 9 "http-heads.gperf"
-    {"User-Agent", HEADER_USER_AGENT},
+#line 13 "http-heads.gperf"
+    {"X-DTLS-Master-Secret", HEADER_MASTER_SECRET},
     {""},
 #line 11 "http-heads.gperf"
     {"X-DTLS-Accept-Encoding", HEADER_DTLS_ENCODING},
 #line 14 "http-heads.gperf"
     {"X-DTLS-CipherSuite", HEADER_DTLS_CIPHERSUITE},
-#line 16 "http-heads.gperf"
+#line 17 "http-heads.gperf"
     {"X-CSTP-Address-Type", HEADER_CSTP_ATYPE},
-#line 13 "http-heads.gperf"
-    {"X-DTLS-Master-Secret", HEADER_MASTER_SECRET},
+#line 18 "http-heads.gperf"
+    {"X-CSTP-Hostname", HEADER_HOSTNAME},
     {""},
 #line 10 "http-heads.gperf"
     {"X-CSTP-Accept-Encoding", HEADER_CSTP_ENCODING},
     {""}, {""},
-#line 17 "http-heads.gperf"
-    {"X-CSTP-Hostname", HEADER_HOSTNAME},
-    {""},
-#line 18 "http-heads.gperf"
-    {"X-CSTP-Full-IPv6-Capability", HEADER_FULL_IPV6},
+#line 9 "http-heads.gperf"
+    {"User-Agent", HEADER_USER_AGENT},
     {""},
 #line 19 "http-heads.gperf"
+    {"X-CSTP-Full-IPv6-Capability", HEADER_FULL_IPV6},
+    {""},
+#line 20 "http-heads.gperf"
     {"X-AnyConnect-Identifier-DeviceType", HEADER_DEVICE_TYPE},
 #line 15 "http-heads.gperf"
     {"X-CSTP-Base-MTU", HEADER_CSTP_BASE_MTU}

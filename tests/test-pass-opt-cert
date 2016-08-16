@@ -53,7 +53,7 @@ return 0
 
 echo "Testing local backend with username-password and optional certificate... "
 
-launch_server -d 1 -f -c test-pass-opt-cert.config & PID=$!
+launch_server -d 1 -f -c "${srcdir}/data/test-pass-opt-cert.config" & PID=$!
 wait_server $PID
 
 echo -n "Connecting to obtain cookie (user without certificate)... "
@@ -71,14 +71,14 @@ fi
 echo ok
 
 echo -n "Connecting to obtain cookie (with certificate)... "
-connect "-u test --sslkey ./user-key.pem -c ./user-cert.pem"
+connect "-u test --sslkey ./certs/user-key.pem -c ./certs/user-cert.pem"
 if test $? != 0;then
 	fail $PID "Failed to connect with certificate!"
 fi
 echo ok
 
 echo -n "Connecting to obtain cookie (with incorrect certificate)... "
-connect "-u test --sslkey ./user-key.pem -c ./user-cert-wrong.pem" ""
+connect "-u test --sslkey ./certs/user-key.pem -c ./certs/user-cert-wrong.pem" ""
 if test $? = 0;then
 	fail $PID "Should not have connected with wrong certificate!"
 fi

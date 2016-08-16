@@ -245,14 +245,18 @@ int handle_worker_commands(main_server_st * s, struct proc_st *proc)
 
 	ret = recv_msg_headers(proc->fd, &cmd, MAX_WAIT_SECS);
 	if (ret < 0) {
-		mslog(s, proc, LOG_DEBUG,
-		      "cannot obtain metadata from command socket");
+		if (ret == ERR_PEER_TERMINATED)
+			mslog(s, proc, LOG_DEBUG,
+			      "worker terminated");
+		else
+			mslog(s, proc, LOG_DEBUG,
+			      "cannot obtain metadata from worker's command socket");
 		return ret;
 	}
 
 	length = ret;
 
-	mslog(s, proc, LOG_DEBUG, "main received message '%s' of %u bytes\n",
+	mslog(s, proc, LOG_DEBUG, "main received worker's message '%s' of %u bytes\n",
 	      cmd_request_to_str(cmd), (unsigned)length);
 
 	raw = talloc_size(proc, length);
@@ -264,8 +268,8 @@ int handle_worker_commands(main_server_st * s, struct proc_st *proc)
 	raw_len = force_read_timeout(proc->fd, raw, length, MAX_WAIT_SECS);
 	if (raw_len != length) {
 		e = errno;
-		mslog(s, proc, LOG_ERR,
-		      "cannot obtain data from command socket: %s",
+		mslog(s, proc, LOG_DEBUG,
+		      "cannot obtain data from worker's command socket: %s",
 		      strerror(e));
 		ret = ERR_BAD_COMMAND;
 		goto cleanup;
@@ -278,7 +282,7 @@ int handle_worker_commands(main_server_st * s, struct proc_st *proc)
 
 			tmsg = ban_ip_msg__unpack(&pa, raw_len, raw);
 			if (tmsg == NULL) {
-				mslog(s, NULL, LOG_ERR, "error unpacking sec-mod data");
+				mslog(s, NULL, LOG_ERR, "error unpacking worker data");
 				ret = ERR_BAD_COMMAND;
 				goto cleanup;
 			}
@@ -339,7 +343,7 @@ int handle_worker_commands(main_server_st * s, struct proc_st *proc)
 
 			tmsg = session_info_msg__unpack(&pa, raw_len, raw);
 			if (tmsg == NULL) {
-				mslog(s, proc, LOG_ERR, "error unpacking data");
+				mslog(s, proc, LOG_ERR, "error unpacking session info data");
 				ret = ERR_BAD_COMMAND;
 				goto cleanup;
 			}
@@ -359,14 +363,16 @@ int handle_worker_commands(main_server_st * s, struct proc_st *proc)
 			if (tmsg->user_agent)
 				strlcpy(proc->user_agent, tmsg->user_agent,
 					 sizeof(proc->user_agent));
-			if (tmsg->hostname)
+			if (tmsg->hostname) {
 				strlcpy(proc->hostname, tmsg->hostname,
 					 sizeof(proc->hostname));
+				mslog(s, proc, LOG_DEBUG, "setting worker hostname to '%s'", proc->hostname);
+				user_hostname_update(s, proc);
+			}
 
 			if (s->config->listen_proxy_proto) {
 				if (tmsg->has_remote_addr && tmsg->remote_addr.len <= sizeof(struct sockaddr_storage)) {
-					memcpy(&proc->remote_addr, tmsg->remote_addr.data, tmsg->remote_addr.len);
-					proc->remote_addr_len = tmsg->remote_addr.len;
+					proc_table_update_ip(s, proc, (struct sockaddr_storage*)tmsg->remote_addr.data, tmsg->remote_addr.len);
 
 					/* If the address is in the BAN list, terminate it */
 					if (check_if_banned(s, &proc->remote_addr, proc->remote_addr_len) != 0) {
@@ -397,7 +403,7 @@ int handle_worker_commands(main_server_st * s, struct proc_st *proc)
 		auth_cookie_req =
 		    auth_cookie_request_msg__unpack(&pa, raw_len, raw);
 		if (auth_cookie_req == NULL) {
-			mslog(s, proc, LOG_ERR, "error unpacking data");
+			mslog(s, proc, LOG_ERR, "error unpacking cookie data");
 			ret = ERR_BAD_COMMAND;
 			goto cleanup;
 		}
@@ -417,7 +423,7 @@ int handle_worker_commands(main_server_st * s, struct proc_st *proc)
 		break;
 
 	default:
-		mslog(s, proc, LOG_ERR, "unknown CMD 0x%x.", (unsigned)cmd);
+		mslog(s, proc, LOG_ERR, "unknown CMD from worker: 0x%x", (unsigned)cmd);
 		ret = ERR_BAD_COMMAND;
 		goto cleanup;
 	}

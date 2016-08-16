@@ -91,17 +91,16 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 @LOCAL_TALLOC_TRUE@am__append_1 = -I$(top_srcdir)/src/ccan/talloc
-@LOCAL_HTTP_PARSER_TRUE@am__append_2 = -I$(srcdir)/http-parser/
+@LOCAL_HTTP_PARSER_TRUE@am__append_2 = -I$(top_srcdir)/src/http-parser/
+@LOCAL_PROTOBUF_C_TRUE@am__append_3 = -I$(top_srcdir)/src/protobuf/
 sbin_PROGRAMS = ocserv$(EXEEXT)
-@ENABLE_COMPRESSION_TRUE@am__append_3 = lzs.c lzs.h
-@HAVE_GSSAPI_TRUE@am__append_4 = kkdcp_asn1_tab.c kkdcp.asn 
-@PCL_TRUE@am__append_5 = $(PCL_LIBS)
-@PCL_FALSE@am__append_6 = pcl/libpcl.a
-@PCL_FALSE@am__append_7 = pcl
-@PCL_FALSE@am__append_8 = -I$(srcdir)/pcl/
-@LOCAL_PROTOBUF_C_TRUE@am__append_9 = protobuf
-@LOCAL_PROTOBUF_C_TRUE@am__append_10 = -I$(srcdir)/protobuf/
-@LOCAL_PROTOBUF_C_TRUE@am__append_11 = protobuf/libprotobuf.a
+@ENABLE_COMPRESSION_TRUE@am__append_4 = lzs.c lzs.h
+@HAVE_GSSAPI_TRUE@am__append_5 = kkdcp_asn1_tab.c kkdcp.asn
+@PCL_TRUE@am__append_6 = $(PCL_LIBS)
+@PCL_FALSE@am__append_7 = pcl/libpcl.a
+@PCL_FALSE@am__append_8 = pcl
+@PCL_FALSE@am__append_9 = -I$(srcdir)/pcl/
+@LOCAL_PROTOBUF_C_TRUE@am__append_10 = protobuf
 subdir = src
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/libopts/m4/libopts.m4 \
@@ -141,7 +140,9 @@ am__aclocal_m4_deps = $(top_srcdir)/libopts/m4/libopts.m4 \
 	$(top_srcdir)/gl/m4/sys_types_h.m4 \
 	$(top_srcdir)/gl/m4/time_h.m4 $(top_srcdir)/gl/m4/unistd_h.m4 \
 	$(top_srcdir)/gl/m4/warn-on-use.m4 \
-	$(top_srcdir)/gl/m4/wchar_t.m4 $(top_srcdir)/configure.ac
+	$(top_srcdir)/gl/m4/wchar_t.m4 \
+	$(top_srcdir)/m4/ax_code_coverage.m4 \
+	$(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
 DIST_COMMON = $(srcdir)/Makefile.am $(am__DIST_COMMON)
@@ -181,11 +182,11 @@ am__ocserv_SOURCES_DIST = main.c main-auth.c worker-vpn.c \
 	worker-bandwidth.c worker-bandwidth.h main-ctl.h vasprintf.c \
 	vasprintf.h worker-proxyproto.c config-ports.c proc-search.c \
 	proc-search.h http-heads.h ip-util.c ip-util.h main-ban.c \
-	main-ban.h common-config.h base64-helper.c base64-helper.h \
-	str.c str.h gettime.h http-parser/http_parser.c \
-	http-parser/http_parser.h sec-mod-acct.h setproctitle.c \
-	setproctitle.h sec-mod-resume.h sec-mod-cookies.c lzs.c lzs.h \
-	kkdcp_asn1_tab.c kkdcp.asn main-ctl-unix.c
+	main-ban.h common-config.h valid-hostname.c str.c str.h \
+	gettime.h http-parser/http_parser.c http-parser/http_parser.h \
+	sec-mod-acct.h setproctitle.c setproctitle.h sec-mod-resume.h \
+	sec-mod-cookies.c lzs.c lzs.h kkdcp_asn1_tab.c kkdcp.asn \
+	main-ctl-unix.c
 am__dirstamp = $(am__leading_dot)dirstamp
 am__objects_1 = auth/pam.$(OBJEXT) auth/plain.$(OBJEXT) \
 	auth/radius.$(OBJEXT) auth/common.$(OBJEXT) \
@@ -212,27 +213,30 @@ am_ocserv_OBJECTS = main.$(OBJEXT) main-auth.$(OBJEXT) \
 	worker-bandwidth.$(OBJEXT) vasprintf.$(OBJEXT) \
 	worker-proxyproto.$(OBJEXT) config-ports.$(OBJEXT) \
 	proc-search.$(OBJEXT) ip-util.$(OBJEXT) main-ban.$(OBJEXT) \
-	base64-helper.$(OBJEXT) str.$(OBJEXT) $(am__objects_3) \
+	valid-hostname.$(OBJEXT) str.$(OBJEXT) $(am__objects_3) \
 	setproctitle.$(OBJEXT) sec-mod-cookies.$(OBJEXT) \
 	$(am__objects_4) $(am__objects_5) main-ctl-unix.$(OBJEXT)
 ocserv_OBJECTS = $(am_ocserv_OBJECTS)
 am__DEPENDENCIES_1 =
 @NEED_LIBOPTS_FALSE@am__DEPENDENCIES_2 = $(am__DEPENDENCIES_1)
-@NEED_LIBOPTS_TRUE@am__DEPENDENCIES_2 = ../libopts/libopts.a
+@NEED_LIBOPTS_TRUE@am__DEPENDENCIES_2 =  \
+@NEED_LIBOPTS_TRUE@	$(top_srcdir)/libopts/libopts.a
 @LOCAL_HTTP_PARSER_FALSE@am__DEPENDENCIES_3 = $(am__DEPENDENCIES_1)
-@PCL_TRUE@am__DEPENDENCIES_4 = $(am__DEPENDENCIES_1)
+@LOCAL_PROTOBUF_C_FALSE@am__DEPENDENCIES_4 = $(am__DEPENDENCIES_1)
+@LOCAL_PROTOBUF_C_TRUE@am__DEPENDENCIES_4 = $(top_srcdir)/src/protobuf/libprotobuf.a
+@PCL_TRUE@am__DEPENDENCIES_5 = $(am__DEPENDENCIES_1)
 ocserv_DEPENDENCIES = ../gl/libgnu.a $(am__DEPENDENCIES_2) \
 	libcmd-ocserv.a ccan/libccan.a common/libcommon.a \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_3) $(am__DEPENDENCIES_1) \
+	$(am__DEPENDENCIES_3) $(am__DEPENDENCIES_4) \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
 	$(am__DEPENDENCIES_1) libipc.a $(am__DEPENDENCIES_4) \
-	$(am__append_6) $(am__append_11)
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_5) $(am__append_7)
 am__vpath_adj_setup = srcdirstrip=`echo "$(srcdir)" | sed 's|.|.|g'`;
 am__vpath_adj = case $$p in \
     $(srcdir)/*) f=`echo "$$p" | sed "s|^$$srcdirstrip/||"`;; \
@@ -380,12 +384,19 @@ BITSIZEOF_WINT_T = @BITSIZEOF_WINT_T@
 CC = @CC@
 CCDEPMODE = @CCDEPMODE@
 CFLAGS = @CFLAGS@
+CODE_COVERAGE_CFLAGS = @CODE_COVERAGE_CFLAGS@
+CODE_COVERAGE_CPPFLAGS = @CODE_COVERAGE_CPPFLAGS@
+CODE_COVERAGE_CXXFLAGS = @CODE_COVERAGE_CXXFLAGS@
+CODE_COVERAGE_ENABLED = @CODE_COVERAGE_ENABLED@
+CODE_COVERAGE_LDFLAGS = @CODE_COVERAGE_LDFLAGS@
 CPP = @CPP@
 CPPFLAGS = @CPPFLAGS@
 CSCOPE = @CSCOPE@
 CTAGS = @CTAGS@
 CWRAP_CFLAGS = @CWRAP_CFLAGS@
 CWRAP_LIBS = @CWRAP_LIBS@
+CWRAP_PAM_CFLAGS = @CWRAP_PAM_CFLAGS@
+CWRAP_PAM_LIBS = @CWRAP_PAM_LIBS@
 CYGPATH_W = @CYGPATH_W@
 DEFS = @DEFS@
 DEPDIR = @DEPDIR@
@@ -401,6 +412,8 @@ EOVERFLOW_HIDDEN = @EOVERFLOW_HIDDEN@
 EOVERFLOW_VALUE = @EOVERFLOW_VALUE@
 ERRNO_H = @ERRNO_H@
 EXEEXT = @EXEEXT@
+GCOV = @GCOV@
+GENHTML = @GENHTML@
 GNULIB_ATOLL = @GNULIB_ATOLL@
 GNULIB_CALLOC_POSIX = @GNULIB_CALLOC_POSIX@
 GNULIB_CANONICALIZE_FILE_NAME = @GNULIB_CANONICALIZE_FILE_NAME@
@@ -761,6 +774,7 @@ INSTALL_DATA = @INSTALL_DATA@
 INSTALL_PROGRAM = @INSTALL_PROGRAM@
 INSTALL_SCRIPT = @INSTALL_SCRIPT@
 INSTALL_STRIP_PROGRAM = @INSTALL_STRIP_PROGRAM@
+LCOV = @LCOV@
 LDFLAGS = @LDFLAGS@
 LIBC = @LIBC@
 LIBCRYPT = @LIBCRYPT@
@@ -855,6 +869,8 @@ PACKAGE_STRING = @PACKAGE_STRING@
 PACKAGE_TARNAME = @PACKAGE_TARNAME@
 PACKAGE_URL = @PACKAGE_URL@
 PACKAGE_VERSION = @PACKAGE_VERSION@
+PAMDIR = @PAMDIR@
+PAMWRAPDIR = @PAMWRAPDIR@
 PAM_CFLAGS = @PAM_CFLAGS@
 PAM_LIBS = @PAM_LIBS@
 PATH_SEPARATOR = @PATH_SEPARATOR@
@@ -982,6 +998,8 @@ REPLACE_VSNPRINTF = @REPLACE_VSNPRINTF@
 REPLACE_VSPRINTF = @REPLACE_VSPRINTF@
 REPLACE_WCTOMB = @REPLACE_WCTOMB@
 REPLACE_WRITE = @REPLACE_WRITE@
+ROOTGID = @ROOTGID@
+ROOTUID = @ROOTUID@
 SED = @SED@
 SET_MAKE = @SET_MAKE@
 SHELL = @SHELL@
@@ -1051,7 +1069,6 @@ pdfdir = @pdfdir@
 prefix = @prefix@
 program_transform_name = @program_transform_name@
 psdir = @psdir@
-runstatedir = @runstatedir@
 sbindir = @sbindir@
 sharedstatedir = @sharedstatedir@
 srcdir = @srcdir@
@@ -1060,30 +1077,27 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-SUBDIRS = ccan common $(am__append_7) $(am__append_9) occtl ocpasswd
-AM_CPPFLAGS = -I$(srcdir)/../gl/ -I$(builddir)/../gl/ -I$(srcdir)/ \
+SUBDIRS = ccan common $(am__append_8) $(am__append_10) occtl ocpasswd
+AM_CPPFLAGS = $(am__append_1) $(am__append_2) $(am__append_3) \
+	-I$(srcdir)/../gl/ -I$(builddir)/../gl/ -I$(srcdir)/ \
 	-I$(builddir)/../ -I$(srcdir)/../ $(LIBOPTS_CFLAGS) \
 	$(LIBGNUTLS_CFLAGS) -I$(srcdir)/common -I$(builddir)/common \
 	$(LIBPROTOBUF_C_CFLAGS) $(LIBLZ4_CFLAGS) $(LIBREADLINE_CFLAGS) \
-	$(LIBTALLOC_CFLAGS) $(LIBDBUS_CFLAGS) $(LIBOATH_CFLAGS) \
-	$(LIBKRB5_CFLAGS) $(LIBTASN1_CFLAGS) $(RADCLI_CFLAGS) \
-	$(am__append_1) $(am__append_2) $(am__append_8) \
-	$(am__append_10)
+	$(CODE_COVERAGE_CFLAGS) $(LIBTALLOC_CFLAGS) $(LIBDBUS_CFLAGS) \
+	$(LIBOATH_CFLAGS) $(LIBKRB5_CFLAGS) $(LIBTASN1_CFLAGS) \
+	$(RADCLI_CFLAGS) $(am__append_9)
+@NEED_LIBOPTS_FALSE@NEEDED_LIBOPTS = $(LIBOPTS_LDADD)
+@NEED_LIBOPTS_TRUE@NEEDED_LIBOPTS = $(top_srcdir)/libopts/libopts.a
+@LOCAL_HTTP_PARSER_FALSE@NEEDED_HTTP_PARSER_LIBS = $(HTTP_PARSER_LIBS)
+@LOCAL_HTTP_PARSER_TRUE@NEEDED_HTTP_PARSER_LIBS = 
+@LOCAL_PROTOBUF_C_FALSE@NEEDED_LIBPROTOBUF_LIBS = $(LIBPROTOBUF_C_LIBS)
+@LOCAL_PROTOBUF_C_TRUE@NEEDED_LIBPROTOBUF_LIBS = $(top_srcdir)/src/protobuf/libprotobuf.a
 BUILT_SOURCES = ocserv-args.c ocserv-args.h ipc.pb-c.c ipc.pb-c.h \
 	http-heads.h kkdcp_asn1_tab.c ctl.pb-c.c ctl.pb-c.h
 
-@NEED_LIBOPTS_FALSE@NEEDED_LIBOPTS = $(LIBOPTS_LDADD)
-@NEED_LIBOPTS_TRUE@NEEDED_LIBOPTS = ../libopts/libopts.a
-@NEED_LIBOPTS_FALSE@NEEDED_LIBOPTS2 = $(LIBOPTS_LDADD)
-@NEED_LIBOPTS_TRUE@NEEDED_LIBOPTS2 = ../../libopts/libopts.a
-
-#AM_CPPFLAGS += -DDEBUG_LEAKS
 EXTRA_DIST = version.inc.in version.inc \
 	ipc.proto ctl.proto http-heads.gperf common.mk ocserv-fw
 
-@LOCAL_HTTP_PARSER_TRUE@HTTP_PARSER_SOURCES = http-parser/http_parser.c http-parser/http_parser.h
-@LOCAL_HTTP_PARSER_FALSE@NEEDED_HTTP_PARSER_LIBS = $(HTTP_PARSER_LIBS)
-@LOCAL_HTTP_PARSER_TRUE@NEEDED_HTTP_PARSER_LIBS = 
 bin_SCRIPTS = ocserv-fw
 noinst_LIBRARIES = libcmd-ocserv.a libipc.a
 libcmd_ocserv_a_SOURCES = ocserv-args.def ocserv-args.c ocserv-args.h
@@ -1108,19 +1122,21 @@ ocserv_SOURCES = main.c main-auth.c worker-vpn.c worker-auth.c \
 	worker-bandwidth.c worker-bandwidth.h main-ctl.h vasprintf.c \
 	vasprintf.h worker-proxyproto.c config-ports.c proc-search.c \
 	proc-search.h http-heads.h ip-util.c ip-util.h main-ban.c \
-	main-ban.h common-config.h base64-helper.c base64-helper.h \
-	str.c str.h gettime.h $(CCAN_SOURCES) $(HTTP_PARSER_SOURCES) \
+	main-ban.h common-config.h valid-hostname.c str.c str.h \
+	gettime.h $(CCAN_SOURCES) $(HTTP_PARSER_SOURCES) \
 	sec-mod-acct.h setproctitle.c setproctitle.h sec-mod-resume.h \
-	sec-mod-cookies.c $(am__append_3) $(am__append_4) \
+	sec-mod-cookies.c $(am__append_4) $(am__append_5) \
 	main-ctl-unix.c
+@LOCAL_HTTP_PARSER_TRUE@HTTP_PARSER_SOURCES = http-parser/http_parser.c http-parser/http_parser.h
 ocserv_LDADD = ../gl/libgnu.a $(NEEDED_LIBOPTS) libcmd-ocserv.a \
 	ccan/libccan.a common/libcommon.a $(LIBGNUTLS_LIBS) \
 	$(PAM_LIBS) $(LIBUTIL) $(LIBSECCOMP) $(LIBWRAP) $(LIBCRYPT) \
-	$(NEEDED_HTTP_PARSER_LIBS) $(LIBPROTOBUF_C_LIBS) $(LIBSYSTEMD) \
-	$(LIBTALLOC_LIBS) $(RADCLI_LIBS) $(LIBLZ4_LIBS) \
+	$(NEEDED_HTTP_PARSER_LIBS) $(NEEDED_LIBPROTOBUF_LIBS) \
+	$(LIBSYSTEMD) $(LIBTALLOC_LIBS) $(RADCLI_LIBS) $(LIBLZ4_LIBS) \
 	$(LIBKRB5_LIBS) $(LIBTASN1_LIBS) $(LIBOATH_LIBS) \
-	$(LIBNETTLE_LIBS) $(LIBEV_LIBS) libipc.a $(am__append_5) \
-	$(am__append_6) $(am__append_11)
+	$(LIBNETTLE_LIBS) $(LIBEV_LIBS) libipc.a \
+	$(NEEDED_LIBPROTOBUF_LIBS) $(CODE_COVERAGE_LDFLAGS) \
+	$(am__append_6) $(am__append_7)
 libipc_a_SOURCES = ctl.pb-c.c ctl.pb-c.h ipc.pb-c.h ipc.pb-c.c
 all: $(BUILT_SOURCES)
 	$(MAKE) $(AM_MAKEFLAGS) all-recursive
@@ -1136,9 +1152,9 @@ $(srcdir)/Makefile.in:  $(srcdir)/Makefile.am $(srcdir)/common.mk $(am__configur
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --gnu src/Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign src/Makefile'; \
 	$(am__cd) $(top_srcdir) && \
-	  $(AUTOMAKE) --gnu src/Makefile
+	  $(AUTOMAKE) --foreign src/Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \
 	  *config.status*) \
@@ -1309,7 +1325,6 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/auth-unix.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/base64-helper.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/config-kkdcp.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/config-ports.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/config.Po@am__quote@
@@ -1344,6 +1359,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/subconfig.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tlslib.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tun.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/valid-hostname.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/vasprintf.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/worker-auth.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/worker-bandwidth.Po@am__quote@

@@ -89,6 +89,9 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
+@LOCAL_TALLOC_TRUE@am__append_1 = -I$(top_srcdir)/src/ccan/talloc
+@LOCAL_HTTP_PARSER_TRUE@am__append_2 = -I$(top_srcdir)/src/http-parser/
+@LOCAL_PROTOBUF_C_TRUE@am__append_3 = -I$(top_srcdir)/src/protobuf/
 bin_PROGRAMS = ocpasswd$(EXEEXT)
 subdir = src/ocpasswd
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -129,7 +132,9 @@ am__aclocal_m4_deps = $(top_srcdir)/libopts/m4/libopts.m4 \
 	$(top_srcdir)/gl/m4/sys_types_h.m4 \
 	$(top_srcdir)/gl/m4/time_h.m4 $(top_srcdir)/gl/m4/unistd_h.m4 \
 	$(top_srcdir)/gl/m4/warn-on-use.m4 \
-	$(top_srcdir)/gl/m4/wchar_t.m4 $(top_srcdir)/configure.ac
+	$(top_srcdir)/gl/m4/wchar_t.m4 \
+	$(top_srcdir)/m4/ax_code_coverage.m4 \
+	$(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
 DIST_COMMON = $(srcdir)/Makefile.am $(am__DIST_COMMON)
@@ -152,9 +157,11 @@ am_ocpasswd_OBJECTS = ocpasswd.$(OBJEXT)
 ocpasswd_OBJECTS = $(am_ocpasswd_OBJECTS)
 am__DEPENDENCIES_1 =
 @NEED_LIBOPTS_FALSE@am__DEPENDENCIES_2 = $(am__DEPENDENCIES_1)
-@NEED_LIBOPTS_TRUE@am__DEPENDENCIES_2 = ../../libopts/libopts.a
+@NEED_LIBOPTS_TRUE@am__DEPENDENCIES_2 =  \
+@NEED_LIBOPTS_TRUE@	$(top_srcdir)/libopts/libopts.a
 ocpasswd_DEPENDENCIES = ../../gl/libgnu.a $(am__DEPENDENCIES_2) \
-	libcmd-ocpasswd.a $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
+	libcmd-ocpasswd.a $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -230,12 +237,19 @@ BITSIZEOF_WINT_T = @BITSIZEOF_WINT_T@
 CC = @CC@
 CCDEPMODE = @CCDEPMODE@
 CFLAGS = @CFLAGS@
+CODE_COVERAGE_CFLAGS = @CODE_COVERAGE_CFLAGS@
+CODE_COVERAGE_CPPFLAGS = @CODE_COVERAGE_CPPFLAGS@
+CODE_COVERAGE_CXXFLAGS = @CODE_COVERAGE_CXXFLAGS@
+CODE_COVERAGE_ENABLED = @CODE_COVERAGE_ENABLED@
+CODE_COVERAGE_LDFLAGS = @CODE_COVERAGE_LDFLAGS@
 CPP = @CPP@
 CPPFLAGS = @CPPFLAGS@
 CSCOPE = @CSCOPE@
 CTAGS = @CTAGS@
 CWRAP_CFLAGS = @CWRAP_CFLAGS@
 CWRAP_LIBS = @CWRAP_LIBS@
+CWRAP_PAM_CFLAGS = @CWRAP_PAM_CFLAGS@
+CWRAP_PAM_LIBS = @CWRAP_PAM_LIBS@
 CYGPATH_W = @CYGPATH_W@
 DEFS = @DEFS@
 DEPDIR = @DEPDIR@
@@ -251,6 +265,8 @@ EOVERFLOW_HIDDEN = @EOVERFLOW_HIDDEN@
 EOVERFLOW_VALUE = @EOVERFLOW_VALUE@
 ERRNO_H = @ERRNO_H@
 EXEEXT = @EXEEXT@
+GCOV = @GCOV@
+GENHTML = @GENHTML@
 GNULIB_ATOLL = @GNULIB_ATOLL@
 GNULIB_CALLOC_POSIX = @GNULIB_CALLOC_POSIX@
 GNULIB_CANONICALIZE_FILE_NAME = @GNULIB_CANONICALIZE_FILE_NAME@
@@ -611,6 +627,7 @@ INSTALL_DATA = @INSTALL_DATA@
 INSTALL_PROGRAM = @INSTALL_PROGRAM@
 INSTALL_SCRIPT = @INSTALL_SCRIPT@
 INSTALL_STRIP_PROGRAM = @INSTALL_STRIP_PROGRAM@
+LCOV = @LCOV@
 LDFLAGS = @LDFLAGS@
 LIBC = @LIBC@
 LIBCRYPT = @LIBCRYPT@
@@ -705,6 +722,8 @@ PACKAGE_STRING = @PACKAGE_STRING@
 PACKAGE_TARNAME = @PACKAGE_TARNAME@
 PACKAGE_URL = @PACKAGE_URL@
 PACKAGE_VERSION = @PACKAGE_VERSION@
+PAMDIR = @PAMDIR@
+PAMWRAPDIR = @PAMWRAPDIR@
 PAM_CFLAGS = @PAM_CFLAGS@
 PAM_LIBS = @PAM_LIBS@
 PATH_SEPARATOR = @PATH_SEPARATOR@
@@ -832,6 +851,8 @@ REPLACE_VSNPRINTF = @REPLACE_VSNPRINTF@
 REPLACE_VSPRINTF = @REPLACE_VSPRINTF@
 REPLACE_WCTOMB = @REPLACE_WCTOMB@
 REPLACE_WRITE = @REPLACE_WRITE@
+ROOTGID = @ROOTGID@
+ROOTUID = @ROOTUID@
 SED = @SED@
 SET_MAKE = @SET_MAKE@
 SHELL = @SHELL@
@@ -901,7 +922,6 @@ pdfdir = @pdfdir@
 prefix = @prefix@
 program_transform_name = @program_transform_name@
 psdir = @psdir@
-runstatedir = @runstatedir@
 sbindir = @sbindir@
 sharedstatedir = @sharedstatedir@
 srcdir = @srcdir@
@@ -910,21 +930,24 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-AM_CPPFLAGS = -I$(srcdir)/../../gl/ -I$(builddir)/../../gl/ \
-	-I$(srcdir)/ -I$(srcdir)/../ -I$(builddir)/../../ \
-	-I$(builddir) $(LIBTALLOC_CFLAGS) $(LIBOPTS_CFLAGS) 
-
+AM_CPPFLAGS = $(am__append_1) $(am__append_2) $(am__append_3) \
+	-I$(srcdir)/../../gl/ -I$(builddir)/../../gl/ -I$(srcdir)/ \
+	-I$(srcdir)/../ -I$(builddir)/../../ -I$(builddir) \
+	$(LIBTALLOC_CFLAGS) $(LIBOPTS_CFLAGS) $(CODE_COVERAGE_CFLAGS)
 @NEED_LIBOPTS_FALSE@NEEDED_LIBOPTS = $(LIBOPTS_LDADD)
-@NEED_LIBOPTS_TRUE@NEEDED_LIBOPTS = ../libopts/libopts.a
-@NEED_LIBOPTS_FALSE@NEEDED_LIBOPTS2 = $(LIBOPTS_LDADD)
-@NEED_LIBOPTS_TRUE@NEEDED_LIBOPTS2 = ../../libopts/libopts.a
+@NEED_LIBOPTS_TRUE@NEEDED_LIBOPTS = $(top_srcdir)/libopts/libopts.a
+@LOCAL_HTTP_PARSER_FALSE@NEEDED_HTTP_PARSER_LIBS = $(HTTP_PARSER_LIBS)
+@LOCAL_HTTP_PARSER_TRUE@NEEDED_HTTP_PARSER_LIBS = 
+@LOCAL_PROTOBUF_C_FALSE@NEEDED_LIBPROTOBUF_LIBS = $(LIBPROTOBUF_C_LIBS)
+@LOCAL_PROTOBUF_C_TRUE@NEEDED_LIBPROTOBUF_LIBS = $(top_srcdir)/src/protobuf/libprotobuf.a
 EXTRA_DIST = args.def
 BUILT_SOURCES = args.c args.h
 noinst_LIBRARIES = libcmd-ocpasswd.a
 libcmd_ocpasswd_a_SOURCES = args.def args.c args.h
 ocpasswd_SOURCES = ocpasswd.c
-ocpasswd_LDADD = ../../gl/libgnu.a $(NEEDED_LIBOPTS2) \
-	libcmd-ocpasswd.a $(LIBGNUTLS_LIBS) $(LIBCRYPT)
+ocpasswd_LDADD = ../../gl/libgnu.a $(NEEDED_LIBOPTS) libcmd-ocpasswd.a \
+	$(LIBGNUTLS_LIBS) $(LIBCRYPT) $(CODE_COVERAGE_LDFLAGS) \
+	$(LIBNETTLE_LIBS)
 all: $(BUILT_SOURCES)
 	$(MAKE) $(AM_MAKEFLAGS) all-am
 
@@ -939,9 +962,9 @@ $(srcdir)/Makefile.in:  $(srcdir)/Makefile.am $(srcdir)/../common.mk $(am__confi
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --gnu src/ocpasswd/Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign src/ocpasswd/Makefile'; \
 	$(am__cd) $(top_srcdir) && \
-	  $(AUTOMAKE) --gnu src/ocpasswd/Makefile
+	  $(AUTOMAKE) --foreign src/ocpasswd/Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \
 	  *config.status*) \

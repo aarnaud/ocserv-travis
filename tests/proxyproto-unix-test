@@ -31,7 +31,7 @@ CONFIG="proxyproto-unix"
 IMAGE=proxyproto-unix-test
 IMAGE_NAME=test_proxyproto_unix_ocserv
 TMP=$IMAGE_NAME.tmp
-PIDFILE="$IMAGE_NAME.$$.pid"
+PIDFILE="$IMAGE_NAME.$$.pid.tmp"
 . ./docker-common.sh
 
 $DOCKER run -e OCCTL_PAGER=cat -P --privileged=true -p 22 --tty=false -d --name $IMAGE_NAME $IMAGE
@@ -58,7 +58,7 @@ fi
 echo ""
 echo "Connecting with correct username"
 $ECHO_E "test" >pass-full$TMP
-$OPENCONNECT $IP:$PORT_OCSERV -b --sslkey ./user-key.pem -c ./user-cn.pem --pid-file $PIDFILE -u test --passwd-on-stdin -v --servercert=d66b507ae074d03b02eafca40d35f87dd81049d3 < pass-full$TMP
+$OPENCONNECT $IP:$PORT_OCSERV -b --sslkey ./certs/user-key.pem -c ./certs/user-cn.pem --pid-file $PIDFILE -u test --passwd-on-stdin -v --servercert=d66b507ae074d03b02eafca40d35f87dd81049d3 < pass-full$TMP
 if test $? != 0;then
 	echo "Cannot connect to server"
 	stop

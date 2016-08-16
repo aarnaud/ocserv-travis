@@ -50,7 +50,6 @@ int response_404(worker_st *ws, unsigned http_ver)
 	return 0;
 }
 
-#ifdef ANYCONNECT_CLIENT_COMPAT
 static int send_headers(worker_st *ws, unsigned http_ver, const char *content_type,
 			unsigned content_length)
 {
@@ -64,7 +63,7 @@ static int send_headers(worker_st *ws, unsigned http_ver, const char *content_ty
 	return 0;
 }
 
-static int send_string(worker_st *ws, unsigned http_ver, const char *content_type,
+static int send_data(worker_st *ws, unsigned http_ver, const char *content_type,
 		       const char *data, int content_length)
 {
 	/* don't bother uncorking on error - the connection will be closed anyway */
@@ -76,6 +75,152 @@ static int send_string(worker_st *ws, unsigned http_ver, const char *content_typ
 	return 0;
 }
 
+int get_cert_handler(worker_st * ws, unsigned http_ver)
+{
+	if (ws->conn_type != SOCK_TYPE_UNIX) { /* we have TLS */
+		const gnutls_datum_t *certs;
+		gnutls_datum_t out = {NULL, 0};
+		int ret;
+
+		oclog(ws, LOG_DEBUG, "requested server certificate");
+
+		certs = gnutls_certificate_get_ours(ws->session);
+		if (certs == NULL) {
+			return -1;
+		}
+
+		ret = gnutls_pem_base64_encode_alloc("CERTIFICATE", &certs[0], &out);
+		if (ret < 0)
+			return -1;
+
+		ret = send_data(ws, http_ver, "application/x-pem-file", (char*)out.data, out.size);
+		gnutls_free(out.data);
+
+		return ret;
+	} else {
+		return -1;
+	}
+}
+int get_cert_der_handler(worker_st * ws, unsigned http_ver)
+{
+	if (ws->conn_type != SOCK_TYPE_UNIX) { /* we have TLS */
+		const gnutls_datum_t *certs;
+
+		oclog(ws, LOG_DEBUG, "requested raw server certificate");
+
+		certs = gnutls_certificate_get_ours(ws->session);
+		if (certs == NULL) {
+			return -1;
+		}
+
+		return send_data(ws, http_ver, "application/pkix-cert", (char*)certs[0].data, certs[0].size);
+	} else {
+		return -1;
+	}
+}
+
+
+static
+int ca_handler(worker_st * ws, unsigned http_ver, unsigned der)
+{
+#if GNUTLS_VERSION_NUMBER < 0x030205
+	return -1;
+#else
+	if (ws->conn_type != SOCK_TYPE_UNIX) { /* we have TLS */
+		const gnutls_datum_t *certs;
+		gnutls_datum_t out = {NULL, 0}, tmpca;
+		unsigned i;
+		int ret;
+		gnutls_x509_crt_t issuer = NULL, crt = NULL;
+
+		oclog(ws, LOG_DEBUG, "requested server CA");
+
+		certs = gnutls_certificate_get_ours(ws->session);
+		if (certs == NULL) {
+			oclog(ws, LOG_DEBUG, "could not obtain our cert");
+			return -1;
+		}
+
+		ret = gnutls_x509_crt_init(&crt);
+		if (ret < 0) {
+			oclog(ws, LOG_DEBUG, "could not initialize cert");
+			return -1;
+		}
+
+		ret = gnutls_x509_crt_init(&issuer);
+		if (ret < 0) {
+			oclog(ws, LOG_DEBUG, "could not initialize cert");
+			ret = -1;
+			goto cleanup;
+		}
+
+		ret = gnutls_x509_crt_import(crt, &certs[0], GNUTLS_X509_FMT_DER);
+		if (ret < 0) {
+			ret = -1;
+			oclog(ws, LOG_DEBUG, "could not import our cert");
+			goto cleanup;
+		}
+
+		for (i=0;i<8;i++) {
+			ret = gnutls_certificate_get_crt_raw(ws->creds->xcred, i, 1, &tmpca);
+			if (ret < 0) {
+				goto cleanup;
+			}
+
+			ret = gnutls_x509_crt_import(issuer, &tmpca, GNUTLS_X509_FMT_DER);
+			if (ret < 0) {
+				ret = -1;
+				oclog(ws, LOG_DEBUG, "could not import issuer cert");
+				goto cleanup;
+			}
+
+			ret = gnutls_x509_crt_check_issuer(crt, issuer);
+			if (ret != 0) {
+				ret = gnutls_x509_crt_export2(issuer, der?GNUTLS_X509_FMT_DER:GNUTLS_X509_FMT_PEM, &out);
+				if (ret < 0) {
+					ret = -1;
+					oclog(ws, LOG_DEBUG, "could not export issuer of cert");
+					goto cleanup;
+				}
+				break;
+			}
+
+			gnutls_x509_crt_deinit(issuer);
+			issuer = NULL;
+		}
+
+		ret = send_data(ws, http_ver, "application/pkix-cert", (char*)out.data, out.size);
+
+ cleanup:
+		if (ret == GNUTLS_E_REQUESTED_DATA_NOT_AVAILABLE) {
+			oclog(ws, LOG_DEBUG, "could not get CA; does the server cert list contain the CA certificate?");
+			ret = -1;
+		}
+
+		if (crt)
+			gnutls_x509_crt_deinit(crt);
+		if (issuer)
+			gnutls_x509_crt_deinit(issuer);
+		gnutls_free(out.data);
+
+		return ret;
+	} else {
+		return -1;
+	}
+#endif
+}
+
+int get_ca_handler(worker_st * ws, unsigned http_ver)
+{
+	return ca_handler(ws, http_ver, 0);
+}
+
+int get_ca_der_handler(worker_st * ws, unsigned http_ver)
+{
+	return ca_handler(ws, http_ver, 1);
+}
+
+#ifdef ANYCONNECT_CLIENT_COMPAT
 int get_config_handler(worker_st *ws, unsigned http_ver)
 {
 	int ret;
@@ -119,10 +264,10 @@ int get_string_handler(worker_st *ws, unsigned http_ver)
 {
 	oclog(ws, LOG_HTTP_DEBUG, "requested fixed string: %s", ws->req.url); 
 	if (!strcmp(ws->req.url, "/1/binaries/update.txt")) {
-		return send_string(ws, http_ver, "text/xml", VPN_VERSION,
+		return send_data(ws, http_ver, "text/xml", VPN_VERSION,
 				   sizeof(VPN_VERSION) - 1);
 	} else {
-		return send_string(ws, http_ver, "text/xml", XML_START,
+		return send_data(ws, http_ver, "text/xml", XML_START,
 				   sizeof(XML_START) - 1);
 	}
 }
@@ -133,7 +278,7 @@ int get_string_handler(worker_st *ws, unsigned http_ver)
 int get_dl_handler(worker_st *ws, unsigned http_ver)
 {
 	oclog(ws, LOG_HTTP_DEBUG, "requested downloader: %s", ws->req.url); 
-	return send_string(ws, http_ver, "application/x-shellscript", SH_SCRIPT,
+	return send_data(ws, http_ver, "application/x-shellscript", SH_SCRIPT,
 			   sizeof(SH_SCRIPT) - 1);
 }
 
@@ -141,7 +286,7 @@ int get_dl_handler(worker_st *ws, unsigned http_ver)
 
 int get_empty_handler(worker_st *ws, unsigned http_ver)
 {
-	return send_string(ws, http_ver, "text/html", EMPTY_MSG,
+	return send_data(ws, http_ver, "text/html", EMPTY_MSG,
 			   sizeof(EMPTY_MSG) - 1);
 }
 

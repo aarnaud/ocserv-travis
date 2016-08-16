@@ -77,7 +77,7 @@ static void listen_watcher_cb (EV_P_ ev_io *w, int revents);
 
 int syslog_open = 0;
 sigset_t sig_default_set;
-struct ev_loop *loop;
+struct ev_loop *loop = NULL;
 
 /* EV watchers */
 ev_io ctl_watcher;
@@ -114,30 +114,7 @@ static void set_udp_socket_options(struct perm_cfg_st* config, int fd, int famil
 {
 int y;
 	if (config->config->try_mtu) {
-#if defined(IP_DONTFRAG)
-		y = 1;
-		if (setsockopt(fd, SOL_IP, IP_DONTFRAG,
-			       (const void *) &y, sizeof(y)) < 0)
-			perror("setsockopt(IP_DF) failed");
-#elif defined(IP_MTU_DISCOVER)
-		y = IP_PMTUDISC_DO;
-		if (setsockopt(fd, IPPROTO_IP, IP_MTU_DISCOVER,
-		       (const void *) &y, sizeof(y)) < 0)
-			perror("setsockopt(IP_DF) failed");
-#endif
-		if (family == AF_INET6) {
-#if defined(IPV6_DONTFRAG)
-			y = 1;
-			if (setsockopt(fd, IPPROTO_IPV6, IPV6_DONTFRAG,
-				       (const void *) &y, sizeof(y)) < 0)
-				perror("setsockopt(IPV6_DF) failed");
-#elif defined(IPV6_MTU_DISCOVER)
-			y = IP_PMTUDISC_DO;
-			if (setsockopt(fd, IPPROTO_IPV6, IPV6_MTU_DISCOVER,
-			       (const void *) &y, sizeof(y)) < 0)
-				perror("setsockopt(IPV6_DF) failed");
-#endif
-		}
+		set_mtu_disc(fd, family, 1);
 	}
 #if defined(IP_PKTINFO)
 	y = 1;
@@ -480,15 +457,7 @@ int y;
 	setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, (const void *) &y, sizeof(y));
 
 	if (s->config->try_mtu) {
-#if defined(IP_DONTFRAG)
-		y = 1;
-		setsockopt(fd, IPPROTO_IP, IP_DONTFRAG,
-			       (const void *) &y, sizeof(y));
-#elif defined(IP_MTU_DISCOVER)
-		y = IP_PMTUDISC_DO;
-		setsockopt(fd, IPPROTO_IP, IP_MTU_DISCOVER,
-			       (const void *) &y, sizeof(y));
-#endif
+		set_mtu_disc(fd, family, 1);
 	}
 	set_cloexec_flag (fd, 1);
 
@@ -662,18 +631,20 @@ void clear_lists(main_server_st *s)
 	main_ban_db_deinit(s);
 
 	/* clear libev state */
-	ev_io_stop (loop, &ctl_watcher);
-	ev_io_stop (loop, &sec_mod_watcher);
-	ev_child_stop (loop, &child_watcher);
-	ev_timer_stop(loop, &maintainance_watcher);
-	/* free memory by the event loop */
-	ev_loop_destroy (loop);
+	if (loop) {
+		ev_io_stop (loop, &ctl_watcher);
+		ev_io_stop (loop, &sec_mod_watcher);
+		ev_child_stop (loop, &child_watcher);
+		ev_timer_stop(loop, &maintainance_watcher);
+		/* free memory and descriptors by the event loop */
+		ev_loop_destroy (loop);
+	}
 }
 
 /* A UDP fd will not be forwarded to worker process before this number of
  * seconds has passed. That is to prevent a duplicate message messing the worker.
  */
-#define UDP_FD_RESEND_TIME 60
+#define UDP_FD_RESEND_TIME 3
 
 #define RECORD_PAYLOAD_POS 13
 #define HANDSHAKE_SESSION_ID_POS 46
@@ -705,8 +676,7 @@ int sfd = -1;
 	}
 	buffer_size = ret;
 
-	/* obtain the session id */
-	if (buffer_size < RECORD_PAYLOAD_POS+HANDSHAKE_SESSION_ID_POS+GNUTLS_MAX_SESSION_ID+2) {
+	if (buffer_size < RECORD_PAYLOAD_POS) {
 		mslog(s, NULL, LOG_INFO, "%s: too short UDP packet",
 		      human_addr((struct sockaddr*)&cli_addr, cli_addr_size, tbuf, sizeof(tbuf)));
 		goto fail;
@@ -732,7 +702,7 @@ int sfd = -1;
 		mslog(s, NULL, LOG_DEBUG, "%s: unexpected DTLS content type: %u; possibly a firewall disassociated a UDP session",
 		      human_addr((struct sockaddr*)&cli_addr, cli_addr_size, tbuf, sizeof(tbuf)),
 		      (unsigned int)s->msg_buffer[0]);
-		/* Here we received a non-client hello packet. It may be that
+		/* Here we received a non-client-hello packet. It may be that
 		 * the client's NAT changed its UDP source port and the previous
 		 * connection is invalidated. Try to see if we can simply match
 		 * the IP address and forward the socket.
@@ -743,6 +713,14 @@ int sfd = -1;
 		if (s->perm_config->unix_conn_file)
 			goto fail;
 	} else {
+		/* A client hello packet. We can get the session ID and figure
+		 * the associated connection. */
+		if (buffer_size < RECORD_PAYLOAD_POS+HANDSHAKE_SESSION_ID_POS+GNUTLS_MAX_SESSION_ID+2) {
+			mslog(s, NULL, LOG_INFO, "%s: too short handshake packet",
+			      human_addr((struct sockaddr*)&cli_addr, cli_addr_size, tbuf, sizeof(tbuf)));
+			goto fail;
+		}
+
 		/* read session_id */
 		session_id_size = s->msg_buffer[RECORD_PAYLOAD_POS+HANDSHAKE_SESSION_ID_POS];
 		session_id = &s->msg_buffer[RECORD_PAYLOAD_POS+HANDSHAKE_SESSION_ID_POS+1];
@@ -797,8 +775,8 @@ int sfd = -1;
 
 		if (match_ip_only != 0) {
 			msg.hello = 0; /* by default this is one */
-		} else {
 		}
+
 		msg.data.data = s->msg_buffer;
 		msg.data.len = buffer_size;
 
@@ -874,7 +852,7 @@ void script_child_watcher_cb(struct ev_loop *loop, ev_child *w, int revents)
 		estatus = 1;
 
 	/* check if someone was waiting for that pid */
-	mslog(s, stmp->proc, LOG_DEBUG, "%s-script exit status: %u", stmp->up?"connect":"disconnect", estatus);
+	mslog(s, stmp->proc, LOG_DEBUG, "connect-script exit status: %u", estatus);
 	list_del(&stmp->list);
 	ev_child_stop(loop, &stmp->ev_child);
 
@@ -1165,12 +1143,6 @@ int main(int argc, char** argv)
 
 	memset(&creds, 0, sizeof(creds));
 
-	loop = EV_DEFAULT;
-	if (loop == NULL) {
-		fprintf(stderr, "could not initialise libev\n");
-		exit(1);
-	}
-
 	/* main pool */
 	main_pool = talloc_init("main");
 	if (main_pool == NULL) {
@@ -1186,6 +1158,8 @@ int main(int argc, char** argv)
 	s->main_pool = main_pool;
 	s->creds = &creds;
 	s->start_time = time(0);
+	s->top_fd = -1;
+	s->ctl_fd = -1;
 
 	list_head_init(&s->proc_list.head);
 	list_head_init(&s->script_list.head);
@@ -1243,13 +1217,22 @@ int main(int argc, char** argv)
 		}
 	}
 
+	/* we don't need them */
+	close(STDIN_FILENO);
+	close(STDOUT_FILENO);
+
 	write_pid_file();
 
-	s->top_fd = -1;
 	s->sec_mod_fd = run_sec_mod(s, &s->sec_mod_fd_sync);
 	ret = ctl_handler_init(s);
 	if (ret < 0) {
-		fprintf(stderr, "Cannot create command handler\n");
+		mslog(s, NULL, LOG_ERR, "Cannot create command handler");
+		exit(1);
+	}
+
+	loop = EV_DEFAULT;
+	if (loop == NULL) {
+		mslog(s, NULL, LOG_ERR, "could not initialise libev");
 		exit(1);
 	}
 
@@ -1280,13 +1263,13 @@ int main(int argc, char** argv)
 	/* initialize memory for worker process */
 	worker_pool = talloc_named(main_pool, 0, "worker");
 	if (worker_pool == NULL) {
-		fprintf(stderr, "talloc init error\n");
+		mslog(s, NULL, LOG_ERR, "talloc init error");
 		exit(1);
 	}
 
 	s->ws = talloc_zero(worker_pool, struct worker_st);
 	if (s->ws == NULL) {
-		fprintf(stderr, "memory error\n");
+		mslog(s, NULL, LOG_ERR, "memory error");
 		exit(1);
 	}
 
@@ -1295,15 +1278,11 @@ int main(int argc, char** argv)
 	if (s->config->kkdcp) {
 		ret = asn1_array2tree(kkdcp_asn1_tab, &_kkdcp_pkix1_asn, NULL);
 		if (ret != ASN1_SUCCESS) {
-			fprintf(stderr, "KKDCP ASN.1 initialization error\n");
+			mslog(s, NULL, LOG_ERR, "KKDCP ASN.1 initialization error");
 			exit(1);
 		}
 	}
 #endif
-
-	/* we don't need them */
-	close(STDIN_FILENO);
-	close(STDOUT_FILENO);
 
 	/* increase the number of our allowed file descriptors */
 	update_fd_limits(s, 1);

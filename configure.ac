@@ -1,8 +1,8 @@
 AC_PREREQ(2.61)
-AC_INIT([ocserv], [0.11.1], [nmav@gnutls.org])
+AC_INIT([ocserv], [0.11.4], [nmav@gnutls.org])
 PKG_PROG_PKG_CONFIG
 AC_CONFIG_AUX_DIR([build-aux])
-AC_CONFIG_MACRO_DIR([gl/m4])
+AC_CONFIG_MACRO_DIR([m4])
 
 AM_INIT_AUTOMAKE([1.11.3 subdir-objects no-dist-gzip dist-xz -Wall -Wno-override])
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
@@ -20,6 +20,8 @@ fi
 AC_PATH_PROG(CTAGS, ctags, [:])
 AC_PATH_PROG(CSCOPE, cscope, [:])
 AC_CHECK_PROG([AUTOGEN], [autogen], [autogen], [:])
+
+AX_CODE_COVERAGE
 
 if test x"$AUTOGEN" = "x:"; then
 	AC_MSG_WARN([[
@@ -200,22 +202,14 @@ AC_LINK_IFELSE([AC_LANG_PROGRAM([
 LIBS="$oldlibs"
 fi
 
-AC_ARG_WITH(all-tests,
-  AS_HELP_STRING([--with-all-tests], [do not include tests which require code in the server]),
-  all_tests=$withval,
-  all_tests=no)
-
-if test "$all_tests" != no;then
 PKG_CHECK_MODULES([CWRAP], [uid_wrapper, socket_wrapper], have_cwrap=yes, have_cwrap=no)
-else
-have_cwrap=no
-fi
+PKG_CHECK_MODULES([CWRAP_PAM], [pam_wrapper], have_cwrap_pam=yes, have_cwrap_pam=no)
 
 if test "$have_cwrap" != no;then
 	AC_DEFINE([HAVE_CWRAP], 1, [Enable testing with cwrap])
 fi
-
 AM_CONDITIONAL(HAVE_CWRAP, test "x$have_cwrap" != xno)
+AM_CONDITIONAL(HAVE_CWRAP_PAM, test "x$have_cwrap_pam" != xno && test "$have_liboath" = yes && test "$pam_enabled" = yes)
 
 AC_ARG_WITH(radius,
   AS_HELP_STRING([--without-radius], [do not include Radius support]),
@@ -422,7 +416,7 @@ if test "$test_for_gssapi" = yes;then
 PKG_CHECK_MODULES([LIBKRB5], [krb5-gssapi], [
 enable_gssapi=yes
 AC_DEFINE([HAVE_GSSAPI], [], [GSSAPI was found])
-PKG_CHECK_MODULES(LIBTASN1, [libtasn1 >= 3.8])
+PKG_CHECK_MODULES(LIBTASN1, [libtasn1 >= 3.4])
 ],
 [
 	AC_MSG_WARN([[
@@ -472,6 +466,26 @@ LIBS="$oldlibs"
 fi
 AM_CONDITIONAL(PCL, test "$with_local_pcl" = no)
 
+if test -f /usr/lib64/pam_wrapper/pam_matrix.so;then
+	AC_SUBST([PAMWRAPDIR], [/usr/lib64/pam_wrapper])
+elif test -f /usr/lib/pam_wrapper/pam_matrix.so;then
+	AC_SUBST([PAMWRAPDIR], [/usr/lib/pam_wrapper])
+else
+	AC_SUBST([PAMWRAPDIR], [/usr/lib/pam_wrapper])
+fi
+
+if test -f /usr/lib64/security/pam_oath.so;then
+	AC_SUBST([PAMDIR], [/usr/lib64/security])
+elif test -f /usr/lib/security/pam_oath.so;then
+	AC_SUBST([PAMDIR], [/usr/lib/security])
+else
+	AC_SUBST([PAMDIR], [/usr/lib/security])
+fi
+
+uid=$(id -u)
+gid=$(id -g)
+AC_SUBST([ROOTUID], [$uid])
+AC_SUBST([ROOTGID], [$gid])
 
 LIBOPTS_CHECK([libopts])
 if test "$NEED_LIBOPTS_DIR" = "true";then
@@ -503,6 +517,10 @@ AC_CONFIG_FILES([
 	gl/Makefile
 	tests/docker-ocserv/Makefile
 	tests/docker-kerberos/Makefile
+	tests/data/pam/ocserv
+	tests/data/pam-single/ocserv
+	tests/data/pam/nss-passwd
+	tests/data/pam/nss-group
 	tests/Makefile
 ])
 AC_OUTPUT
@@ -515,6 +533,7 @@ Summary of build options:
   Compiler:             ${CC}
   CFlags:               ${CFLAGS}
   CWrap testing:        ${have_cwrap}
+  CWrap PAM testing:    ${have_cwrap_pam}
   
   PAM auth backend:     ${pam_enabled}
   Radius auth backend:  ${radius_enabled}

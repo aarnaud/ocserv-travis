@@ -19,7 +19,7 @@
  * The occtl program is copyrighted and licensed
  * under the following terms:
  *
- *  Copyright (C) 2014, 2015 Red Hat, all rights reserved.
+ *  Copyright (C) 2014-2016 Red Hat, all rights reserved.
  *  This is free software. It is licensed for use, modification and
  *  redistribution under the terms of the GNU General Public License,
  *  version 2 <http://gnu.org/licenses/gpl.html>
@@ -52,7 +52,7 @@ extern "C" {
 #endif
 extern FILE * option_usage_fp;
 #define zCopyright      (occtl_opt_strs+0)
-#define zLicenseDescrip (occtl_opt_strs+244)
+#define zLicenseDescrip (occtl_opt_strs+243)
 
 
 #ifndef NULL
@@ -62,13 +62,13 @@ extern FILE * option_usage_fp;
 /**
  *  static const strings for occtl options
  */
-static char const occtl_opt_strs[1416] =
-/*     0 */ "occtl 0.11.1\n"
-            "Copyright (C) 2014, 2015 Red Hat, all rights reserved.\n"
+static char const occtl_opt_strs[1415] =
+/*     0 */ "occtl 0.11.4\n"
+            "Copyright (C) 2014-2016 Red Hat, all rights reserved.\n"
             "This is free software. It is licensed for use, modification and\n"
             "redistribution under the terms of the GNU General Public License,\n"
             "version 2 <http://gnu.org/licenses/gpl.html>\n\0"
-/*   244 */ "occtl is free software: you can redistribute it and/or modify it under the\n"
+/*   243 */ "occtl is free software: you can redistribute it and/or modify it under the\n"
             "terms of version 2 of the GNU General Public License, as published by the\n"
             "Free Software Foundation.\n\n"
             "occtl is distributed in the hope that it will be useful, but WITHOUT ANY\n"
@@ -77,41 +77,41 @@ static char const occtl_opt_strs[1416] =
             "details.\n\n"
             "You should have received a copy of the GNU General Public License, version\n"
             "2, along with this program.  If not, see <http://www.gnu.org/licenses/>.\n\0"
-/*   797 */ "Specify the server's occtl socket file\0"
-/*   836 */ "SOCKET_FILE\0"
-/*   848 */ "socket-file\0"
-/*   860 */ "Output will be JSON formatted\0"
-/*   890 */ "JSON\0"
-/*   895 */ "json\0"
-/*   900 */ "No pager will be used over output data\0"
-/*   939 */ "NO_PAGER\0"
-/*   948 */ "no-pager\0"
-/*   957 */ "display extended usage information and exit\0"
-/*  1001 */ "help\0"
-/*  1006 */ "extended usage information passed thru pager\0"
-/*  1051 */ "more-help\0"
-/*  1061 */ "output version information and exit\0"
-/*  1097 */ "version\0"
-/*  1105 */ "OCCTL\0"
-/*  1111 */ "occtl - OpenConnect VPN server control\n"
+/*   796 */ "Specify the server's occtl socket file\0"
+/*   835 */ "SOCKET_FILE\0"
+/*   847 */ "socket-file\0"
+/*   859 */ "Output will be JSON formatted\0"
+/*   889 */ "JSON\0"
+/*   894 */ "json\0"
+/*   899 */ "No pager will be used over output data\0"
+/*   938 */ "NO_PAGER\0"
+/*   947 */ "no-pager\0"
+/*   956 */ "display extended usage information and exit\0"
+/*  1000 */ "help\0"
+/*  1005 */ "extended usage information passed thru pager\0"
+/*  1050 */ "more-help\0"
+/*  1060 */ "output version information and exit\0"
+/*  1096 */ "version\0"
+/*  1104 */ "OCCTL\0"
+/*  1110 */ "occtl - OpenConnect VPN server control\n"
             "Usage:  %s [ -<flag> [<val>] | --<name>[{=| }<val>] ]...\n\0"
-/*  1208 */ "openconnect-devel@lists.infradead.org\0"
-/*  1246 */ "\n\0"
-/*  1248 */ "Openconnect VPN server control (occtl) is a tool to control the ocserv VPN\n"
+/*  1207 */ "openconnect-devel@lists.infradead.org\0"
+/*  1245 */ "\n\0"
+/*  1247 */ "Openconnect VPN server control (occtl) is a tool to control the ocserv VPN\n"
             "server.\n\0"
-/*  1332 */ "occtl 0.11.1\0"
-/*  1345 */ "Usage: occtl [options] [command]\n"
+/*  1331 */ "occtl 0.11.4\0"
+/*  1344 */ "Usage: occtl [options] [command]\n"
             "occtl --help for usage instructions.\n";
 
 /**
  *  socket-file option description:
  */
 /** Descriptive text for the socket-file option */
-#define SOCKET_FILE_DESC      (occtl_opt_strs+797)
+#define SOCKET_FILE_DESC      (occtl_opt_strs+796)
 /** Upper-cased name for the socket-file option */
-#define SOCKET_FILE_NAME      (occtl_opt_strs+836)
+#define SOCKET_FILE_NAME      (occtl_opt_strs+835)
 /** Name string for the socket-file option */
-#define SOCKET_FILE_name      (occtl_opt_strs+848)
+#define SOCKET_FILE_name      (occtl_opt_strs+847)
 /** Compiled in flag settings for the socket-file option */
 #define SOCKET_FILE_FLAGS     (OPTST_DISABLED \
         | OPTST_SET_ARGTYPE(OPARG_TYPE_FILE))
@@ -120,11 +120,11 @@ static char const occtl_opt_strs[1416] =
  *  json option description:
  */
 /** Descriptive text for the json option */
-#define JSON_DESC      (occtl_opt_strs+860)
+#define JSON_DESC      (occtl_opt_strs+859)
 /** Upper-cased name for the json option */
-#define JSON_NAME      (occtl_opt_strs+890)
+#define JSON_NAME      (occtl_opt_strs+889)
 /** Name string for the json option */
-#define JSON_name      (occtl_opt_strs+895)
+#define JSON_name      (occtl_opt_strs+894)
 /** Compiled in flag settings for the json option */
 #define JSON_FLAGS     (OPTST_DISABLED)
 
@@ -132,22 +132,22 @@ static char const occtl_opt_strs[1416] =
  *  no-pager option description:
  */
 /** Descriptive text for the no-pager option */
-#define NO_PAGER_DESC      (occtl_opt_strs+900)
+#define NO_PAGER_DESC      (occtl_opt_strs+899)
 /** Upper-cased name for the no-pager option */
-#define NO_PAGER_NAME      (occtl_opt_strs+939)
+#define NO_PAGER_NAME      (occtl_opt_strs+938)
 /** Name string for the no-pager option */
-#define NO_PAGER_name      (occtl_opt_strs+948)
+#define NO_PAGER_name      (occtl_opt_strs+947)
 /** Compiled in flag settings for the no-pager option */
 #define NO_PAGER_FLAGS     (OPTST_DISABLED)
 
 /*
  *  Help/More_Help/Version option descriptions:
  */
-#define HELP_DESC       (occtl_opt_strs+957)
-#define HELP_name       (occtl_opt_strs+1001)
+#define HELP_DESC       (occtl_opt_strs+956)
+#define HELP_name       (occtl_opt_strs+1000)
 #ifdef HAVE_WORKING_FORK
-#define MORE_HELP_DESC  (occtl_opt_strs+1006)
-#define MORE_HELP_name  (occtl_opt_strs+1051)
+#define MORE_HELP_DESC  (occtl_opt_strs+1005)
+#define MORE_HELP_name  (occtl_opt_strs+1050)
 #define MORE_HELP_FLAGS (OPTST_IMM | OPTST_NO_INIT)
 #else
 #define MORE_HELP_DESC  HELP_DESC
@@ -160,8 +160,8 @@ static char const occtl_opt_strs[1416] =
 #  define VER_FLAGS     (OPTST_SET_ARGTYPE(OPARG_TYPE_STRING) | \
                          OPTST_ARG_OPTIONAL | OPTST_IMM | OPTST_NO_INIT)
 #endif
-#define VER_DESC        (occtl_opt_strs+1061)
-#define VER_name        (occtl_opt_strs+1097)
+#define VER_DESC        (occtl_opt_strs+1060)
+#define VER_name        (occtl_opt_strs+1096)
 /**
  *  Declare option callback procedures
  */
@@ -259,21 +259,21 @@ static tOptDesc optDesc[OPTION_CT] = {
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 /** Reference to the upper cased version of occtl. */
-#define zPROGNAME       (occtl_opt_strs+1105)
+#define zPROGNAME       (occtl_opt_strs+1104)
 /** Reference to the title line for occtl usage. */
-#define zUsageTitle     (occtl_opt_strs+1111)
+#define zUsageTitle     (occtl_opt_strs+1110)
 /** There is no occtl configuration file. */
 #define zRcName         NULL
 /** There are no directories to search for occtl config files. */
 #define apzHomeList     NULL
 /** The occtl program bug email address. */
-#define zBugsAddr       (occtl_opt_strs+1208)
+#define zBugsAddr       (occtl_opt_strs+1207)
 /** Clarification/explanation of what occtl does. */
-#define zExplain        (occtl_opt_strs+1246)
+#define zExplain        (occtl_opt_strs+1245)
 /** Extra detail explaining what occtl does. */
-#define zDetail         (occtl_opt_strs+1248)
+#define zDetail         (occtl_opt_strs+1247)
 /** The full version string for occtl. */
-#define zFullVersion    (occtl_opt_strs+1332)
+#define zFullVersion    (occtl_opt_strs+1331)
 /* extracted from optcode.tlib near line 364 */
 
 #if defined(ENABLE_NLS)
@@ -285,7 +285,7 @@ static tOptDesc optDesc[OPTION_CT] = {
 #endif /* ENABLE_NLS */
 
 #define occtl_full_usage (NULL)
-#define occtl_short_usage (occtl_opt_strs+1345)
+#define occtl_short_usage (occtl_opt_strs+1344)
 
 #endif /* not defined __doxygen__ */
 
@@ -533,8 +533,8 @@ static void bogus_function(void) {
      translate option names.
    */
   /* referenced via occtlOptions.pzCopyright */
-  puts(_("occtl 0.11.1\n\
-Copyright (C) 2014, 2015 Red Hat, all rights reserved.\n\
+  puts(_("occtl 0.11.4\n\
+Copyright (C) 2014-2016 Red Hat, all rights reserved.\n\
 This is free software. It is licensed for use, modification and\n\
 redistribution under the terms of the GNU General Public License,\n\
 version 2 <http://gnu.org/licenses/gpl.html>\n"));
@@ -580,7 +580,7 @@ Usage:  %s [ -<flag> [<val>] | --<name>[{=| }<val>] ]...\n"));
 server.\n"));
 
   /* referenced via occtlOptions.pzFullVersion */
-  puts(_("occtl 0.11.1"));
+  puts(_("occtl 0.11.4"));
 
   /* referenced via occtlOptions.pzFullUsage */
   puts(_("<<<NOT-FOUND>>>"));

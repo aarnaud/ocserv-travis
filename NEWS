@@ -1,3 +1,54 @@
+* Version 0.11.4 (released 2016-08-05)
+- ocserv: Corrected the IPv6 address advertisement to client. Instead of
+  using the server's address prefix use the prefix assigned to client.
+- ocserv: Added per-user-configuration option hostname.
+- ocserv: Corrected the assignment of the tun device group membership in
+  Linux.
+- ocserv: Do not hard fail when TUNSETGROUP ioctl fails with EINVAL. This
+  allows ocserv to operate under older kernels.
+- ocserv: Corrected crash on worker process after client DTLS IP/port change.
+- ocserv: reworked the MTU discovery. Disable MTU discovery when not requested
+  and set the minimum packet size to 1280 for IPv6 and 800 bytes for IPv4. When
+  the MTU discovery fails to calculate an MTU over the minimum then disable MTU
+  discovery and rely on packet fragmentation. Also set the DPD packet size to
+  equal the current MTU, to allow detecting broken DTLS connections.
+- ocserv: updated the DTLS negotiation to conform to the latest openconnect
+  protocol draft. This keeps the previous anyconnect DTLS negotiation based on
+  resumption as legacy, but adds a new negotiation based on DTLS with PSK.
+
+
+* Version 0.11.3 (released 2016-06-16)
+- ocserv: added '/cert.pem' and '/cert.cer' HTTP handlers. These provide
+  the server's certificate as PEM and DER files.
+- ocserv: added '/ca.pem' and '/ca.cer' HTTP handlers. These provide
+  the server's CA certificate as PEM and DER files. The handlers work
+  only if the CA is part of the server's certificate chain.
+- ocserv: use the same work around for openconnect v3 clients in
+  earlier versions. This allows very old openconnect clients to connect
+  in ocserv. Addresses issue #51.
+- ocserv: added the host-update-script config option. This option
+  allows to specify a script to run once the hostname of the connected
+  user is known.
+- ocserv-fw: fixed to correctly apply the rules in the forward chain. Report
+  and fix by Lance LeFlore.
+- occtl: Corrected the printing of cookie last modification time.
+- occtl: Print the user's cookie on occtl show user cmd.
+
+
+* Version 0.11.2 (released 2016-04-25)
+- radius: replaced experimental Group-Name with Class attribute;
+  the current format of Class "OU=group1;group2" allows to handle
+  multiple groups.
+- Do not require a client hello handshake packet to forward a UDP session;
+  that is, allow any small DPD packets to be sent to the correct
+  worker process.
+- Do not allow to combine radius' groupconfig=true with config-per-user;
+  these options are incompatible with each other.
+- Fixed issue in FreeBSD, preventing the server's startup when on
+  background. Reported by Carlos J Puga Medina.
+- occtl: Fixes in the presentation of iroutes and cookies.
+
+
 * Version 0.11.1 (released 2016-03-19)
 - Several *BSD compilation fixes. Reported by Björn Ketelaars.
 - The ipv4-network option in user configuration allows for prefix. Reported

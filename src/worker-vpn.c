@@ -59,7 +59,7 @@
 
 #include <http_parser.h>
 
-#define MIN_MTU(ws) (((ws)->vinfo.ipv6!=NULL)?1281:257)
+#define MIN_MTU(ws) (((ws)->vinfo.ipv6!=NULL)?1280:800)
 
 #define PERIODIC_CHECK_TIME 30
 #define MIN_STATS_INTERVAL 10
@@ -85,13 +85,17 @@ static int parse_dtls_data(struct worker_st *ws, uint8_t * buf, size_t buf_size,
 			   time_t);
 static int connect_handler(worker_st * ws);
 static void session_info_send(worker_st * ws);
+static void set_net_priority(worker_st * ws, int fd, int priority);
+static void set_socket_timeout(worker_st * ws, int fd);
+
+static void link_mtu_set(worker_st * ws, unsigned mtu);
 
 static void handle_alarm(int signo)
 {
 	if (global_ws)
 		exit_worker(global_ws);
 
-	exit(1);
+	_exit(1);
 }
 
 static void handle_term(int signo)
@@ -179,27 +183,86 @@ ssize_t dtls_push(gnutls_transport_ptr_t ptr, const void *data, size_t size)
 	return send(p->fd, data, size, 0);
 }
 
-static int setup_dtls_connection(struct worker_st *ws)
+int get_psk_key(gnutls_session_t session,
+		const char *username, gnutls_datum_t *key)
+{
+	struct worker_st *ws = gnutls_session_get_ptr(session);
+
+	key->data = gnutls_malloc(PSK_KEY_SIZE);
+	if (key->data == NULL)
+		return GNUTLS_E_MEMORY_ERROR;
+
+	memcpy(key->data, ws->master_secret, PSK_KEY_SIZE);
+	key->size = PSK_KEY_SIZE;
+
+	return 0;
+}
+
+#define PSK_LABEL "EXPORTER-openconnect-psk"
+#define PSK_LABEL_SIZE sizeof(PSK_LABEL)-1
+/* We initial a PSK connection with ciphers and MAC matching the TLS negotiated
+ * ciphers and MAC. The key is 32-bytes generated from gnutls_prf_rfc5705()
+ * with label being the PSK_LABEL.
+ */
+static int setup_dtls_psk_keys(gnutls_session_t session, struct worker_st *ws)
 {
 	int ret;
-	gnutls_session_t session;
+	char prio_string[256];
+	gnutls_mac_algorithm_t mac;
+	gnutls_cipher_algorithm_t cipher;
+
+	if (ws->session) {
+		cipher = gnutls_cipher_get(ws->session);
+		mac = gnutls_mac_get(ws->session);
+
+		snprintf(prio_string, sizeof(prio_string), "%s:-VERS-ALL:-CIPHER-ALL:-MAC-ALL:-KX-ALL:+PSK:+VERS-DTLS-ALL:+%s:+%s",
+			 ws->config->priorities, gnutls_mac_get_name(mac), gnutls_cipher_get_name(cipher));
+	} else {
+		/* if we haven't an associated session, enable all ciphers we would have enabled
+		 * otherwise for TLS. */
+		snprintf(prio_string, sizeof(prio_string), "%s:-VERS-ALL:-KX-ALL:+PSK:+VERS-DTLS-ALL",
+			 ws->config->priorities);
+	}
+
+	ret =
+	    gnutls_priority_set_direct(session, prio_string, NULL);
+	if (ret < 0) {
+		oclog(ws, LOG_ERR, "could not set TLS priority: '%s': %s",
+		      prio_string, gnutls_strerror(ret));
+		return ret;
+	}
+
+	/* we should have used gnutls_prf_rfc5705() but since we don't use
+	 * the RFC5705 context, the output is identical with gnutls_prf(). The
+	 * latter is available in much earlier versions of gnutls. */
+	ret = gnutls_prf(ws->session, PSK_LABEL_SIZE, PSK_LABEL, 0, 0, 0, PSK_KEY_SIZE,	(char*)ws->master_secret);
+	if (ret < 0) {
+		oclog(ws, LOG_ERR, "error in PSK key generation: %s",
+		      gnutls_strerror(ret));
+		return ret;
+	}
+
+	ret =
+	    gnutls_credentials_set(session, GNUTLS_CRD_PSK,
+				   ws->creds->pskcred);
+	if (ret < 0) {
+		oclog(ws, LOG_ERR, "could not set TLS PSK credentials: %s",
+		      gnutls_strerror(ret));
+		return ret;
+	}
+
+	return 0;
+}
+
+static int setup_dtls0_9_keys(gnutls_session_t session, struct worker_st *ws)
+{
+	int ret;
 	gnutls_datum_t master =
 	    { ws->master_secret, sizeof(ws->master_secret) };
 	gnutls_datum_t sid = { ws->session_id, sizeof(ws->session_id) };
 
 	if (ws->req.selected_ciphersuite == NULL) {
 		oclog(ws, LOG_ERR, "no DTLS ciphersuite negotiated");
-		return -1;
-	}
-
-	oclog(ws, LOG_DEBUG, "setting up DTLS connection");
-	/* DTLS cookie verified.
-	 * Initialize session.
-	 */
-	ret = gnutls_init(&session, GNUTLS_SERVER|GNUTLS_DATAGRAM|GNUTLS_NONBLOCK);
-	if (ret < 0) {
-		oclog(ws, LOG_ERR, "could not initialize TLS session: %s",
-		      gnutls_strerror(ret));
 		return -1;
 	}
 
@@ -210,7 +273,7 @@ static int setup_dtls_connection(struct worker_st *ws)
 	if (ret < 0) {
 		oclog(ws, LOG_ERR, "could not set TLS priority: %s",
 		      gnutls_strerror(ret));
-		goto fail;
+		return ret;
 	}
 
 	ret = gnutls_session_set_premaster(session, GNUTLS_SERVER,
@@ -226,8 +289,10 @@ static int setup_dtls_connection(struct worker_st *ws)
 	if (ret < 0) {
 		oclog(ws, LOG_ERR, "could not set TLS premaster: %s",
 		      gnutls_strerror(ret));
-		goto fail;
+		return ret;
 	}
+
+	gnutls_certificate_server_set_request(session, GNUTLS_CERT_IGNORE);
 
 	ret =
 	    gnutls_credentials_set(session, GNUTLS_CRD_CERTIFICATE,
@@ -235,6 +300,38 @@ static int setup_dtls_connection(struct worker_st *ws)
 	if (ret < 0) {
 		oclog(ws, LOG_ERR, "could not set TLS credentials: %s",
 		      gnutls_strerror(ret));
+		return ret;
+	}
+
+	return 0;
+}
+
+static int setup_dtls_connection(struct worker_st *ws)
+{
+	int ret;
+	gnutls_session_t session;
+
+	/* DTLS cookie verified.
+	 * Initialize session.
+	 */
+	ret = gnutls_init(&session, GNUTLS_SERVER|GNUTLS_DATAGRAM|GNUTLS_NONBLOCK);
+	if (ret < 0) {
+		oclog(ws, LOG_ERR, "could not initialize TLS session: %s",
+		      gnutls_strerror(ret));
+		return -1;
+	}
+
+	gnutls_session_set_ptr(session, ws);
+
+	if (ws->req.use_psk) {
+		oclog(ws, LOG_INFO, "setting up DTLS-PSK connection");
+		ret = setup_dtls_psk_keys(session, ws);
+	} else {
+		oclog(ws, LOG_INFO, "setting up DTLS-0.9 connection");
+		ret = setup_dtls0_9_keys(session, ws);
+	}
+
+	if (ret < 0) {
 		goto fail;
 	}
 
@@ -243,12 +340,25 @@ static int setup_dtls_connection(struct worker_st *ws)
 	gnutls_transport_set_pull_timeout_function(session, dtls_pull_timeout);
 	gnutls_transport_set_ptr(session, &ws->dtls_tptr);
 
-	gnutls_session_set_ptr(session, ws);
-	gnutls_certificate_server_set_request(session, GNUTLS_CERT_IGNORE);
-
 	gnutls_handshake_set_timeout(session, GNUTLS_DEFAULT_HANDSHAKE_TIMEOUT);
 
 	ws->udp_state = UP_HANDSHAKE;
+
+	/* Setup the fd settings */
+	if (ws->config->output_buffer > 0) {
+		int t = MIN(2048, ws->link_mtu * ws->config->output_buffer);
+		ret = setsockopt(ws->dtls_tptr.fd, SOL_SOCKET, SO_SNDBUF, &t,
+			   sizeof(t));
+		if (ret == -1)
+			oclog(ws, LOG_DEBUG,
+			      "setsockopt(UDP, SO_SNDBUF) to %u, failed.",
+			      t);
+	}
+	set_net_priority(ws, ws->dtls_tptr.fd, ws->user_config->net_priority);
+	set_socket_timeout(ws, ws->dtls_tptr.fd);
+
+	/* reset MTU */
+	link_mtu_set(ws, ws->adv_link_mtu);
 
 	ws->dtls_session = session;
 
@@ -289,9 +399,6 @@ void ws_add_score_to_ip(worker_st *ws, unsigned points, unsigned final)
 		return;
 	}
 
-	if (final != 0)
-		return;
-
 	ret = recv_msg(ws, ws->cmd_fd, CMD_BAN_IP_REPLY,
 		       (void *)&reply, (unpack_func) ban_ip_reply_msg__unpack, DEFAULT_SOCKET_TIMEOUT);
 	if (ret < 0) {
@@ -299,7 +406,7 @@ void ws_add_score_to_ip(worker_st *ws, unsigned points, unsigned final)
 		return;
 	}
 
-	if (reply->reply != AUTH__REP__OK) {
+	if (final ==0 && reply->reply != AUTH__REP__OK) {
 		/* we have exceeded the maximum score */
 		exit(1);
 	}
@@ -340,6 +447,8 @@ void send_stats_to_secmod(worker_st * ws, time_t now, unsigned discon_reason)
 		ret = send_msg_to_secmod(ws, sd, CMD_SEC_CLI_STATS, &msg,
 				 (pack_size_func)cli_stats_msg__get_packed_size,
 				 (pack_func) cli_stats_msg__pack);
+		if (discon_reason) /* wait for sec-mod to close connection to verify data have been accounted */
+			read(sd, buf, sizeof(buf));
 		close(sd);
 
 		if (ret >= 0) {
@@ -374,7 +483,7 @@ void exit_worker_reason(worker_st * ws, unsigned reason)
 
 	talloc_free(ws->main_pool);
 	closelog();
-	exit(1);
+	_exit(1);
 }
 
 
@@ -425,6 +534,8 @@ void vpn_server(struct worker_st *ws)
 		}
 	}
 	ws->session_start_time = time(0);
+
+	gnutls_psk_set_server_credentials_function(ws->creds->pskcred, get_psk_key);
 
 	if (ws->remote_addr_len == sizeof(struct sockaddr_in))
 		ws->proto = AF_INET;
@@ -599,7 +710,7 @@ void vpn_server(struct worker_st *ws)
 }
 
 static
-void mtu_send(worker_st * ws, unsigned mtu)
+void data_mtu_send(worker_st * ws, unsigned mtu)
 {
 	TunMtuMsg msg = TUN_MTU_MSG__INIT;
 
@@ -608,7 +719,7 @@ void mtu_send(worker_st * ws, unsigned mtu)
 			 (pack_size_func) tun_mtu_msg__get_packed_size,
 			 (pack_func) tun_mtu_msg__pack);
 
-	oclog(ws, LOG_DEBUG, "setting MTU to %u", msg.mtu);
+	oclog(ws, LOG_DEBUG, "setting data MTU to %u", msg.mtu);
 }
 
 static
@@ -654,21 +765,53 @@ void session_info_send(worker_st * ws)
 	gnutls_free(msg.dtls_ciphersuite);
 }
 
-/* mtu_set: Sets the MTU for the session
+/* link_mtu_set: Sets the link MTU for the session
  *
  * @ws: a worker structure
- * @mtu: the "plaintext" data MTU
+ * @mtu: the link MTU
  */
 static
-void mtu_set(worker_st * ws, unsigned mtu)
+void link_mtu_set(worker_st * ws, unsigned mtu)
 {
-	ws->conn_mtu = mtu;
+	if (ws->link_mtu == mtu || mtu > sizeof(ws->buffer))
+		return;
 
+	ws->link_mtu = mtu;
+
+	oclog(ws, LOG_DEBUG, "setting connection link MTU to %u", mtu);
 	if (ws->dtls_session)
-		gnutls_dtls_set_data_mtu(ws->dtls_session,
-					 ws->conn_mtu + CSTP_DTLS_OVERHEAD);
+		gnutls_dtls_set_mtu(ws->dtls_session,
+				    ws->link_mtu - ws->dtls_proto_overhead);
 
-	mtu_send(ws, ws->conn_mtu);
+	data_mtu_send(ws, DATA_MTU(ws, ws->link_mtu));
+}
+
+/* data_mtu_set: Sets the data MTU for the session
+ *
+ * @ws: a worker structure
+ * @mtu: the "plaintext" data MTU (not including the DTLS protocol byte)
+ */
+static
+void data_mtu_set(worker_st * ws, unsigned mtu)
+{
+	if (ws->dtls_session) {
+		gnutls_dtls_set_data_mtu(ws->dtls_session, mtu+1);
+
+		mtu = gnutls_dtls_get_mtu(ws->dtls_session);
+		if (mtu <= 0 || mtu == ws->link_mtu)
+			return;
+
+		mtu += ws->dtls_proto_overhead;
+		link_mtu_set(ws, mtu);
+	}
+}
+
+static void disable_mtu_disc(worker_st *ws)
+{
+	oclog(ws, LOG_DEBUG, "disabling MTU discovery on UDP socket");
+	set_mtu_disc(ws->dtls_tptr.fd, ws->proto, 0);
+	link_mtu_set(ws, ws->adv_link_mtu);
+	ws->config->try_mtu = 0;
 }
 
 /* sets the current value of mtu as bad,
@@ -679,72 +822,76 @@ void mtu_set(worker_st * ws, unsigned mtu)
 static
 int mtu_not_ok(worker_st * ws)
 {
-	if (ws->proto == AF_INET) {
-		unsigned min = MIN_MTU(ws);
+	if (ws->config->try_mtu == 0 || ws->dtls_session == NULL)
+		return 0;
 
-		ws->last_bad_mtu = ws->conn_mtu;
+	if (ws->proto == AF_INET) {
+		const unsigned min = MIN_MTU(ws);
+
+		ws->last_bad_mtu = ws->link_mtu;
 
 		if (ws->last_good_mtu == min) {
 			oclog(ws, LOG_INFO,
-			      "could not calculate a sufficient MTU; disabling DTLS");
-			dtls_close(ws);
-			ws->udp_state = UP_DISABLED;
-			return -1;
+			      "could not calculate a sufficient MTU; disabling MTU discovery");
+			disable_mtu_disc(ws);
+			link_mtu_set(ws, min);
+			return 0;
 		}
 
-		if (ws->last_good_mtu >= ws->conn_mtu) {
-			ws->last_good_mtu = MAX(((2 * (ws->conn_mtu)) / 3), min);
+		if (ws->last_good_mtu >= ws->link_mtu) {
+			ws->last_good_mtu = MAX(((2 * (ws->link_mtu)) / 3), min);
 		}
 
-		mtu_set(ws, ws->last_good_mtu);
+		link_mtu_set(ws, ws->last_good_mtu);
 		oclog(ws, LOG_INFO, "MTU %u is too large, switching to %u",
-		      ws->last_bad_mtu, ws->conn_mtu);
+		      ws->last_bad_mtu, ws->link_mtu);
 	} else if (ws->proto == AF_INET6) { /* IPv6 */
-		int mtu;
 #ifdef IPV6_PATHMTU
 		struct ip6_mtuinfo mtuinfo;
 		socklen_t len = sizeof(mtuinfo);
 
 		if (getsockopt(ws->dtls_tptr.fd, IPPROTO_IPV6, IPV6_PATHMTU, &mtuinfo, &len) < 0 || mtuinfo.ip6m_mtu < 1280) {
-			oclog(ws, LOG_INFO, "cannot obtain IPv6 MTU (was %u); disabling DTLS",
-			      ws->conn_mtu);
-			dtls_close(ws);
-			ws->udp_state = UP_DISABLED;
-			return -1;
+			oclog(ws, LOG_INFO, "cannot obtain IPv6 MTU (was %u); disabling MTU discovery",
+			      ws->link_mtu);
+			disable_mtu_disc(ws);
+			link_mtu_set(ws, MIN_MTU(ws));
+			return 0;
 		}
-		mtu = mtuinfo.ip6m_mtu;
+
+		oclog(ws, LOG_DEBUG, "setting (via IPV6_PATHMTU) connection MTU to %u", mtuinfo.ip6m_mtu);
+		link_mtu_set(ws, mtuinfo.ip6m_mtu);
+
+		if (mtuinfo.ip6m_mtu > ws->adv_link_mtu) {
+			oclog(ws, LOG_INFO, "the discovered IPv6 MTU (%u) is larger than the advertised (%u); disabling MTU discovery",
+			      (unsigned)mtuinfo.ip6m_mtu, ws->adv_link_mtu);
+			return 0;
+		}
 #else
-		mtu = 1280; /* minimum IPv6 MTU */
+		link_mtu_set(ws, MIN_MTU(ws));
 #endif
-
-		mtu -= CSTP_DTLS_OVERHEAD - ws->proto_overhead;
-
-		if (ws->dtls_session) {
-			gnutls_dtls_set_mtu(ws->dtls_session, mtu);
-			mtu = gnutls_dtls_get_data_mtu(ws->dtls_session);
-
-			if (mtu >= ws->conn_mtu) {
-				oclog(ws, LOG_INFO, "the provided IPv6 MTU is larger than the used (was %u, new %d); disabling DTLS",
-				      ws->conn_mtu, mtu);
-				dtls_close(ws);
-				ws->udp_state = UP_DISABLED;
-				return -1;
-			}
-			ws->conn_mtu = mtu;
-			mtu_send(ws, ws->conn_mtu);
-		}
 	}
 
 	return 0;
 }
 
-/* mtu_set: initiates MTU discovery
+/* mtu_discovery_init: initiates MTU discovery
  *
  * @ws: a worker structure
  * @mtu: the current "plaintext" data MTU
  */
 static void mtu_discovery_init(worker_st * ws, unsigned mtu)
 {
+	const unsigned min = MIN_MTU(ws);
+	if (mtu <= min) {
+		oclog(ws, LOG_INFO,
+		      "our initial MTU is too low; disabling MTU discovery");
+		disable_mtu_disc(ws);
+	}
+
+	if (!ws->config->try_mtu)
+		oclog(ws, LOG_DEBUG,
+		      "Initializing MTU discovery; initial MTU: %u\n", mtu);
+
 	ws->last_good_mtu = mtu;
 	ws->last_bad_mtu = mtu;
 }
@@ -754,17 +901,17 @@ void mtu_ok(worker_st * ws)
 {
 	unsigned int c;
 
-	if (ws->proto == AF_INET6)
+	if (ws->config->try_mtu == 0 || ws->proto == AF_INET6)
 		return;
 
-	if (ws->last_bad_mtu == (ws->conn_mtu) + 1 ||
-	    ws->last_bad_mtu == (ws->conn_mtu))
+	if (ws->last_bad_mtu == (ws->link_mtu) + 1 ||
+	    ws->last_bad_mtu == (ws->link_mtu))
 		return;
 
-	ws->last_good_mtu = ws->conn_mtu;
-	c = (ws->conn_mtu + ws->last_bad_mtu) / 2;
+	ws->last_good_mtu = ws->link_mtu;
+	c = (ws->link_mtu + ws->last_bad_mtu) / 2;
 
-	mtu_set(ws, c);
+	link_mtu_set(ws, c);
 	return;
 }
 
@@ -775,8 +922,7 @@ void mtu_ok(worker_st * ws)
 		}
 
 static
-int periodic_check(worker_st * ws, unsigned mtu_overhead, struct timespec *tnow,
-		   unsigned dpd)
+int periodic_check(worker_st * ws, struct timespec *tnow, unsigned dpd)
 {
 	socklen_t sl;
 	int max, e, ret;
@@ -828,12 +974,15 @@ int periodic_check(worker_st * ws, unsigned mtu_overhead, struct timespec *tnow,
 	/* check DPD. Otherwise exit */
 	if (ws->udp_state == UP_ACTIVE &&
 	    now - ws->last_msg_udp > DPD_TRIES * dpd && dpd > 0) {
+	    	unsigned data_mtu = DATA_MTU(ws, ws->link_mtu);
 		oclog(ws, LOG_ERR,
 		      "have not received any UDP message or DPD for long (%d secs, DPD is %d)",
 		      (int)(now - ws->last_msg_udp), dpd);
 
+		memset(ws->buffer+1, 0, data_mtu);
 		ws->buffer[0] = AC_PKT_DPD_OUT;
-		ret = dtls_send(ws, ws->buffer, 1);
+
+		ret = dtls_send(ws, ws->buffer, data_mtu+1);
 		DTLS_FATAL_ERR_CMD(ret, exit_worker_reason(ws, REASON_ERROR));
 
 		if (now - ws->last_msg_udp > DPD_MAX_TRIES * dpd) {
@@ -865,7 +1014,7 @@ int periodic_check(worker_st * ws, unsigned mtu_overhead, struct timespec *tnow,
 		}
 	}
 
-	if (ws->conn_type != SOCK_TYPE_UNIX) {
+	if (ws->conn_type != SOCK_TYPE_UNIX && ws->udp_state != UP_DISABLED) {
 		sl = sizeof(max);
 		ret = getsockopt(ws->conn_fd, IPPROTO_TCP, TCP_MAXSEG, &max, &sl);
 		if (ret == -1) {
@@ -875,10 +1024,10 @@ int periodic_check(worker_st * ws, unsigned mtu_overhead, struct timespec *tnow,
 		} else {
 			max -= 13;
 			/*oclog(ws, LOG_DEBUG, "TCP MSS is %u", max); */
-			if (max > 0 && max - mtu_overhead < ws->conn_mtu) {
+			if (max > 0 && max < ws->link_mtu) {
 				oclog(ws, LOG_DEBUG, "reducing MTU due to TCP MSS to %u",
-				      max - mtu_overhead);
-				mtu_set(ws, MIN(ws->conn_mtu, max - mtu_overhead));
+				      max);
+				link_mtu_set(ws, max);
 			}
 		}
 	}
@@ -981,7 +1130,7 @@ static int dtls_mainloop(worker_st * ws, struct timespec *tnow)
 			ws->udp_state = UP_ACTIVE;
 
 			if (bandwidth_update
-			    (&ws->b_rx, data.size - 1, ws->conn_mtu, tnow) != 0) {
+			    (&ws->b_rx, data.size - CSTP_DTLS_OVERHEAD, tnow) != 0) {
 				ret =
 				    parse_dtls_data(ws, data.data, data.size,
 						    tnow->tv_sec);
@@ -1004,9 +1153,8 @@ static int dtls_mainloop(worker_st * ws, struct timespec *tnow)
 			goto cleanup;
 		}
 
-		gnutls_dtls_set_mtu(ws->dtls_session,
-				    ws->conn_mtu + ws->crypto_overhead);
-		mtu_discovery_init(ws, ws->conn_mtu);
+		gnutls_dtls_set_mtu(ws->dtls_session, ws->link_mtu - ws->dtls_proto_overhead);
+		mtu_discovery_init(ws, ws->link_mtu);
 		break;
 
 	case UP_HANDSHAKE:
@@ -1032,24 +1180,17 @@ static int dtls_mainloop(worker_st * ws, struct timespec *tnow)
 			mtu_not_ok(ws);
 			goto hsk_restart;
 		} else if (ret == 0) {
-			unsigned mtu;
+			unsigned data_mtu;
 
 			/* gnutls_dtls_get_data_mtu() already subtracts the crypto overhead */
-			mtu =
+			data_mtu =
 			    gnutls_dtls_get_data_mtu(ws->dtls_session) -
 			    CSTP_DTLS_OVERHEAD;
 
-			/* openconnect doesn't like if we send more bytes
-			 * than the initially agreed MTU */
-			if (mtu > ws->conn_mtu)
-				mtu = ws->conn_mtu;
-
 			ws->udp_state = UP_ACTIVE;
-			mtu_discovery_init(ws, mtu);
-			mtu_set(ws, mtu);
 			oclog(ws, LOG_DEBUG,
-			      "DTLS handshake completed (plaintext MTU: %u)\n",
-			      ws->conn_mtu);
+			      "DTLS handshake completed (link MTU: %u, data MTU: %u)\n",
+			      ws->link_mtu, data_mtu);
 			session_info_send(ws);
 		}
 
@@ -1080,7 +1221,7 @@ static int tls_mainloop(struct worker_st *ws, struct timespec *tnow)
 	} else if (ret >= 8) {
 		oclog(ws, LOG_TRANSFER_DEBUG, "received %d byte(s) (TLS)", data.size);
 
-		if (bandwidth_update(&ws->b_rx, data.size - 8, ws->conn_mtu, tnow) != 0) {
+		if (bandwidth_update(&ws->b_rx, data.size - 8, tnow) != 0) {
 			ret = parse_cstp_data(ws, data.data, data.size, tnow->tv_sec);
 			if (ret < 0) {
 				oclog(ws, LOG_ERR, "error parsing CSTP data");
@@ -1132,7 +1273,7 @@ static int tun_mainloop(struct worker_st *ws, struct timespec *tnow)
 	gnutls_datum_t dtls_to_send;
 	gnutls_datum_t cstp_to_send;
 
-	l = tun_read(ws->tun_fd, ws->buffer + 8, ws->conn_mtu);
+	l = tun_read(ws->tun_fd, ws->buffer + 8, DATA_MTU(ws, ws->link_mtu));
 	if (l < 0) {
 		e = errno;
 
@@ -1187,7 +1328,7 @@ static int tun_mainloop(struct worker_st *ws, struct timespec *tnow)
 	}
 
 	/* only transmit if allowed */
-	if (bandwidth_update(&ws->b_tx, dtls_to_send.size, ws->conn_mtu, tnow)
+	if (bandwidth_update(&ws->b_tx, dtls_to_send.size, tnow)
 	    != 0) {
 		tls_retry = 0;
 
@@ -1207,7 +1348,7 @@ static int tun_mainloop(struct worker_st *ws, struct timespec *tnow)
 				oclog(ws, LOG_TRANSFER_DEBUG,
 				      "retrying (TLS) %d\n", l);
 				tls_retry = 1;
-			} else if (ret >= ws->conn_mtu &&
+			} else if (ret >= 1+DATA_MTU(ws, ws->link_mtu) &&
 				   ws->config->try_mtu != 0) {
 				mtu_ok(ws);
 			}
@@ -1315,9 +1456,78 @@ static void set_socket_timeout(worker_st * ws, int fd)
 	ret =
 	    setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &tval,
 			       sizeof(tval));
-	if (ret == -1)
+	if (ret == -1) {
+		int e = errno;
 		oclog(ws, LOG_DEBUG,
-		      "setsockopt(%s, SO_RCVTIMEO) failed.", (fd==ws->conn_fd)?"ΤCP":"UDP");
+		      "setsockopt(%s, SO_RCVTIMEO) failed: %s", (fd==ws->conn_fd)?"ΤCP":"UDP", strerror(e));
+	}
+}
+
+#define IP_HEADER_SIZE 20
+#define IPV6_HEADER_SIZE 40
+#define TCP_HEADER_SIZE 8
+#define UDP_HEADER_SIZE 8
+
+/* wild but conservative guess; this ciphersuite has the largest overhead */
+#define MAX_CSTP_CRYPTO_OVERHEAD (CSTP_OVERHEAD+tls_get_overhead(GNUTLS_TLS1_0, GNUTLS_CIPHER_AES_128_CBC, GNUTLS_MAC_SHA1))
+#define MAX_DTLS_CRYPTO_OVERHEAD (CSTP_DTLS_OVERHEAD+tls_get_overhead(GNUTLS_DTLS1_0, GNUTLS_CIPHER_AES_128_CBC, GNUTLS_MAC_SHA1))
+#define MAX_DTLS_PROTO_OVERHEAD(ws) ((ws->proto == AF_INET)?(IP_HEADER_SIZE+UDP_HEADER_SIZE):(IPV6_HEADER_SIZE+UDP_HEADER_SIZE))
+
+/* Calculate MTU for CSTP and DTLS channels.
+ */
+static void calc_mtu_values(worker_st * ws)
+{
+	/* assume that if IPv6 is used over TCP then the same would be used over UDP */
+	if (ws->proto == AF_INET) {
+		ws->cstp_proto_overhead = IP_HEADER_SIZE;
+		ws->dtls_proto_overhead = IP_HEADER_SIZE;
+	} else {
+		ws->cstp_proto_overhead = IPV6_HEADER_SIZE;
+		ws->dtls_proto_overhead = IPV6_HEADER_SIZE;
+	}
+	ws->cstp_proto_overhead += TCP_HEADER_SIZE;
+	ws->dtls_proto_overhead += UDP_HEADER_SIZE;
+
+	if (ws->session == NULL) {
+		ws->cstp_crypto_overhead = MAX_CSTP_CRYPTO_OVERHEAD;
+	} else {
+		ws->cstp_crypto_overhead = CSTP_OVERHEAD +
+		    tls_get_overhead(gnutls_protocol_get_version(ws->session),
+				     gnutls_cipher_get(ws->session),
+				     gnutls_mac_get(ws->session));
+	}
+
+	/* link MTU is the device MTU */
+	ws->link_mtu = ws->vinfo.mtu;
+
+	if (ws->udp_state != UP_DISABLED) {
+		/* crypto overhead for DTLS */
+		if (ws->req.use_psk) {
+			if (ws->session == NULL) {
+				ws->dtls_crypto_overhead = MAX_DTLS_CRYPTO_OVERHEAD;
+			} else {
+				ws->dtls_crypto_overhead = tls_get_overhead(
+						GNUTLS_DTLS1_0,
+						gnutls_cipher_get(ws->session),
+						gnutls_mac_get(ws->session));
+			}
+		} else {
+			ws->dtls_crypto_overhead =
+			    tls_get_overhead(ws->req.
+					     selected_ciphersuite->gnutls_version,
+					     ws->req.
+					     selected_ciphersuite->gnutls_cipher,
+					     ws->req.selected_ciphersuite->gnutls_mac);
+		}
+		ws->dtls_crypto_overhead += CSTP_DTLS_OVERHEAD;
+
+		oclog(ws, LOG_DEBUG,
+		      "DTLS overhead is %u",
+		      ws->dtls_proto_overhead + ws->dtls_crypto_overhead);
+	}
+
+	/* This is the data MTU we advertised to peer, we will never exceed this value */
+	ws->adv_link_mtu = ws->link_mtu;
 }
 
 /* connect_handler:
@@ -1385,6 +1595,11 @@ static int connect_handler(worker_st * ws)
 		return -1;
 	}
 
+	/* override any hostname sent by the peer if we have one already configured */
+	if (ws->user_config->hostname) {
+		strlcpy(ws->req.hostname, ws->user_config->hostname, sizeof(ws->req.hostname));
+	}
+
 	FUZZ(ws->user_config->interim_update_secs, 5, rnd);
 	FUZZ(ws->config->rekey_time, 30, rnd);
 
@@ -1408,6 +1623,12 @@ static int connect_handler(worker_st * ws)
 		ws->config->idle_timeout = ws->config->mobile_idle_timeout;
 	}
 
+	/* Notify back the client about the accepted hostname */
+	if (ws->req.hostname[0] != 0) {
+		ret = cstp_printf(ws, "X-CSTP-Hostname: %s\r\n", ws->req.hostname);
+		SEND_ERR(ret);
+	}
+
 	oclog(ws, LOG_INFO, "suggesting DPD of %d secs", ws->user_config->dpd);
 	if (ws->user_config->dpd > 0) {
 		ret =
@@ -1424,23 +1645,29 @@ static int connect_handler(worker_st * ws)
 	}
 
 	ws->udp_state = UP_DISABLED;
-	if (ws->perm_config->udp_port != 0 && req->master_secret_set != 0 && ws->req.selected_ciphersuite != NULL) {
+	if (ws->perm_config->udp_port != 0 && req->master_secret_set != 0) {
 		memcpy(ws->master_secret, req->master_secret, TLS_MASTER_SIZE);
 		ws->udp_state = UP_WAIT_FD;
 	} else {
 		oclog(ws, LOG_DEBUG, "disabling UDP (DTLS) connection");
 	}
 
-	/* calculate base MTU */
-	if (ws->user_config->mtu > 0) {
+	if (ws->user_config->mtu > 0)
 		ws->vinfo.mtu = ws->user_config->mtu;
+	oclog(ws, LOG_INFO, "configured link MTU is %u", ws->vinfo.mtu);
+
+	if (req->link_mtu > 0) {
+		oclog(ws, LOG_INFO, "peer's link MTU is %u", req->link_mtu);
+		ws->vinfo.mtu = MIN(ws->vinfo.mtu, req->link_mtu);
+	} else if (req->tunnel_mtu > 0) {
+		/* Old clients didn't send their link MTU, they send the plaintext MTU
+		 * they can transfer. */
+		ws->vinfo.mtu = MIN(ws->vinfo.mtu, req->tunnel_mtu + MAX_DTLS_PROTO_OVERHEAD(ws) + MAX_DTLS_CRYPTO_OVERHEAD);
+		oclog(ws, LOG_INFO, "peer's data MTU is %u / link is %u", req->tunnel_mtu, ws->vinfo.mtu);
 	}
 
-	if (req->base_mtu > 0) {
-		oclog(ws, LOG_INFO, "peer's base MTU is %u", req->base_mtu);
-		ws->vinfo.mtu = MIN(ws->vinfo.mtu, req->base_mtu);
-	}
-
+	/* Attempt to use the TCP connection maximum segment size to set a more
+	 * precise MTU. */
 	if (ws->conn_type != SOCK_TYPE_UNIX) {
 		sl = sizeof(max);
 		ret = getsockopt(ws->conn_fd, IPPROTO_TCP, TCP_MAXSEG, &max, &sl);
@@ -1458,27 +1685,10 @@ static int connect_handler(worker_st * ws)
 		}
 	}
 
-	ret = cstp_printf(ws, "X-CSTP-Base-MTU: %u\r\n", ws->vinfo.mtu);
-	SEND_ERR(ret);
-	oclog(ws, LOG_INFO, "CSTP Base MTU is %u bytes", ws->vinfo.mtu);
+	calc_mtu_values(ws);
 
-	/* calculate TLS channel MTU */
-	if (ws->session == NULL) {
-		/* wild guess */
-		ws->crypto_overhead = CSTP_OVERHEAD +
-			tls_get_overhead(GNUTLS_TLS1_0, GNUTLS_CIPHER_AES_128_CBC, GNUTLS_MAC_SHA1);
-	} else {
-		ws->crypto_overhead = CSTP_OVERHEAD +
-		    tls_get_overhead(gnutls_protocol_get_version(ws->session),
-				     gnutls_cipher_get(ws->session),
-				     gnutls_mac_get(ws->session));
-	}
-
-	/* plaintext MTU is the device MTU minus the overhead
-	 * of the CSTP protocol. */
-	ws->conn_mtu = ws->vinfo.mtu - ws->crypto_overhead;
-	if (ws->conn_mtu < 1280 && ws->vinfo.ipv6 && req->no_ipv6 == 0) {
-		oclog(ws, LOG_INFO, "Connection MTU (%d) is not sufficient for IPv6 (1280)", ws->conn_mtu);
+	if (DATA_MTU(ws, ws->link_mtu) < 1280 && ws->vinfo.ipv6 && req->no_ipv6 == 0) {
+		oclog(ws, LOG_INFO, "Connection MTU (link: %u, data: %u) is not sufficient for IPv6 (1280)", ws->link_mtu, DATA_MTU(ws, ws->link_mtu));
 		req->no_ipv6 = 1;
 	}
 
@@ -1499,12 +1709,12 @@ static int connect_handler(worker_st * ws)
 	}
 
 	if (ws->vinfo.ipv6 && req->no_ipv6 == 0 && ws->user_config->ipv6_prefix != 0) {
-		oclog(ws, LOG_INFO, "sending IPv6 %s/%u", ws->vinfo.ipv6, ws->user_config->ipv6_prefix);
-		if (ws->full_ipv6 && ws->user_config->ipv6_prefix) {
+		oclog(ws, LOG_INFO, "sending IPv6 %s/%u", ws->vinfo.ipv6, ws->user_config->ipv6_subnet_prefix);
+		if (ws->full_ipv6 && ws->user_config->ipv6_subnet_prefix) {
 			ret =
 			    cstp_printf(ws,
 				       "X-CSTP-Address-IP6: %s/%u\r\n",
-				       ws->vinfo.ipv6, ws->user_config->ipv6_prefix);
+				       ws->vinfo.ipv6, ws->user_config->ipv6_subnet_prefix);
 			SEND_ERR(ret);
 		} else {
 			const char *net;
@@ -1520,7 +1730,7 @@ static int connect_handler(worker_st * ws)
 
 			ret =
 			    cstp_printf(ws, "X-CSTP-Netmask: %s/%u\r\n",
-				        net, ws->user_config->ipv6_prefix);
+				        net, ws->user_config->ipv6_subnet_prefix);
 			SEND_ERR(ret);
 		}
 	}
@@ -1689,7 +1899,9 @@ static int connect_handler(worker_st * ws)
 
 	/* set TCP socket options */
 	if (ws->config->output_buffer > 0) {
-		t = ws->conn_mtu * ws->config->output_buffer;
+		t = ws->link_mtu;
+		t *= ws->config->output_buffer;
+
 		ret =
 		    setsockopt(ws->conn_fd, SOL_SOCKET, SO_SNDBUF, &t,
 			       sizeof(t));
@@ -1746,71 +1958,41 @@ static int connect_handler(worker_st * ws)
 			       ws->user_config->keepalive);
 		SEND_ERR(ret);
 
-		oclog(ws, LOG_INFO, "DTLS ciphersuite: %s",
-		      ws->req.selected_ciphersuite->oc_name);
-		ret =
-		    cstp_printf(ws, "X-DTLS-CipherSuite: %s\r\n",
-			       ws->req.selected_ciphersuite->oc_name);
-		SEND_ERR(ret);
-
-		/* assume that if IPv6 is used over TCP then the same would be used over UDP */
-		if (ws->proto == AF_INET)
-			ws->proto_overhead = 20;	/* ip */
-		else
-			ws->proto_overhead = 40;	/* ipv6 */
-		ws->proto_overhead += 8;	/* udp */
-
-		/* crypto overhead for DTLS */
-		ws->crypto_overhead =
-		    tls_get_overhead(ws->req.
-				     selected_ciphersuite->gnutls_version,
-				     ws->req.
-				     selected_ciphersuite->gnutls_cipher,
-				     ws->req.selected_ciphersuite->gnutls_mac);
-		ws->crypto_overhead += CSTP_DTLS_OVERHEAD;
-
-		oclog(ws, LOG_DEBUG,
-		      "DTLS overhead is %u",
-		      ws->proto_overhead + ws->crypto_overhead);
-
-		/* plaintext MTU is the device MTU minus the overhead
-		 * of the DTLS (+AnyConnect header) protocol.
-		 */
-		ws->conn_mtu =
-		    MIN(ws->conn_mtu,
-			ws->vinfo.mtu - ws->proto_overhead - ws->crypto_overhead);
-
-		ret =
-		    cstp_printf(ws, "X-DTLS-MTU: %u\r\n", ws->conn_mtu);
-		SEND_ERR(ret);
-		oclog(ws, LOG_INFO, "suggesting DTLS MTU %u", ws->conn_mtu);
-
-		if (ws->config->output_buffer > 0) {
-			t = MIN(2048, ws->conn_mtu * ws->config->output_buffer);
-			setsockopt(ws->dtls_tptr.fd, SOL_SOCKET, SO_SNDBUF, &t,
-				   sizeof(t));
-			if (ret == -1)
-				oclog(ws, LOG_DEBUG,
-				      "setsockopt(UDP, SO_SNDBUF) to %u, failed.",
-				      t);
+		if (ws->req.use_psk) {
+			oclog(ws, LOG_INFO, "DTLS ciphersuite: PSK");
+			ret =
+			    cstp_printf(ws, "X-DTLS-CipherSuite: PSK\r\n");
+		} else {
+			oclog(ws, LOG_INFO, "DTLS ciphersuite: %s",
+			      ws->req.selected_ciphersuite->oc_name);
+			ret =
+			    cstp_printf(ws, "X-DTLS-CipherSuite: %s\r\n",
+				       ws->req.selected_ciphersuite->oc_name);
 		}
+		SEND_ERR(ret);
 
-		set_net_priority(ws, ws->dtls_tptr.fd, ws->user_config->net_priority);
-		set_socket_timeout(ws, ws->dtls_tptr.fd);
+		ret =
+		    cstp_printf(ws, "X-DTLS-MTU: %u\r\n", DATA_MTU(ws, ws->link_mtu));
+		SEND_ERR(ret);
+		oclog(ws, LOG_INFO, "DTLS data MTU %u", DATA_MTU(ws, ws->link_mtu));
 	}
 
 	/* hack for openconnect. It uses only a single MTU value */
-	ret = cstp_printf(ws, "X-CSTP-MTU: %u\r\n", ws->conn_mtu);
+	ret = cstp_printf(ws, "X-CSTP-Base-MTU: %u\r\n", ws->link_mtu);
+	SEND_ERR(ret);
+	oclog(ws, LOG_INFO, "Link MTU is %u bytes", ws->link_mtu);
+
+	ret = cstp_printf(ws, "X-CSTP-MTU: %u\r\n", DATA_MTU(ws, ws->link_mtu));
 	SEND_ERR(ret);
 
-	if (ws->buffer_size <= ws->conn_mtu + CSTP_OVERHEAD) {
+	if (ws->buffer_size < ws->link_mtu+16) {
 		oclog(ws, LOG_ERR,
 		      "buffer size is smaller than MTU (%u < %u)",
-		      ws->buffer_size, ws->conn_mtu);
+		      ws->buffer_size, ws->link_mtu);
 		goto exit;
 	}
 
-	mtu_send(ws, ws->conn_mtu);
+	data_mtu_send(ws, DATA_MTU(ws, ws->link_mtu));
 
 	if (ws->config->banner) {
 		ret =
@@ -1925,9 +2107,7 @@ static int connect_handler(worker_st * ws)
 		}
 		gettime(&tnow);
 
-		if (periodic_check
-		    (ws, ws->proto_overhead + ws->crypto_overhead, &tnow,
-		     ws->user_config->dpd) < 0) {
+		if (periodic_check(ws, &tnow, ws->user_config->dpd) < 0) {
 			terminate_reason = REASON_ERROR;
 			goto exit;
 		}
@@ -2037,8 +2217,15 @@ static int parse_data(struct worker_st *ws, uint8_t *buf, size_t buf_size,
 			/* Use DPD for MTU discovery in DTLS */
 			buf[0] = AC_PKT_DPD_RESP;
 
+			if (buf_size-CSTP_DTLS_OVERHEAD > DATA_MTU(ws, ws->link_mtu)) {
+				/* peer is doing MTU discovery */
+				data_mtu_set(ws, buf_size-CSTP_DTLS_OVERHEAD);
+			}
+
 			ret = dtls_send(ws, buf, buf_size);
 			if (ret == GNUTLS_E_LARGE_PACKET) {
+				oclog(ws, LOG_TRANSFER_DEBUG,
+				      "could not send DPD of %d bytes", (int)buf_size);
 				mtu_not_ok(ws);
 				ret = dtls_send(ws, buf, 1);
 			}

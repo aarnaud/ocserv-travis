@@ -1055,7 +1055,7 @@ const ProtobufCMessageDescriptor fw_port_st__descriptor =
   (ProtobufCMessageInit) fw_port_st__init,
   NULL,NULL,NULL    /* reserved[123] */
 };
-static const ProtobufCFieldDescriptor group_cfg_st__field_descriptors[31] =
+static const ProtobufCFieldDescriptor group_cfg_st__field_descriptors[32] =
 {
   {
     "interim_update_secs",
@@ -1429,6 +1429,18 @@ static const ProtobufCFieldDescriptor group_cfg_st__field_descriptors[31] =
     0,             /* flags */
     0,NULL,NULL    /* reserved1,reserved2, etc */
   },
+  {
+    "hostname",
+    40,
+    PROTOBUF_C_LABEL_OPTIONAL,
+    PROTOBUF_C_TYPE_STRING,
+    0,   /* quantifier_offset */
+    offsetof(GroupCfgSt, hostname),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
 };
 static const unsigned group_cfg_st__field_indices_by_name[] = {
   12,   /* field[12] = cgroup */
@@ -1438,6 +1450,7 @@ static const unsigned group_cfg_st__field_indices_by_name[] = {
   17,   /* field[17] = explicit_ipv4 */
   18,   /* field[18] = explicit_ipv6 */
   30,   /* field[30] = fw_ports */
+  31,   /* field[31] = hostname */
   28,   /* field[28] = idle_timeout */
   0,   /* field[0] = interim_update_secs */
   8,   /* field[8] = ipv4_net */
@@ -1468,7 +1481,7 @@ static const ProtobufCIntRange group_cfg_st__number_ranges[3 + 1] =
   { 2, 0 },
   { 10, 2 },
   { 13, 4 },
-  { 0, 31 }
+  { 0, 32 }
 };
 const ProtobufCMessageDescriptor group_cfg_st__descriptor =
 {
@@ -1478,7 +1491,7 @@ const ProtobufCMessageDescriptor group_cfg_st__descriptor =
   "GroupCfgSt",
   "",
   sizeof(GroupCfgSt),
-  31,
+  32,
   group_cfg_st__field_descriptors,
   group_cfg_st__field_indices_by_name,
   3,  group_cfg_st__number_ranges,
@@ -1770,7 +1783,7 @@ const ProtobufCMessageDescriptor session_resume_store_req_msg__descriptor =
   (ProtobufCMessageInit) session_resume_store_req_msg__init,
   NULL,NULL,NULL    /* reserved[123] */
 };
-const ProtobufCEnumValue session_resume_reply_msg__resume__rep__enum_values_by_number[2] =
+static const ProtobufCEnumValue session_resume_reply_msg__resume__rep__enum_values_by_number[2] =
 {
   { "OK", "SESSION_RESUME_REPLY_MSG__RESUME__REP__OK", 1 },
   { "FAILED", "SESSION_RESUME_REPLY_MSG__RESUME__REP__FAILED", 2 },
@@ -1778,7 +1791,7 @@ const ProtobufCEnumValue session_resume_reply_msg__resume__rep__enum_values_by_n
 static const ProtobufCIntRange session_resume_reply_msg__resume__rep__value_ranges[] = {
 {1, 0},{0, 2}
 };
-const ProtobufCEnumValueIndex session_resume_reply_msg__resume__rep__enum_values_by_name[2] =
+static const ProtobufCEnumValueIndex session_resume_reply_msg__resume__rep__enum_values_by_name[2] =
 {
   { "FAILED", 1 },
   { "OK", 0 },
@@ -3003,7 +3016,7 @@ const ProtobufCMessageDescriptor secm_session_reply_msg__descriptor =
   (ProtobufCMessageInit) secm_session_reply_msg__init,
   NULL,NULL,NULL    /* reserved[123] */
 };
-static const ProtobufCFieldDescriptor cookie_int_msg__field_descriptors[10] =
+static const ProtobufCFieldDescriptor cookie_int_msg__field_descriptors[9] =
 {
   {
     "sid",
@@ -3102,18 +3115,6 @@ static const ProtobufCFieldDescriptor cookie_int_msg__field_descriptors[10] =
     0,NULL,NULL    /* reserved1,reserved2, etc */
   },
   {
-    "psid",
-    9,
-    PROTOBUF_C_LABEL_REQUIRED,
-    PROTOBUF_C_TYPE_STRING,
-    0,   /* quantifier_offset */
-    offsetof(CookieIntMsg, psid),
-    NULL,
-    NULL,
-    0,             /* flags */
-    0,NULL,NULL    /* reserved1,reserved2, etc */
-  },
-  {
     "status",
     10,
     PROTOBUF_C_LABEL_REQUIRED,
@@ -3129,19 +3130,19 @@ static const ProtobufCFieldDescriptor cookie_int_msg__field_descriptors[10] =
 static const unsigned cookie_int_msg__field_indices_by_name[] = {
   5,   /* field[5] = groupname */
   3,   /* field[3] = last_modified */
-  8,   /* field[8] = psid */
   7,   /* field[7] = remote_ip */
   1,   /* field[1] = session_is_open */
   0,   /* field[0] = sid */
-  9,   /* field[9] = status */
+  8,   /* field[8] = status */
   2,   /* field[2] = tls_auth_ok */
   6,   /* field[6] = user_agent */
   4,   /* field[4] = username */
 };
-static const ProtobufCIntRange cookie_int_msg__number_ranges[1 + 1] =
+static const ProtobufCIntRange cookie_int_msg__number_ranges[2 + 1] =
 {
   { 1, 0 },
-  { 0, 10 }
+  { 10, 8 },
+  { 0, 9 }
 };
 const ProtobufCMessageDescriptor cookie_int_msg__descriptor =
 {
@@ -3151,10 +3152,10 @@ const ProtobufCMessageDescriptor cookie_int_msg__descriptor =
   "CookieIntMsg",
   "",
   sizeof(CookieIntMsg),
-  10,
+  9,
   cookie_int_msg__field_descriptors,
   cookie_int_msg__field_indices_by_name,
-  1,  cookie_int_msg__number_ranges,
+  2,  cookie_int_msg__number_ranges,
   (ProtobufCMessageInit) cookie_int_msg__init,
   NULL,NULL,NULL    /* reserved[123] */
 };
@@ -3196,7 +3197,7 @@ const ProtobufCMessageDescriptor secm_list_cookies_reply_msg__descriptor =
   (ProtobufCMessageInit) secm_list_cookies_reply_msg__init,
   NULL,NULL,NULL    /* reserved[123] */
 };
-const ProtobufCEnumValue auth__rep__enum_values_by_number[3] =
+static const ProtobufCEnumValue auth__rep__enum_values_by_number[3] =
 {
   { "OK", "AUTH__REP__OK", 1 },
   { "MSG", "AUTH__REP__MSG", 2 },
@@ -3205,7 +3206,7 @@ const ProtobufCEnumValue auth__rep__enum_values_by_number[3] =
 static const ProtobufCIntRange auth__rep__value_ranges[] = {
 {1, 0},{0, 3}
 };
-const ProtobufCEnumValueIndex auth__rep__enum_values_by_name[3] =
+static const ProtobufCEnumValueIndex auth__rep__enum_values_by_name[3] =
 {
   { "FAILED", 2 },
   { "MSG", 1 },
