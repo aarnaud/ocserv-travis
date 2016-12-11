@@ -30,8 +30,8 @@ Build-Depends: autogen,
                liboauth-dev,
 Standards-Version: 3.9.7
 Homepage: http://www.infradead.org/ocserv/
-VCS-Git: git://anonscm.debian.org/collab-maint/ocserv.git
-VCS-Browser: https://anonscm.debian.org/git/collab-maint/ocserv.git
+VCS-Browser: https://anonscm.debian.org/cgit/collab-maint/ocserv.git
+VCS-Git: https://anonscm.debian.org/git/collab-maint/ocserv.git
 
 Package: ocserv
 Architecture: any
