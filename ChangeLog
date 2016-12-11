@@ -1,3 +1,286 @@
+2016-11-14  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/Makefile.am, src/ocpasswd/Makefile.am: only copy files in
+	autogen/ if the directory exists
+
+2016-11-14  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* NEWS: released 0.11.6
+
+2016-11-14  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* configure.ac: bumped version
+
+2016-11-14  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* src/occtl/args.def: occtl.8: Added examples of usage
+
+2016-11-14  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* src/occtl/args.def: occtl.8: added more info on JSON output
+
+2016-11-11  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* NEWS: doc update
+
+2016-11-11  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* .gitlab-ci.yml: .gitlab-ci.yml: added centos6 build
+
+2016-11-11  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* src/common.mk: common.mk: corrected path of generated static libs
+
+2016-11-11  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* .gitlab-ci.yml, src/Makefile.am, src/autogen/ocpasswd-args.c,
+	src/autogen/ocpasswd-args.h, src/autogen/ocserv-args.c,
+	src/autogen/ocserv-args.h, src/ocpasswd/Makefile.am: autogen: store
+	and use auto-generated autogen files in git builds That is, if autogen is not present in the build system use the
+	stored files.
+
+2016-11-11  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* configure.ac: configure: require automake 1.11.1 This allows ocserv to compile on Centos 6.
+
+2016-11-11  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* src/tlslib.c: when compiled with gnutls 3.5.6 or later use its
+	pre-generated DH parameters
+
+2016-11-11  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* NEWS: doc update
+
+2016-11-11  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* NEWS: doc update
+
+2016-11-11  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* src/tlslib.c, src/tlslib.h: ocserv: pre-load the OCSP response
+	file That allows the worker processes to serve OCSP responses, even when
+	they have no access to the actual file.
+
+2016-11-04  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* NEWS: doc update
+
+2016-09-23  Andrew Patrikalakis <anrp.gitlab@anrp.net>
+
+	* src/config.c, src/ocserv-args.def, src/vpn.h, src/worker-vpn.c: 
+	Automatically switch to TCP in case of no received UDP traffic and
+	enable by default
+
+2016-10-20  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* doc/README-radius.md: doc update
+
+2016-10-20  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* NEWS: doc update
+
+2016-10-16  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/html.c: html: enhanced HTML decoding with decoding of explicit
+	unicode chars
+
+2016-10-16  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* tests/Makefile.am, tests/html-escape.c: tests: added basic checks
+	for HTML escaping/unescaping
+
+2016-10-16  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* tests/Makefile.am, tests/url-escape.c: tests: added basic checks
+	for URL escaping/unescaping
+
+2016-10-16  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/html.c: html: fixed URL escaping
+
+2016-10-09  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* doc/sample.config, src/ocserv-args.def: doc: point to
+	README-radius.md for radius configuration attributes
+
+2016-09-27  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* doc/README-radius.md: doc: mention about NAS-Port in radius README
+	file
+
+2016-09-27  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* src/sec-mod-auth.c, src/sec-mod.c, src/sec-mod.h: radius: update
+	the worker's pid on subsequent updates That is, even if we initially advertize the PID of the worker
+	handling the client as NAS-Port, the client may eventually end-up
+	being served by another process. In that case we make sure that the
+	radius server is notified on the next accounting message.
+
+2016-09-25  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* NEWS: doc update
+
+2016-09-25  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* doc/sample.config, src/http-heads.gperf, src/ipc.proto,
+	src/main-worker-cmd.c, src/ocserv-args.def, src/vpn.h,
+	src/worker-http.c, src/worker-vpn.c, src/worker.h: Use the
+	X-AnyConnect-Identifier-Platform header to identify mobile clients That is, if the header contains "android" or "apple-ios" mark it as
+	a mobile client. The header X-AnyConnect-Identifier-DeviceType is
+	only considered for logging purposes and appended to the user-agent
+	name if present.
+
+2016-09-24  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* .gitlab-ci.yml: .gitlab-ci.yml: restrict freebsd build on ocserv
+	branches This runner is not shared and cannot be taken advantage outside the
+	ocserv group.
+
+2016-09-23  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* NEWS: bumped version
+
+2016-09-22  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* configure.ac: bumped version
+
+2016-09-22  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* src/main.c: get_session_id: added explicit casts
+
+2016-09-22  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* src/config.c: config: more consistent printing of startup error
+	and info messages
+
+2016-09-22  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* NEWS, doc/sample.config, src/config.c, src/ocserv-args.def,
+	src/vpn.h, src/worker-http.c, src/worker-vpn.c: untied the
+	cisco-client-compat option from the DTLS-LEGACY protocol Introduced instead the 'dtls-legacy' config option which can be used
+	to explicitly disable the legacy DTLS protocol.
+
+2016-09-22  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* NEWS, doc/sample.config, src/config.c, src/ocserv-args.def,
+	src/worker-vpn.c: renamed match-tls-and-dtls-ciphers to
+	match-tls-dtls-ciphers
+
+2016-09-22  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* NEWS: doc update
+
+2016-09-22  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* doc/sample.config, src/config.c, src/main.c, src/ocserv-args.def,
+	src/vpn.h, src/worker-http.c, src/worker-vpn.c: Added configuration
+	option 'dtls-psk' When this option is set to false, the DTLS-PSK protocol will not be
+	negotiated by worker processes. The process will fallback to the
+	legacy protocol in that case.
+
+2016-09-20  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* src/main.c, src/worker-vpn.c: Updated the new DTLS protocol
+	negotiation The server sends the X-DTLS-App-ID header in the new protocol; the
+	X-DTLS-Session-ID is only used in the legacy protocol. The server
+	expects the Application identifier to be placed in a TLS extension.
+
+2016-09-21  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* src/worker-privs.c: seccomp: add getrandom syscall to filter only
+	when it is available
+
+2016-09-15  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* src/worker-auth.c: worker: increased the wait time for the
+	SEC_AUTH_REPLY message from sec-mod That is, to allow for authentication methods which require the user
+	input prior to returning a reply.
+
+2016-09-14  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* src/worker-vpn.c: Only send the X-DTLS-MTU in the legacy protocol There the DTLS ciphersuite and DTLS version are negotiated and we
+	cannot accurately predict the actual tunnel size. In that case the
+	client must rely on the Base-MTU.
+
+2016-09-14  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* tests/Makefile.am: tests: link valid-hostname with gnulib It is used by its included file.
+
+2016-09-14  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* src/ocpasswd/Makefile.am: ocspasswd: compile with LIBGNUTLS_CFLAGS
+
+2016-09-14  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* src/Makefile.am, src/common/common.c, src/defs.h, src/vpn.h: added
+	defs.h containing definitions from vpn.h These are the definitions used by common/ library and a split from
+	vpn.h to reduce the dependencies (in headers) to common library.
+
+2016-09-14  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* NEWS: doc update
+
+2016-09-14  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* src/worker-privs.c: seccomp: added getrandom() to the accepted
+	list of calls
+
+2016-09-13  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* src/vpn.h, src/worker-http.c, src/worker-vpn.c: Use a macro for
+	the DTLS-PSK protocol indicator Also corrected its usage in worker-http
+
+2016-09-13  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* src/worker-http.c, src/worker-vpn.c: Modified the
+	X-DTLS-CipherSuite parameter for PSK to PSK-NEGOTIATE This was changed so that it is explicitly made incompatible with
+	existing openconnect patch. The new openconnect client patch for PSK
+	negotiation is incompatible with the protocol as implemented in
+	0.11.4 and requires the option match-tls-and-dtls-ciphers for its
+	openssl variant.
+
+2016-09-13  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* NEWS: doc update
+
+2016-09-13  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* doc/sample.config, src/config.c, src/ocserv-args.def, src/vpn.h,
+	src/worker-http.c, src/worker-vpn.c: Added the
+	match-tls-and-dtls-ciphers config option That when enable, it will prevent any DTLS negotiation other than
+	the DTLS-PSK, and will ensure that the cipher/mac combination
+	matches on the TLS and DTLS connections. The cisco-client-compat
+	config option when disabled, it will disable the pre-draft-DTLS
+	negotiation.
+
+2016-08-05  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* tests/test-gssapi: test-gssapi: use an unlikely username to avoid
+	clashes That prevents the test from failing if the host system contains a
+	user called 'test'.
+
+2016-09-04  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* .gitlab-ci.yml: .gitlab-ci.yml: use gitlab.com shared runners
+
+2016-09-04  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* README.md: README.md: added coverage badge
+
+2016-09-04  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* configure.ac, tests/Makefile.am: Allow disabling the tests
+	requiring root This allows seamless operation on the CI.
+
+2016-08-27  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/ocserv-args.def: doc update
+
+2016-08-05  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* NEWS: released 0.11.4
+
 2016-08-05  Nikos Mavrogiannopoulos <nmav@redhat.com>
 
 	* src/worker-http.c: removed support for chacha20-poly1305 using the
@@ -270,8 +553,8 @@
 	tests/data/test-enc-key.config, tests/data/test-enc-key2.config,
 	tests/data/test-explicit-ip.config,
 	tests/data/test-group-cert.config,
-	tests/data/test-group-pass.config, tests/data/test-group.passwd,
-	tests/data/test-gssapi-local-map.config,
+	tests/data/test-group-pass.config, tests/{ =>
+	data}/test-group.passwd, tests/data/test-gssapi-local-map.config,
 	tests/data/test-gssapi.config, tests/data/test-iroute.config,
 	tests/data/test-multi-cookie.config,
 	tests/data/test-pass-opt-cert.config,
@@ -282,51 +565,39 @@
 	tests/data/test-user-config.config,
 	tests/data/test-user-group-cert-no-pass.config,
 	tests/data/test-user-group-cert.config, tests/data/test1.config,
-	tests/data/test1.passwd, tests/data/test3.config,
-	tests/test-group.passwd, tests/test-sighup, tests/test1.passwd: 
-	tests: moved passwd files to data/
+	tests/{ => data}/test1.passwd, tests/data/test3.config,
+	tests/test-sighup: tests: moved passwd files to data/
 
 2016-06-17  Nikos Mavrogiannopoulos <nmav@redhat.com>
 
-	* tests/Makefile.am, tests/common.sh, tests/data/test-ban.config,
-	tests/data/test-cookie-invalidation.config,
-	tests/data/test-cookie-timeout-2.config,
-	tests/data/test-cookie-timeout.config,
-	tests/data/test-enc-key.config, tests/data/test-enc-key2.config,
-	tests/data/test-explicit-ip.config,
-	tests/data/test-group-cert.config,
-	tests/data/test-group-pass.config,
-	tests/data/test-gssapi-local-map.config,
-	tests/data/test-gssapi.config, tests/data/test-iroute.config,
-	tests/data/test-multi-cookie.config,
-	tests/data/test-pass-opt-cert.config,
-	tests/data/test-pass-script.config,
-	tests/data/test-sighup-key-change.config,
-	tests/data/test-sighup.config, tests/data/test-stress.config,
-	tests/data/test-user-cert.config,
-	tests/data/test-user-config.config,
-	tests/data/test-user-group-cert-no-pass.config,
-	tests/data/test-user-group-cert.config, tests/data/test1.config,
-	tests/data/test3.config, tests/test-append-routes, tests/test-ban,
-	tests/test-ban.config, tests/test-cookie-invalidation,
-	tests/test-cookie-invalidation.config, tests/test-cookie-timeout,
-	tests/test-cookie-timeout-2, tests/test-cookie-timeout-2.config,
-	tests/test-cookie-timeout.config, tests/test-enc-key.config,
-	tests/test-enc-key2.config, tests/test-explicit-ip,
-	tests/test-explicit-ip.config, tests/test-group-cert,
-	tests/test-group-cert.config, tests/test-group-pass.config,
-	tests/test-gssapi, tests/test-gssapi-local-map.config,
-	tests/test-gssapi.config, tests/test-iroute,
-	tests/test-iroute.config, tests/test-multi-cookie,
-	tests/test-multi-cookie.config, tests/test-pass-opt-cert,
-	tests/test-pass-opt-cert.config, tests/test-pass-script,
-	tests/test-pass-script.config, tests/test-sighup-key-change.config,
-	tests/test-sighup.config, tests/test-stress,
-	tests/test-stress.config, tests/test-user-cert.config,
-	tests/test-user-config, tests/test-user-config.config,
-	tests/test-user-group-cert-no-pass.config,
-	tests/test-user-group-cert.config, tests/test1.config,
-	tests/test3.config: tests: moved config files to data/
+	* tests/Makefile.am, tests/common.sh, tests/{ =>
+	data}/test-ban.config, tests/{ =>
+	data}/test-cookie-invalidation.config, tests/{ =>
+	data}/test-cookie-timeout-2.config, tests/{ =>
+	data}/test-cookie-timeout.config, tests/{ =>
+	data}/test-enc-key.config, tests/{ => data}/test-enc-key2.config,
+	tests/{ => data}/test-explicit-ip.config, tests/{ =>
+	data}/test-group-cert.config, tests/{ =>
+	data}/test-group-pass.config, tests/{ =>
+	data}/test-gssapi-local-map.config, tests/{ =>
+	data}/test-gssapi.config, tests/{ => data}/test-iroute.config,
+	tests/{ => data}/test-multi-cookie.config, tests/{ =>
+	data}/test-pass-opt-cert.config, tests/{ =>
+	data}/test-pass-script.config, tests/{ =>
+	data}/test-sighup-key-change.config, tests/{ =>
+	data}/test-sighup.config, tests/{ => data}/test-stress.config,
+	tests/{ => data}/test-user-cert.config, tests/{ =>
+	data}/test-user-config.config, tests/{ =>
+	data}/test-user-group-cert-no-pass.config, tests/{ =>
+	data}/test-user-group-cert.config, tests/{ => data}/test1.config,
+	tests/{ => data}/test3.config, tests/test-append-routes,
+	tests/test-ban, tests/test-cookie-invalidation,
+	tests/test-cookie-timeout, tests/test-cookie-timeout-2,
+	tests/test-explicit-ip, tests/test-group-cert, tests/test-gssapi,
+	tests/test-iroute, tests/test-multi-cookie,
+	tests/test-pass-opt-cert, tests/test-pass-script,
+	tests/test-stress, tests/test-user-config: tests: moved config files
+	to data/
 
 2016-06-16  Nikos Mavrogiannopoulos <nmav@redhat.com>
 
@@ -499,12 +770,12 @@
 
 2016-05-14  Nikos Mavrogiannopoulos <nmav@gnutls.org>
 
-	* src/Makefile.am, src/base64-helper.c, src/base64-helper.h,
-	src/common/Makefile.am, src/common/base64-helper.c,
-	src/common/base64-helper.h, src/ctl.proto, src/ipc.proto,
-	src/main-ctl-unix.c, src/occtl/Makefile.am, src/occtl/unix.c,
-	src/ocpasswd/Makefile.am, src/sec-mod-cookies.c: occtl: print the
-	cookie associated with a user on user info This allows to map existing cookies to connected users.
+	* src/Makefile.am, src/common/Makefile.am, src/{ =>
+	common}/base64-helper.c, src/{ => common}/base64-helper.h,
+	src/ctl.proto, src/ipc.proto, src/main-ctl-unix.c,
+	src/occtl/Makefile.am, src/occtl/unix.c, src/ocpasswd/Makefile.am,
+	src/sec-mod-cookies.c: occtl: print the cookie associated with a
+	user on user info This allows to map existing cookies to connected users.
 
 2016-05-13  Nikos Mavrogiannopoulos <nmav@redhat.com>
 
@@ -1399,8 +1670,8 @@
 
 2016-01-11  Nikos Mavrogiannopoulos <nmav@redhat.com>
 
-	* src/Makefile.am, src/main-auth.c, src/main-misc.c,
-	src/main-worker-cmd.c: main: introduced main-worker-cmd.c
+	* src/Makefile.am, src/main-auth.c, src/{main-misc.c =>
+	main-worker-cmd.c}: main: introduced main-worker-cmd.c
 
 2016-01-11  Nikos Mavrogiannopoulos <nmav@redhat.com>
 
@@ -1505,15 +1776,15 @@
 
 2015-12-08  Nikos Mavrogiannopoulos <nmav@redhat.com>
 
-	* src/Makefile.am, src/common/Makefile.am, src/common/ctl.proto,
-	src/ctl.proto, src/occtl/Makefile.am: protocol buffers generated
+	* src/Makefile.am, src/common/Makefile.am, src/{common =>
+	}/ctl.proto, src/occtl/Makefile.am: protocol buffers generated
 	sources for ctl were moved to libipc
 
 2015-12-07  Nikos Mavrogiannopoulos <nmav@gnutls.org>
 
 	* src/Makefile.am, src/ipc.proto, src/main-ctl-unix.c,
-	src/main-misc.c, src/main-resume.c, src/main-sec-mod-cmd.c,
-	src/main.c, src/main.h, src/sec-mod-auth.c, src/sec-mod-resume.c,
+	src/main-misc.c, src/main-sec-mod-cmd.c, src/main.c, src/main.h,
+	src/sec-mod-auth.c, src/{main-resume.c => sec-mod-resume.c},
 	src/sec-mod-resume.h, src/sec-mod.c, src/sec-mod.h,
 	src/worker-resume.c: TLS session resumption database was moved to
 	sec-mod This reduces the number of sensitive data available to main process.
@@ -1974,7 +2245,7 @@
 
 2015-11-13  Nikos Mavrogiannopoulos <nmav@redhat.com>
 
-	* src/Makefile.am, src/worker-extras.c, src/worker-http-handlers.c: 
+	* src/Makefile.am, src/{worker-extras.c => worker-http-handlers.c}: 
 	worker-extras -> worker-http-handers
 
 2015-11-11  Nikos Mavrogiannopoulos <nmav@redhat.com>
@@ -2017,11 +2288,11 @@
 
 2015-11-11  Nikos Mavrogiannopoulos <nmav@redhat.com>
 
-	* configure.ac, src/Makefile.am, src/common.c, src/common.h,
-	src/common/cloexec.c, src/common/cloexec.h, src/common/common.c,
-	src/common/common.h, src/common/ctl.proto, src/common/system.c,
-	src/common/system.h, src/ctl.proto, src/occtl/Makefile.am,
-	src/system.c, src/system.h: move common sources to common/
+	* configure.ac, src/Makefile.am, src/common/cloexec.c,
+	src/common/cloexec.h, src/{ => common}/common.c, src/{ =>
+	common}/common.h, src/{ => common}/ctl.proto, src/{ =>
+	common}/system.c, src/{ => common}/system.h, src/occtl/Makefile.am: 
+	move common sources to common/
 
 2015-11-11  Nikos Mavrogiannopoulos <nmav@redhat.com>
 
@@ -2182,8 +2453,8 @@
 
 2015-10-31  Nikos Mavrogiannopoulos <nmav@gnutls.org>
 
-	* src/common-json.c, src/common-json.h, src/occtl/Makefile.am,
-	src/occtl/json.c, src/occtl/json.h, src/occtl/print.c,
+	* src/occtl/Makefile.am, src/{common-json.c => occtl/json.c},
+	src/{common-json.h => occtl/json.h}, src/occtl/print.c,
 	tests/Makefile.am, tests/json-escape.c: moved JSON functionality to
 	occtl/ as it was the only user
 
@@ -2198,9 +2469,9 @@
 
 2015-10-31  Nikos Mavrogiannopoulos <nmav@gnutls.org>
 
-	* src/Makefile.am, src/config.c, src/ctl.h, src/main-ctl.h,
-	src/main.h, src/occtl/args.def, src/occtl/ctl.h: occtl: move ctl.h
-	in occtl/ and fixed args.def to include version.inc
+	* src/Makefile.am, src/config.c, src/main-ctl.h, src/main.h,
+	src/occtl/args.def, src/{ => occtl}/ctl.h: occtl: move ctl.h in
+	occtl/ and fixed args.def to include version.inc
 
 2015-10-30  Nikos Mavrogiannopoulos <nmav@gnutls.org>
 
@@ -2312,16 +2583,15 @@
 2015-10-28  Nikos Mavrogiannopoulos <nmav@gnutls.org>
 
 	* configure.ac, doc/Makefile.am, src/Makefile.am, src/common.mk,
-	src/occtl-args.def, src/occtl-cache.c, src/occtl-ip-cache.c,
-	src/occtl-nl.c, src/occtl-pager.c, src/occtl-print.c,
-	src/occtl-time.c, src/occtl-unix.c, src/occtl.c, src/occtl.h,
-	src/occtl/Makefile.am, src/occtl/args.def, src/occtl/cache.c,
-	src/occtl/ip-cache.c, src/occtl/nl.c, src/occtl/occtl.c,
-	src/occtl/occtl.h, src/occtl/pager.c, src/occtl/print.c,
-	src/occtl/time.c, src/occtl/unix.c, src/ocpasswd-args.def,
-	src/ocpasswd.c, src/ocpasswd/Makefile.am, src/ocpasswd/args.def,
-	src/ocpasswd/ocpasswd.c: occtl and ocpasswd were moved into separate
-	directories
+	src/occtl/Makefile.am, src/{occtl-args.def => occtl/args.def},
+	src/{occtl-cache.c => occtl/cache.c}, src/{occtl-ip-cache.c =>
+	occtl/ip-cache.c}, src/{occtl-nl.c => occtl/nl.c}, src/{ =>
+	occtl}/occtl.c, src/{ => occtl}/occtl.h, src/{occtl-pager.c =>
+	occtl/pager.c}, src/{occtl-print.c => occtl/print.c},
+	src/{occtl-time.c => occtl/time.c}, src/{occtl-unix.c =>
+	occtl/unix.c}, src/ocpasswd/Makefile.am, src/{ocpasswd-args.def =>
+	ocpasswd/args.def}, src/{ => ocpasswd}/ocpasswd.c: occtl and
+	ocpasswd were moved into separate directories
 
 2015-10-30  Nikos Mavrogiannopoulos <nmav@redhat.com>
 
@@ -2528,8 +2798,8 @@
 
 2015-09-19  Nikos Mavrogiannopoulos <nmav@gnutls.org>
 
-	* Makefile.am, README.md, doc/Makefile.am, doc/README-radius.md,
-	doc/README.radius: doc: converted README.radius to markdown and link
+	* Makefile.am, README.md, doc/Makefile.am, doc/{README.radius =>
+	README-radius.md}: doc: converted README.radius to markdown and link
 	it from README.md
 
 2015-09-19  Nikos Mavrogiannopoulos <nmav@gnutls.org>
@@ -2546,7 +2816,7 @@
 
 2015-09-19  Nikos Mavrogiannopoulos <nmav@gnutls.org>
 
-	* README, README.md: converted README to markdown
+	* README => README.md: converted README to markdown
 
 2015-09-18  Nikos Mavrogiannopoulos <nmav@redhat.com>
 
@@ -4818,10 +5088,10 @@
 2015-02-25  Nikos Mavrogiannopoulos <nmav@redhat.com>
 
 	* doc/sample.config, src/Makefile.am, src/config.c, src/ipc.proto,
-	src/main-ban.c, src/main-ban.h, src/main-sec-mod-cmd.c, src/main.c,
-	src/main.h, src/ocserv-args.def, src/sec-mod-auth.c,
-	src/sec-mod-ban.c, src/sec-mod.c, src/sec-mod.h, src/vpn.h: enforce
-	of IP banning was moved to main
+	src/{sec-mod-ban.c => main-ban.c}, src/main-ban.h,
+	src/main-sec-mod-cmd.c, src/main.c, src/main.h,
+	src/ocserv-args.def, src/sec-mod-auth.c, src/sec-mod.c,
+	src/sec-mod.h, src/vpn.h: enforce of IP banning was moved to main
 
 2015-02-25  Nikos Mavrogiannopoulos <nmav@redhat.com>
 
@@ -5215,7 +5485,7 @@
 2015-02-16  Nikos Mavrogiannopoulos <nmav@redhat.com>
 
 	* src/Makefile.am, src/config.c, src/vpn.h, src/worker-http.c,
-	src/worker-kkdcp.c, src/worker-urlfw.c, src/worker.h: renamed urlfw
+	src/{worker-urlfw.c => worker-kkdcp.c}, src/worker.h: renamed urlfw
 	to kkdcp
 
 2015-02-16  Nikos Mavrogiannopoulos <nmav@redhat.com>
@@ -6298,12 +6568,10 @@
 2014-12-29  Nikos Mavrogiannopoulos <nmav@gnutls.org>
 
 	* tests/Makefile.am, tests/docker-common.sh,
-	tests/docker-ocserv/Dockerfile-debian-tcp,
-	tests/docker-ocserv/Dockerfile-debian-unix,
+	tests/docker-ocserv/{Dockerfile-tcp => Dockerfile-debian-tcp},
+	tests/docker-ocserv/{Dockerfile-unix => Dockerfile-debian-unix},
 	tests/docker-ocserv/Dockerfile-fedora-tcp,
 	tests/docker-ocserv/Dockerfile-fedora-unix,
-	tests/docker-ocserv/Dockerfile-tcp,
-	tests/docker-ocserv/Dockerfile-unix,
 	tests/docker-ocserv/Makefile.am, tests/full-test, tests/unix-test: 
 	full-test, unix-test: modified to operate in Fedora as well That also enables a check for ping in the IPv6 address.
 
@@ -6526,10 +6794,10 @@
 2014-12-08  Nikos Mavrogiannopoulos <nmav@redhat.com>
 
 	* src/Makefile.am, src/common.h, src/config.c, src/ip-lease.c,
-	src/ipc.proto, src/main-auth.c, src/main-misc.c,
-	src/main-sup-config.c, src/main-sup-config.h, src/main.c,
+	src/ipc.proto, src/main-auth.c, src/main-misc.c, src/main.c,
 	src/main.h, src/ocserv-args.def, src/sec-mod-auth.c,
-	src/sec-mod-sup-config.c, src/sec-mod-sup-config.h, src/sec-mod.c,
+	src/{main-sup-config.c => sec-mod-sup-config.c},
+	src/{main-sup-config.h => sec-mod-sup-config.h}, src/sec-mod.c,
 	src/sec-mod.h, src/sup-config/file.c, src/sup-config/file.h,
 	src/vpn.h: Supplementary configuration is now read by the security
 	module.  That allows sec-mod to handle both authentication and accounting.
@@ -6937,13 +7205,12 @@
 	src/sup-config/file.c, src/system.c, src/tlslib.c, src/tun.c,
 	src/worker-auth.c, src/worker-bandwidth.c, src/worker-extras.c,
 	src/worker-misc.c, src/worker-privs.c, src/worker-resume.c,
-	src/worker-vpn.c: Revert "license upgraded to GPLv3" This reverts commit 213f9a63ee60192c5bb086c3c970c4644e55f459.  Conflicts: 	configure.ac
+	src/worker-vpn.c: Revert "license upgraded to GPLv3" This reverts commit 213f9a63ee60192c5bb086c3c970c4644e55f459.  Conflicts:         configure.ac
 
 2014-09-24  Nikos Mavrogiannopoulos <nmav@gnutls.org>
 
-	* .gitignore, tests/Makefile.am, tests/docker-ocserv/Dockerfile,
-	tests/docker-ocserv/Dockerfile-tcp,
-	tests/docker-ocserv/Dockerfile-unix,
+	* .gitignore, tests/Makefile.am, tests/docker-ocserv/{Dockerfile =>
+	Dockerfile-tcp}, tests/docker-ocserv/Dockerfile-unix,
 	tests/docker-ocserv/Makefile.am, tests/docker-ocserv/combo.pem,
 	tests/docker-ocserv/haproxy.cfg,
 	tests/docker-ocserv/ocserv-unix.conf, tests/full-test,
@@ -7134,12 +7401,10 @@
 
 2014-08-24  Nikos Mavrogiannopoulos <nmav@gnutls.org>
 
-	* configure.ac, src/Makefile.am,
-	src/protobuf/google/protobuf-c/protobuf-c.c,
-	src/protobuf/google/protobuf-c/protobuf-c.h,
-	src/protobuf/protobuf-c/protobuf-c.c,
-	src/protobuf/protobuf-c/protobuf-c.h: corrected included protobuf's
-	path, to align with protobuf 1.0.0
+	* configure.ac, src/Makefile.am, src/protobuf/{google =>
+	}/protobuf-c/protobuf-c.c, src/protobuf/{google =>
+	}/protobuf-c/protobuf-c.h: corrected included protobuf's path, to
+	align with protobuf 1.0.0
 
 2014-08-23  Nikos Mavrogiannopoulos <nmav@gnutls.org>
 
@@ -8038,15 +8303,15 @@
 2014-05-15  Nikos Mavrogiannopoulos <nmav@redhat.com>
 
 	* src/auth/pam.c, src/auth/pam.h, src/auth/plain.h,
-	src/main-auth.c, src/main-auth.h, src/main.c, src/sec-mod-auth.c,
-	src/sec-mod-auth.h: Renamed main-auth.h.
+	src/main-auth.c, src/main.c, src/sec-mod-auth.c, src/{main-auth.h
+	=> sec-mod-auth.h}: Renamed main-auth.h.
 
 2014-05-15  Nikos Mavrogiannopoulos <nmav@redhat.com>
 
-	* src/Makefile.am, src/group-config.c, src/main-misc.c,
-	src/main-sup-config.c, src/main-sup-config.h, src/main.c,
-	src/main.h, src/sup-config/file.c, src/sup-config/file.h: 
-	Supplementary group/user configuration is now modular.  That will ease the addition of other backends that can be used to
+	* src/Makefile.am, src/main-misc.c, src/main-sup-config.c,
+	src/main-sup-config.h, src/main.c, src/main.h, src/{group-config.c
+	=> sup-config/file.c}, src/sup-config/file.h: Supplementary
+	group/user configuration is now modular.  That will ease the addition of other backends that can be used to
 	read the user/group configuration. The only backend supported now is
 	file.
 
@@ -8073,11 +8338,10 @@
 
 2014-05-14  Nikos Mavrogiannopoulos <nmav@redhat.com>
 
-	* src/Makefile.am, src/auth/pam.c, src/auth/pam.h,
-	src/auth/plain.c, src/auth/plain.h, src/main-auth.c,
-	src/main-misc.c, src/main.c, src/pam.c, src/pam.h, src/plain.c,
-	src/plain.h, src/sec-mod-auth.c: Authentication modules were moved
-	to subdirectory auth/
+	* src/Makefile.am, src/{ => auth}/pam.c, src/{ => auth}/pam.h,
+	src/{ => auth}/plain.c, src/{ => auth}/plain.h, src/main-auth.c,
+	src/main-misc.c, src/main.c, src/sec-mod-auth.c: Authentication
+	modules were moved to subdirectory auth/
 
 2014-05-14  Nikos Mavrogiannopoulos <nmav@redhat.com>
 
@@ -8256,11 +8520,11 @@
 2014-05-07  Nikos Mavrogiannopoulos <nmav@redhat.com>
 
 	* .gitignore, configure.ac, src/Makefile.am, src/common.c,
-	src/config.c, src/ctl.h, src/ctl.proto, src/main-ctl-dbus.c,
-	src/main-ctl-handler.c, src/main-ctl-unix.c, src/main-ctl.h,
-	src/main.c, src/main.h, src/occtl-dbus.c, src/occtl-unix.c,
-	src/occtl.c, src/occtl.h, src/sec-mod.c, src/system.c, src/system.h: 
-	Added support for unix sockets for the occtl communication.  D-BUS support is left, but is not enabled by default.
+	src/config.c, src/ctl.h, src/ctl.proto, src/{main-ctl-handler.c =>
+	main-ctl-dbus.c}, src/main-ctl-unix.c, src/main-ctl.h, src/main.c,
+	src/main.h, src/occtl-dbus.c, src/occtl-unix.c, src/occtl.c,
+	src/occtl.h, src/sec-mod.c, src/system.c, src/system.h: Added
+	support for unix sockets for the occtl communication.  D-BUS support is left, but is not enabled by default.
 
 2014-05-06  Nikos Mavrogiannopoulos <nmav@redhat.com>
 
@@ -8661,10 +8925,9 @@
 
 2014-04-01  Nikos Mavrogiannopoulos <nmav@redhat.com>
 
-	* tests/Makefile.am, tests/test-pass-cert,
-	tests/test-user-cert.config, tests/test2.config,
-	tests/user-cert-wrong.pem: Added check for connection with incorrect
-	certificate
+	* tests/Makefile.am, tests/test-pass-cert, tests/{test2.config =>
+	test-user-cert.config}, tests/user-cert-wrong.pem: Added check for
+	connection with incorrect certificate
 
 2014-04-01  Nikos Mavrogiannopoulos <nmav@redhat.com>
 
@@ -9379,10 +9642,9 @@
 
 2014-01-28  Nikos Mavrogiannopoulos <nmav@redhat.com>
 
-	* doc/Makefile.am, doc/systemd/ocserv.service,
-	doc/systemd/ocserv.socket,
-	doc/systemd/socket-activated/ocserv.service,
-	doc/systemd/socket-activated/ocserv.socket,
+	* doc/Makefile.am, doc/systemd/{ =>
+	socket-activated}/ocserv.service, doc/systemd/{ =>
+	socket-activated}/ocserv.socket,
 	doc/systemd/standalone/ocserv.service: Added two versions of systemd
 	socket files, a standalone and a socket activate.  From the standalone is installed by default.
 
@@ -9478,11 +9740,9 @@
 
 2014-01-20  Nikos Mavrogiannopoulos <nmav@gnutls.org>
 
-	* configure.ac, src/Makefile.am,
-	src/google/protobuf-c/protobuf-c.c,
-	src/google/protobuf-c/protobuf-c.h,
-	src/protobuf/google/protobuf-c/protobuf-c.c,
-	src/protobuf/google/protobuf-c/protobuf-c.h: Changes to avoid the
+	* configure.ac, src/Makefile.am, src/{ =>
+	protobuf}/google/protobuf-c/protobuf-c.c, src/{ =>
+	protobuf}/google/protobuf-c/protobuf-c.h: Changes to avoid the
 	embedded protobuf files being included when not needed.
 
 2014-01-20  Nikos Mavrogiannopoulos <nmav@gnutls.org>
@@ -10436,7 +10696,7 @@
 2013-12-09  Nikos Mavrogiannopoulos <nmav@redhat.com>
 
 	* doc/sample.config, src/Makefile.am, src/config.c,
-	src/group-config.c, src/main-auth.c, src/main-config.c,
+	src/{main-config.c => group-config.c}, src/main-auth.c,
 	src/main-misc.c, src/ocserv-args.def, src/vpn.h, src/worker-auth.c,
 	src/worker-vpn.c, src/worker.h: Added the net-priority configuration
 	option.  That option allows setting the protocol-defined priority (via
@@ -10939,8 +11199,8 @@
 
 	* Makefile.am, build-aux/config.rpath, config.h.in, configure.ac,
 	gl/Makefile.am, gl/m4/gnulib-cache.m4, gl/m4/gnulib-comp.m4,
-	gl/m4/lib-ld.m4, gl/m4/lib-link.m4, gl/m4/lib-prefix.m4,
-	m4/lib-link.m4: Added lib-link.m4 via gnulib.
+	gl/m4/lib-ld.m4, {m4 => gl/m4}/lib-link.m4, gl/m4/lib-prefix.m4: 
+	Added lib-link.m4 via gnulib.
 
 2013-11-05  Nikos Mavrogiannopoulos <nmav@gnutls.org>
 
@@ -11280,8 +11540,8 @@
 
 	* Makefile.am, configure.ac, src/Makefile.am, src/ocpasswd-args.c,
 	src/ocpasswd-args.def, src/ocpasswd-args.h, src/ocserv-args.c,
-	src/ocserv-args.def, src/ocserv-args.h, src/version.def.in,
-	src/version.inc.in: regenerate autogen'ed files when making a
+	src/ocserv-args.def, src/ocserv-args.h, src/{version.def.in =>
+	version.inc.in}: regenerate autogen'ed files when making a
 	distribution.
 
 2013-07-21  Mike Miller <mtmiller@ieee.org>
@@ -11370,9 +11630,9 @@
 
 2013-07-07  Nikos Mavrogiannopoulos <nmav@gnutls.org>
 
-	* tests/Makefile.am, tests/test-pass, tests/test-pass-cert,
-	tests/test1, tests/test2: renamed scripts and added additional test
-	with wrong username.
+	* tests/Makefile.am, tests/{test1 => test-pass}, tests/{test2 =>
+	test-pass-cert}: renamed scripts and added additional test with
+	wrong username.
 
 2013-07-06  Nikos Mavrogiannopoulos <nmav@gnutls.org>
 
@@ -11864,10 +12124,10 @@
 
 2013-05-02  Nikos Mavrogiannopoulos <nmav@gnutls.org>
 
-	* src/Makefile.am, src/die.c, src/die.h, src/main-misc.c,
-	src/main-resume.c, src/main-user.c, src/main.c, src/sec-mod.c,
-	src/system.c, src/system.h, src/worker-vpn.c: Use sigaction() to
-	have a consistent behavior across systems for signals.
+	* src/Makefile.am, src/die.h, src/main-misc.c, src/main-resume.c,
+	src/main-user.c, src/main.c, src/sec-mod.c, src/{die.c =>
+	system.c}, src/system.h, src/worker-vpn.c: Use sigaction() to have a
+	consistent behavior across systems for signals.
 
 2013-04-30  Nikos Mavrogiannopoulos <nmav@gnutls.org>
 
@@ -13053,7 +13313,7 @@
 2013-02-06  Nikos Mavrogiannopoulos <nmav@gnutls.org>
 
 	* src/Makefile.am, src/config.c, src/main-auth.c,
-	src/main-script.c, src/main-user.c, src/main.c, src/main.h,
+	src/{main-script.c => main-user.c}, src/main.c, src/main.h,
 	src/ocserv-args.c, src/ocserv-args.def, src/ocserv-args.h,
 	src/sample.config, src/vpn.h: Added explicit logging to UTMP file.
 
@@ -13212,9 +13472,9 @@
 	* config.h.in, configure.ac, gl/Makefile.am, gl/hash-pjw-bare.c,
 	gl/hash-pjw-bare.h, gl/m4/gnulib-cache.m4, gl/m4/gnulib-comp.m4,
 	gl/stdint.in.h, gl/sys_time.in.h, src/Makefile.am, src/hash.h,
-	src/hashtable.h, src/ipc.h, src/list.h, src/main-auth.c,
-	src/main-resume.c, src/main.c, src/main.h, src/tlslib.c,
-	src/tlslib.h, src/vpn.h, src/worker-auth.c, src/worker-auth.h,
+	src/hashtable.h, src/{worker-auth.h => ipc.h}, src/list.h,
+	src/main-auth.c, src/main-resume.c, src/main.c, src/main.h,
+	src/tlslib.c, src/tlslib.h, src/vpn.h, src/worker-auth.c,
 	src/worker-resume.c, src/worker-vpn.c, src/worker.h: Added session
 	resumption to TLS server.
 
@@ -13325,9 +13585,9 @@
 
 2013-01-30  Nikos Mavrogiannopoulos <nmav@gnutls.org>
 
-	* src/Makefile.am, src/config.c, src/cookies.h, src/http_auth.c,
-	src/http_auth.h, src/main.c, src/tun.c, src/vpn.c, src/vpn.h,
-	src/worker-auth.c, src/worker-vpn.c: better file structure
+	* src/Makefile.am, src/config.c, src/cookies.h, src/http_auth.h,
+	src/main.c, src/tun.c, src/vpn.h, src/{http_auth.c =>
+	worker-auth.c}, src/{vpn.c => worker-vpn.c}: better file structure
 
 2013-01-30  Nikos Mavrogiannopoulos <nmav@gnutls.org>
 
@@ -13448,8 +13708,8 @@
 
 2013-01-28  Nikos Mavrogiannopoulos <nmav@gnutls.org>
 
-	* configure.ac, src/Makefile.am, src/auth.c, src/auth.h,
-	src/http_auth.c, src/http_auth.h, src/main.c, src/vpn.c, src/vpn.h: 
+	* configure.ac, src/Makefile.am, src/{auth.c => http_auth.c},
+	src/{auth.h => http_auth.h}, src/main.c, src/vpn.c, src/vpn.h: 
 	updated server.
 
 2013-01-16  Nikos Mavrogiannopoulos <nmav@gnutls.org>
@@ -13507,13 +13767,13 @@
 
 2013-01-13  Nikos Mavrogiannopoulos <nmav@gnutls.org>
 
-	* auth.c, auth.h, common.h, cookies.c, cookies.h,
-	http-parser/http_parser.c, http-parser/http_parser.h, list.h,
-	main.c, src/auth.c, src/auth.h, src/common.h, src/cookies.c,
-	src/cookies.h, src/http-parser/http_parser.c,
-	src/http-parser/http_parser.h, src/list.h, src/main.c,
-	src/tlslib.c, src/tlslib.h, src/vpn.c, src/vpn.h, tlslib.c,
-	tlslib.h, vpn.c, vpn.h: Moved sources
+	* auth.c => src/auth.c, auth.h => src/auth.h, common.h =>
+	src/common.h, cookies.c => src/cookies.c, cookies.h =>
+	src/cookies.h, {http-parser => src/http-parser}/http_parser.c,
+	{http-parser => src/http-parser}/http_parser.h, list.h =>
+	src/list.h, main.c => src/main.c, tlslib.c => src/tlslib.c,
+	tlslib.h => src/tlslib.h, vpn.c => src/vpn.c, vpn.h => src/vpn.h: 
+	Moved sources
 
 2013-01-13  Nikos Mavrogiannopoulos <nmav@gnutls.org>
 
@@ -13532,8 +13792,8 @@
 
 	* Makefile, auth.c, auth.h, common.h, cookies.c, cookies.h,
 	http-parser/http_parser.c, http-parser/http_parser.h, list.h,
-	main.c, root/index.xml, root/login.xml, server.c, tlslib.c,
-	tlslib.h, vpn.c, vpn.h: updated server
+	main.c, root/index.xml, root/login.xml, tlslib.c, tlslib.h,
+	server.c => vpn.c, vpn.h: updated server
 
 2013-01-05  Nikos Mavrogiannopoulos <nmav@gnutls.org>
 

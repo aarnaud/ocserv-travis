@@ -23,7 +23,18 @@ noinst_LIBRARIES = libcmd-ocserv.a libipc.a
 libcmd_ocserv_a_SOURCES = ocserv-args.def ocserv-args.c ocserv-args.h
 
 ocserv-args.c: $(srcdir)/ocserv-args.def $(builddir)/version.inc
-	$(AUTOGEN) $<
+	if test "$(AUTOGEN)" = ":";then \
+		rm -f $(builddir)/ocserv-args.c; \
+		rm -f $(builddir)/ocserv-args.h; \
+		cp $(srcdir)/autogen/ocserv-args.c $(builddir)/; \
+		cp $(srcdir)/autogen/ocserv-args.h $(builddir)/; \
+	else \
+		$(AUTOGEN) $<; \
+		if test -d $(srcdir)/autogen;then \
+			cp $(builddir)/ocserv-args.c $(srcdir)/autogen; \
+			cp $(builddir)/ocserv-args.h $(srcdir)/autogen; \
+		fi; \
+	fi
 ocserv-args.h: ocserv-args.c
 
 # Authentication module sources
@@ -51,7 +62,7 @@ ocserv_SOURCES = main.c main-auth.c worker-vpn.c worker-auth.c tlslib.c \
 	main-ban.c main-ban.h common-config.h valid-hostname.c \
 	str.c str.h gettime.h $(CCAN_SOURCES) $(HTTP_PARSER_SOURCES) \
 	sec-mod-acct.h setproctitle.c setproctitle.h sec-mod-resume.h \
-	sec-mod-cookies.c
+	sec-mod-cookies.c defs.h
 
 if ENABLE_COMPRESSION
 ocserv_SOURCES += lzs.c lzs.h

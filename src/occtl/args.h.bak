@@ -76,9 +76,9 @@ typedef enum {
 /** count of all options for occtl */
 #define OPTION_CT    6
 /** occtl version */
-#define OCCTL_VERSION       "0.11.4"
+#define OCCTL_VERSION       "0.11.6"
 /** Full occtl version text */
-#define OCCTL_FULL_VERSION  "occtl 0.11.4"
+#define OCCTL_FULL_VERSION  "occtl 0.11.6"
 
 /**
  *  Interface defines for all options.  Replace "n" with the UPPER_CASED

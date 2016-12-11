@@ -2107,7 +2107,7 @@ const ProtobufCMessageDescriptor udp_fd_msg__descriptor =
   (ProtobufCMessageInit) udp_fd_msg__init,
   NULL,NULL,NULL    /* reserved[123] */
 };
-static const ProtobufCFieldDescriptor session_info_msg__field_descriptors[8] =
+static const ProtobufCFieldDescriptor session_info_msg__field_descriptors[9] =
 {
   {
     "tls_ciphersuite",
@@ -2205,9 +2205,22 @@ static const ProtobufCFieldDescriptor session_info_msg__field_descriptors[8] =
     0,             /* flags */
     0,NULL,NULL    /* reserved1,reserved2, etc */
   },
+  {
+    "device_type",
+    9,
+    PROTOBUF_C_LABEL_OPTIONAL,
+    PROTOBUF_C_TYPE_STRING,
+    0,   /* quantifier_offset */
+    offsetof(SessionInfoMsg, device_type),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
 };
 static const unsigned session_info_msg__field_indices_by_name[] = {
   3,   /* field[3] = cstp_compr */
+  8,   /* field[8] = device_type */
   1,   /* field[1] = dtls_ciphersuite */
   4,   /* field[4] = dtls_compr */
   7,   /* field[7] = hostname */
@@ -2219,7 +2232,7 @@ static const unsigned session_info_msg__field_indices_by_name[] = {
 static const ProtobufCIntRange session_info_msg__number_ranges[1 + 1] =
 {
   { 1, 0 },
-  { 0, 8 }
+  { 0, 9 }
 };
 const ProtobufCMessageDescriptor session_info_msg__descriptor =
 {
@@ -2229,7 +2242,7 @@ const ProtobufCMessageDescriptor session_info_msg__descriptor =
   "SessionInfoMsg",
   "",
   sizeof(SessionInfoMsg),
-  8,
+  9,
   session_info_msg__field_descriptors,
   session_info_msg__field_indices_by_name,
   1,  session_info_msg__number_ranges,

@@ -109,10 +109,7 @@ An example configuration file follows.
 # and all configuration will be read from radius. That also includes the
 # Acct-Interim-Interval, and Session-Timeout values.
 #
-# The supported atributes for radius configuration are:
-# Group-Name, Framed-IPv6-Address, Framed-IPv6-Prefix, DNS-Server-IPv6-Address,
-# Framed-IP-Address, Framed-IP-Netmask, MS-Primary-DNS-Server, MS-Secondary-DNS-Server,
-# Acct-Interim-Interval.
+# See doc/README-radius.md for the supported radius configuration atributes.
 #
 # gssapi[keytab=/etc/key.tab,require-local-user-map=false,tgt-freshness-time=900,gid-min=1000]
 #  The gssapi option allows to use authentication methods supported by GSSAPI,
@@ -294,8 +291,16 @@ dpd = 90
 # be higher to prevent such clients being awaken too 
 # often by the DPD messages, and save battery.
 # The mobile clients are distinguished from the header
-# 'X-AnyConnect-Identifier-DeviceType'.
+# 'X-AnyConnect-Identifier-Platform'.
 mobile-dpd = 1800
+
+# If using DTLS, and no UDP traffic is received for this
+# many seconds, attempt to send future traffic over the TCP
+# connection instead, in an attempt to wake up the client
+# in the case that there is a NAT and the UDP translation
+# was deleted. If this is unset, do not attempt to use this
+# recovery mechanism.
+switch-to-tcp-timeout = 25
 
 # MTU discovery (DPD must be enabled)
 # If set, this forces all UDP packets to carry the don't fragment 
@@ -360,6 +365,14 @@ tls-priorities = "NORMAL:%SERVER_PRECEDENCE:%COMPAT:-VERS-SSL3.0"
 # E.g., the string below enforces perfect forward secrecy (PFS) 
 # on the main channel.
 #tls-priorities = "NORMAL:%SERVER_PRECEDENCE:%COMPAT:-RSA:-VERS-SSL3.0:-ARCFOUR-128"
+
+# That option requires the established DTLS channel to use the same
+# cipher as the primary TLS channel. This cannot be combined with
+# listen-clear-file since the ciphersuite information is not available
+# in that configuration. Note also, that this option implies that
+# dtls-legacy option is false; this option cannot be enforced
+# in the legacy/compat protocol.
+#match-tls-dtls-ciphers = true
 
 # The time (in seconds) that a client is allowed to stay connected prior
 # to authentication
@@ -696,12 +709,24 @@ no-route = 192.168.5.0/255.255.255.0
 # The following options are for (experimental) AnyConnect client 
 # compatibility. 
 
-# This option must be set to true to support legacy CISCO clients.
-# A side effect of this option is that it will no longer be required 
-# for clients to present their certificate on every connection.
-# That is they may resume a cookie without presenting a certificate
-# (when certificate authentication is used).
+# This option will enable the pre-draft-DTLS version of DTLS, and
+# will not require clients to present their certificate on every TLS
+# connection. It must be set to true to support legacy CISCO clients
+# and openconnect clients < 7.08. When set to true, it implies dtls-legacy = true.
 cisco-client-compat = true
+
+# This option allows to disable the DTLS-PSK negotiation (enabled by default).
+# The DTLS-PSK negotiation was introduced in ocserv 0.11.5 to deprecate
+# the pre-draft-DTLS negotiation inherited from AnyConnect. It allows the
+# DTLS channel to negotiate its ciphers and the DTLS protocol version.
+#dtls-psk = false
+
+# This option allows to disable the legacy DTLS negotiation (enabled by default,
+# but that may change in the future).
+# The legacy DTLS uses a pre-draft version of the DTLS protocol and was
+# from AnyConnect protocol. It has several limitations, that are addressed
+# by the dtls-psk protocol supported by openconnect 7.08+.
+dtls-legacy = true
 
 # Client profile xml. A sample file exists in doc/profile.xml.
 # It is required by some of the CISCO clients.
@@ -885,8 +910,8 @@ and they will send you the server certificate.
 Note that it is recommended to leave detailed personal information out of the
 certificate as it is sent in clear during TLS authentication. The following
 process generates a certificate and converts it to PKCS #12 that is protected
-by a PIN and most clients are able to import (the cipher arcfour is used in
-the example because although weak, it is supported by far more devices than
+by a PIN and most clients are able to import (the 3DES cipher is used in
+the example because it is supported by far more devices than
 AES).
 
 @example
@@ -894,7 +919,7 @@ $ certtool --generate-privkey --outfile user-key.pem
 $ cat << _EOF_ >user.tmpl
 cn = "user"
 unit = "admins"
-expiration_days = 9999
+expiration_days = 365
 signing_key
 tls_www_client
 _EOF_
@@ -910,10 +935,11 @@ $ certtool --to-p12 --load-privkey user-key.pem \
 @end example
 
 @subheading Revoking a client certificate
-To revoke the previous client certificate use:
+To revoke the previous client certificate, i.e., preventing the user from
+accessing the VPN resources prior to its certificate expiration, use:
 @example
 $ cat << _EOF_ >crl.tmpl
-crl_next_update = 9999
+crl_next_update = 365
 crl_number = 1
 _EOF_
 $ cat user-cert.pem >>revoked.pem

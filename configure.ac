@@ -1,10 +1,10 @@
 AC_PREREQ(2.61)
-AC_INIT([ocserv], [0.11.4], [nmav@gnutls.org])
+AC_INIT([ocserv], [0.11.6], [nmav@gnutls.org])
 PKG_PROG_PKG_CONFIG
 AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_MACRO_DIR([m4])
 
-AM_INIT_AUTOMAKE([1.11.3 subdir-objects no-dist-gzip dist-xz -Wall -Wno-override])
+AM_INIT_AUTOMAKE([1.11.1 subdir-objects no-dist-gzip dist-xz -Wall -Wno-override])
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 AC_CONFIG_HEADERS([config.h])
 
@@ -90,6 +90,13 @@ else
 *** libev4 was not found.
 ***]])
 fi
+
+AC_ARG_WITH(root-tests,
+  AS_HELP_STRING([--without-root-tests], [disable any tests requiring root/docker]),
+  root_tests=$withval,
+  root_tests=yes)
+
+AM_CONDITIONAL(ENABLE_ROOT_TESTS, test "x$root_tests" = xyes)
 
 AC_ARG_WITH(local-talloc,
   AS_HELP_STRING([--with-local-talloc], [use the included talloc library]),
