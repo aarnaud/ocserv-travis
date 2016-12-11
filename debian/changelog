@@ -1,3 +1,16 @@
+ocserv (0.11.4-2) unstable; urgency=high
+
+  * d/p/allow-parallel-build-of-autogen-files.patch: Fix parallel build race on
+    autogen files (Closes: 844882)
+  * d/control: Add Depends: lsb-base for ocserv init script
+  * d/README.Debian: Document how to configure listening port (Closes: 837944)
+  * d/p/prevent-parallel-build-of-manpages.patch: Disable parallel build to
+    ensure manpages are built
+  * d/control: Use canonical https URLs for Vcs-*
+  * Bump Standards-Version to 3.9.8, no changes needed
+
+ -- Mike Miller <mtmiller@debian.org>  Sat, 10 Dec 2016 17:12:48 -0800
+
 ocserv (0.11.4-1) unstable; urgency=medium
 
   * Imported Upstream version 0.11.4
