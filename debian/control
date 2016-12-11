@@ -28,7 +28,7 @@ Build-Depends: autogen,
                libev-dev,
                nettle-dev,
                liboauth-dev,
-Standards-Version: 3.9.7
+Standards-Version: 3.9.8
 Homepage: http://www.infradead.org/ocserv/
 VCS-Browser: https://anonscm.debian.org/cgit/collab-maint/ocserv.git
 VCS-Git: https://anonscm.debian.org/git/collab-maint/ocserv.git
