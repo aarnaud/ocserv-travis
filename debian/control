@@ -35,7 +35,7 @@ VCS-Browser: https://anonscm.debian.org/git/collab-maint/ocserv.git
 
 Package: ocserv
 Architecture: any
-Depends: ${misc:Depends}, ${shlibs:Depends}, dbus, ssl-cert
+Depends: ${misc:Depends}, ${shlibs:Depends}, dbus, lsb-base, ssl-cert
 Recommends: ca-certificates
 Description: OpenConnect VPN server compatible with Cisco AnyConnect VPN
  OpenConnect server (ocserv) is an SSL VPN server. Its purpose is to be a
