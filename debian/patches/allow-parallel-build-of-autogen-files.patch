@@ -13,13 +13,19 @@ Last-Update: 2016-12-10
 This patch header follows DEP-3: http://dep.debian.net/deps/dep3/
 --- a/src/Makefile.am
 +++ b/src/Makefile.am
-@@ -22,9 +22,11 @@ bin_SCRIPTS = ocserv-fw
+@@ -22,7 +22,7 @@ bin_SCRIPTS = ocserv-fw
  noinst_LIBRARIES = libcmd-ocserv.a libipc.a
  libcmd_ocserv_a_SOURCES = ocserv-args.def ocserv-args.c ocserv-args.h
  
 -ocserv-args.c: $(srcdir)/ocserv-args.def $(builddir)/version.inc
 +ocserv-args.stamp: $(srcdir)/ocserv-args.def $(builddir)/version.inc
- 	$(AUTOGEN) $<
+ 	if test "$(AUTOGEN)" = ":";then \
+ 		rm -f $(builddir)/ocserv-args.c; \
+ 		rm -f $(builddir)/ocserv-args.h; \
+@@ -35,7 +35,9 @@ ocserv-args.c: $(srcdir)/ocserv-args.def
+ 			cp $(builddir)/ocserv-args.h $(srcdir)/autogen; \
+ 		fi; \
+ 	fi
 -ocserv-args.h: ocserv-args.c
 +	touch $@
 +ocserv-args.h: ocserv-args.stamp
@@ -27,7 +33,7 @@ This patch header follows DEP-3: http://dep.debian.net/deps/dep3/
  
  # Authentication module sources
  AUTH_SOURCES=auth/pam.c auth/pam.h auth/plain.c auth/plain.h auth/radius.c auth/radius.h \
-@@ -116,3 +118,6 @@ common/libcommon.a:
+@@ -127,3 +129,6 @@ common/libcommon.a:
  	cd common && $(MAKE) $(AM_MAKEFLAGS) libcommon.a
  
  .PHONY: ccan/libccan.a common/libcommon.a
@@ -36,13 +42,19 @@ This patch header follows DEP-3: http://dep.debian.net/deps/dep3/
 +	rm -f *.stamp
 --- a/src/ocpasswd/Makefile.am
 +++ b/src/ocpasswd/Makefile.am
-@@ -20,7 +20,11 @@ ocpasswd_LDADD = ../../gl/libgnu.a $(NEE
+@@ -20,7 +20,7 @@ ocpasswd_LDADD = ../../gl/libgnu.a $(NEE
  ocpasswd_LDADD += $(LIBGNUTLS_LIBS) $(LIBCRYPT) $(CODE_COVERAGE_LDFLAGS) \
  	$(LIBNETTLE_LIBS)
  
 -args.c: $(srcdir)/args.def $(builddir)/../version.inc
 +args.stamp: $(srcdir)/args.def $(builddir)/../version.inc
- 	$(AUTOGEN) $<
+ 	if test "$(AUTOGEN)" = ":";then \
+ 		rm -f $(builddir)/args.c; \
+ 		rm -f $(builddir)/args.h; \
+@@ -33,5 +33,9 @@ args.c: $(srcdir)/args.def $(builddir)/.
+ 			cp $(builddir)/args.h $(srcdir)/../autogen/ocpasswd-args.h; \
+ 		fi; \
+ 	fi
 -args.h: args.c
 +	touch $@
 +args.h: args.stamp
