@@ -21,6 +21,14 @@ servers         /etc/radcli/servers
 The dictionary should contain at least the attributes shown below,
 and the servers file should contain the radius server to use.
 
+Note, that ocserv provides the 'NAS-Port' attribute to server,
+which corresponds to the worker process PID value. This PID value
+may change during accounting (because the client may be handled
+by a different process/port). To make the port change, not affect
+the radius server's unique ID, you must configure the server
+not to account NAS-Port. In freeradius servers for example you
+have to remove the NAS-Port attribute from the acct_unique section.
+
 
 Ocserv configuration
 ====================
@@ -57,6 +65,7 @@ Ocserv supports the following radious attributes.
 #	Standard attributes
 ATTRIBUTE	User-Name		1	string
 ATTRIBUTE	Password		2	string
+ATTRIBUTE	NAS-Port		5	integer
 ATTRIBUTE	Framed-Protocol		7	integer
 ATTRIBUTE	NAS-Identifier		32	string
 ATTRIBUTE	Acct-Input-Octets	42	integer

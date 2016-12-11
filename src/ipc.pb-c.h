@@ -329,10 +329,11 @@ struct  _SessionInfoMsg
   protobuf_c_boolean has_remote_addr;
   ProtobufCBinaryData remote_addr;
   char *hostname;
+  char *device_type;
 };
 #define SESSION_INFO_MSG__INIT \
  { PROTOBUF_C_MESSAGE_INIT (&session_info_msg__descriptor) \
-    , NULL, NULL, NULL, NULL, NULL, 0,{0,NULL}, 0,{0,NULL}, NULL }
+    , NULL, NULL, NULL, NULL, NULL, 0,{0,NULL}, 0,{0,NULL}, NULL, NULL }
 
 
 /*

@@ -90,7 +90,7 @@ build_triplet = @build@
 host_triplet = @host@
 @LOCAL_TALLOC_TRUE@am__append_1 = -I$(top_srcdir)/src/ccan/talloc
 @LOCAL_HTTP_PARSER_TRUE@am__append_2 = -I$(top_srcdir)/src/http-parser/
-@LOCAL_PROTOBUF_C_TRUE@am__append_3 = -I$(top_srcdir)/src/protobuf/
+@LOCAL_PROTOBUF_C_TRUE@am__append_3 = -I$(top_builddir)/src/protobuf/
 subdir = src/common
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/libopts/m4/libopts.m4 \
@@ -910,6 +910,7 @@ pdfdir = @pdfdir@
 prefix = @prefix@
 program_transform_name = @program_transform_name@
 psdir = @psdir@
+runstatedir = @runstatedir@
 sbindir = @sbindir@
 sharedstatedir = @sharedstatedir@
 srcdir = @srcdir@
@@ -924,11 +925,11 @@ AM_CPPFLAGS = $(am__append_1) $(am__append_2) $(am__append_3) \
 	-I$(builddir)/../ $(LIBPROTOBUF_C_CFLAGS) $(LIBTALLOC_CFLAGS) \
 	$(CODE_COVERAGE_CFLAGS)
 @NEED_LIBOPTS_FALSE@NEEDED_LIBOPTS = $(LIBOPTS_LDADD)
-@NEED_LIBOPTS_TRUE@NEEDED_LIBOPTS = $(top_srcdir)/libopts/libopts.a
+@NEED_LIBOPTS_TRUE@NEEDED_LIBOPTS = $(top_builddir)/libopts/libopts.a
 @LOCAL_HTTP_PARSER_FALSE@NEEDED_HTTP_PARSER_LIBS = $(HTTP_PARSER_LIBS)
 @LOCAL_HTTP_PARSER_TRUE@NEEDED_HTTP_PARSER_LIBS = 
 @LOCAL_PROTOBUF_C_FALSE@NEEDED_LIBPROTOBUF_LIBS = $(LIBPROTOBUF_C_LIBS)
-@LOCAL_PROTOBUF_C_TRUE@NEEDED_LIBPROTOBUF_LIBS = $(top_srcdir)/src/protobuf/libprotobuf.a
+@LOCAL_PROTOBUF_C_TRUE@NEEDED_LIBPROTOBUF_LIBS = $(top_builddir)/src/protobuf/libprotobuf.a
 
 # Files common to ocserv and occtl.
 libcommon_a_SOURCES = common.c common.h system.c system.h \
@@ -949,9 +950,9 @@ $(srcdir)/Makefile.in:  $(srcdir)/Makefile.am $(srcdir)/../common.mk $(am__confi
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign src/common/Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --gnu src/common/Makefile'; \
 	$(am__cd) $(top_srcdir) && \
-	  $(AUTOMAKE) --foreign src/common/Makefile
+	  $(AUTOMAKE) --gnu src/common/Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \
 	  *config.status*) \

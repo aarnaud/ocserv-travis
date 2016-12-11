@@ -92,7 +92,7 @@ build_triplet = @build@
 host_triplet = @host@
 @LOCAL_TALLOC_TRUE@am__append_1 = -I$(top_srcdir)/src/ccan/talloc
 @LOCAL_HTTP_PARSER_TRUE@am__append_2 = -I$(top_srcdir)/src/http-parser/
-@LOCAL_PROTOBUF_C_TRUE@am__append_3 = -I$(top_srcdir)/src/protobuf/
+@LOCAL_PROTOBUF_C_TRUE@am__append_3 = -I$(top_builddir)/src/protobuf/
 sbin_PROGRAMS = ocserv$(EXEEXT)
 @ENABLE_COMPRESSION_TRUE@am__append_4 = lzs.c lzs.h
 @HAVE_GSSAPI_TRUE@am__append_5 = kkdcp_asn1_tab.c kkdcp.asn
@@ -185,8 +185,8 @@ am__ocserv_SOURCES_DIST = main.c main-auth.c worker-vpn.c \
 	main-ban.h common-config.h valid-hostname.c str.c str.h \
 	gettime.h http-parser/http_parser.c http-parser/http_parser.h \
 	sec-mod-acct.h setproctitle.c setproctitle.h sec-mod-resume.h \
-	sec-mod-cookies.c lzs.c lzs.h kkdcp_asn1_tab.c kkdcp.asn \
-	main-ctl-unix.c
+	sec-mod-cookies.c defs.h lzs.c lzs.h kkdcp_asn1_tab.c \
+	kkdcp.asn main-ctl-unix.c
 am__dirstamp = $(am__leading_dot)dirstamp
 am__objects_1 = auth/pam.$(OBJEXT) auth/plain.$(OBJEXT) \
 	auth/radius.$(OBJEXT) auth/common.$(OBJEXT) \
@@ -220,10 +220,10 @@ ocserv_OBJECTS = $(am_ocserv_OBJECTS)
 am__DEPENDENCIES_1 =
 @NEED_LIBOPTS_FALSE@am__DEPENDENCIES_2 = $(am__DEPENDENCIES_1)
 @NEED_LIBOPTS_TRUE@am__DEPENDENCIES_2 =  \
-@NEED_LIBOPTS_TRUE@	$(top_srcdir)/libopts/libopts.a
+@NEED_LIBOPTS_TRUE@	$(top_builddir)/libopts/libopts.a
 @LOCAL_HTTP_PARSER_FALSE@am__DEPENDENCIES_3 = $(am__DEPENDENCIES_1)
 @LOCAL_PROTOBUF_C_FALSE@am__DEPENDENCIES_4 = $(am__DEPENDENCIES_1)
-@LOCAL_PROTOBUF_C_TRUE@am__DEPENDENCIES_4 = $(top_srcdir)/src/protobuf/libprotobuf.a
+@LOCAL_PROTOBUF_C_TRUE@am__DEPENDENCIES_4 = $(top_builddir)/src/protobuf/libprotobuf.a
 @PCL_TRUE@am__DEPENDENCIES_5 = $(am__DEPENDENCIES_1)
 ocserv_DEPENDENCIES = ../gl/libgnu.a $(am__DEPENDENCIES_2) \
 	libcmd-ocserv.a ccan/libccan.a common/libcommon.a \
@@ -1069,6 +1069,7 @@ pdfdir = @pdfdir@
 prefix = @prefix@
 program_transform_name = @program_transform_name@
 psdir = @psdir@
+runstatedir = @runstatedir@
 sbindir = @sbindir@
 sharedstatedir = @sharedstatedir@
 srcdir = @srcdir@
@@ -1087,11 +1088,11 @@ AM_CPPFLAGS = $(am__append_1) $(am__append_2) $(am__append_3) \
 	$(LIBOATH_CFLAGS) $(LIBKRB5_CFLAGS) $(LIBTASN1_CFLAGS) \
 	$(RADCLI_CFLAGS) $(am__append_9)
 @NEED_LIBOPTS_FALSE@NEEDED_LIBOPTS = $(LIBOPTS_LDADD)
-@NEED_LIBOPTS_TRUE@NEEDED_LIBOPTS = $(top_srcdir)/libopts/libopts.a
+@NEED_LIBOPTS_TRUE@NEEDED_LIBOPTS = $(top_builddir)/libopts/libopts.a
 @LOCAL_HTTP_PARSER_FALSE@NEEDED_HTTP_PARSER_LIBS = $(HTTP_PARSER_LIBS)
 @LOCAL_HTTP_PARSER_TRUE@NEEDED_HTTP_PARSER_LIBS = 
 @LOCAL_PROTOBUF_C_FALSE@NEEDED_LIBPROTOBUF_LIBS = $(LIBPROTOBUF_C_LIBS)
-@LOCAL_PROTOBUF_C_TRUE@NEEDED_LIBPROTOBUF_LIBS = $(top_srcdir)/src/protobuf/libprotobuf.a
+@LOCAL_PROTOBUF_C_TRUE@NEEDED_LIBPROTOBUF_LIBS = $(top_builddir)/src/protobuf/libprotobuf.a
 BUILT_SOURCES = ocserv-args.c ocserv-args.h ipc.pb-c.c ipc.pb-c.h \
 	http-heads.h kkdcp_asn1_tab.c ctl.pb-c.c ctl.pb-c.h
 
@@ -1125,7 +1126,7 @@ ocserv_SOURCES = main.c main-auth.c worker-vpn.c worker-auth.c \
 	main-ban.h common-config.h valid-hostname.c str.c str.h \
 	gettime.h $(CCAN_SOURCES) $(HTTP_PARSER_SOURCES) \
 	sec-mod-acct.h setproctitle.c setproctitle.h sec-mod-resume.h \
-	sec-mod-cookies.c $(am__append_4) $(am__append_5) \
+	sec-mod-cookies.c defs.h $(am__append_4) $(am__append_5) \
 	main-ctl-unix.c
 @LOCAL_HTTP_PARSER_TRUE@HTTP_PARSER_SOURCES = http-parser/http_parser.c http-parser/http_parser.h
 ocserv_LDADD = ../gl/libgnu.a $(NEEDED_LIBOPTS) libcmd-ocserv.a \
@@ -1152,9 +1153,9 @@ $(srcdir)/Makefile.in:  $(srcdir)/Makefile.am $(srcdir)/common.mk $(am__configur
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign src/Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --gnu src/Makefile'; \
 	$(am__cd) $(top_srcdir) && \
-	  $(AUTOMAKE) --foreign src/Makefile
+	  $(AUTOMAKE) --gnu src/Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \
 	  *config.status*) \
@@ -1693,7 +1694,18 @@ uninstall-am: uninstall-binSCRIPTS uninstall-sbinPROGRAMS
 
 
 ocserv-args.c: $(srcdir)/ocserv-args.def $(builddir)/version.inc
-	$(AUTOGEN) $<
+	if test "$(AUTOGEN)" = ":";then \
+		rm -f $(builddir)/ocserv-args.c; \
+		rm -f $(builddir)/ocserv-args.h; \
+		cp $(srcdir)/autogen/ocserv-args.c $(builddir)/; \
+		cp $(srcdir)/autogen/ocserv-args.h $(builddir)/; \
+	else \
+		$(AUTOGEN) $<; \
+		if test -d $(srcdir)/autogen;then \
+			cp $(builddir)/ocserv-args.c $(srcdir)/autogen; \
+			cp $(builddir)/ocserv-args.h $(srcdir)/autogen; \
+		fi; \
+	fi
 ocserv-args.h: ocserv-args.c
 
 ipc.pb-c.c: ipc.proto

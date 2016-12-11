@@ -211,13 +211,18 @@ static int setup_dtls_psk_keys(gnutls_session_t session, struct worker_st *ws)
 	gnutls_mac_algorithm_t mac;
 	gnutls_cipher_algorithm_t cipher;
 
-	if (ws->session) {
+	if (ws->session && ws->config->match_dtls_and_tls) {
 		cipher = gnutls_cipher_get(ws->session);
 		mac = gnutls_mac_get(ws->session);
 
 		snprintf(prio_string, sizeof(prio_string), "%s:-VERS-ALL:-CIPHER-ALL:-MAC-ALL:-KX-ALL:+PSK:+VERS-DTLS-ALL:+%s:+%s",
 			 ws->config->priorities, gnutls_mac_get_name(mac), gnutls_cipher_get_name(cipher));
 	} else {
+		if (ws->config->match_dtls_and_tls) {
+			oclog(ws, LOG_ERR, "cannot determine ciphersuite from CSTP channel (unset match-tls-dtls-ciphers)");
+			return -1;
+		}
+
 		/* if we haven't an associated session, enable all ciphers we would have enabled
 		 * otherwise for TLS. */
 		snprintf(prio_string, sizeof(prio_string), "%s:-VERS-ALL:-KX-ALL:+PSK:+VERS-DTLS-ALL",
@@ -327,6 +332,11 @@ static int setup_dtls_connection(struct worker_st *ws)
 		oclog(ws, LOG_INFO, "setting up DTLS-PSK connection");
 		ret = setup_dtls_psk_keys(session, ws);
 	} else {
+		if (!ws->config->dtls_legacy) {
+			oclog(ws, LOG_INFO, "CISCO client compatibility (dtls-legacy) is disabled; will not setup a DTLS session");
+			ret = -1;
+			goto fail;
+		}
 		oclog(ws, LOG_INFO, "setting up DTLS-0.9 connection");
 		ret = setup_dtls0_9_keys(session, ws);
 	}
@@ -742,6 +752,10 @@ void session_info_send(worker_st * ws)
 
 	if (ws->req.user_agent[0] != 0) {
 		msg.user_agent = ws->req.user_agent;
+	}
+
+	if (ws->req.devtype[0] != 0) {
+		msg.device_type = ws->req.devtype;
 	}
 
 	if (ws->req.hostname[0] != 0) {
@@ -1298,6 +1312,14 @@ static int tun_mainloop(struct worker_st *ws, struct timespec *tnow)
 
 	cstp_to_send.data = ws->buffer;
 	cstp_to_send.size = l;
+
+	if (ws->config->switch_to_tcp_timeout &&
+	    ws->udp_state == UP_ACTIVE &&
+	    tnow->tv_sec > ws->udp_recv_time + ws->config->switch_to_tcp_timeout) {
+		oclog(ws, LOG_DEBUG, "No UDP data received for %li seconds, using TCP instead\n",
+				tnow->tv_sec - ws->udp_recv_time);
+		ws->udp_state = UP_INACTIVE;
+	}
 
 	if (ws->udp_state == UP_ACTIVE && ws->dtls_selected_comp != NULL && l > ws->config->no_compress_limit) {
 		/* otherwise don't compress */
@@ -1916,16 +1938,6 @@ static int connect_handler(worker_st * ws)
 
 	if (ws->udp_state != UP_DISABLED) {
 
-		p = (char *)ws->buffer;
-		for (i = 0; i < sizeof(ws->session_id); i++) {
-			sprintf(p, "%.2x", (unsigned int)ws->session_id[i]);
-			p += 2;
-		}
-		ret =
-		    cstp_printf(ws, "X-DTLS-Session-ID: %s\r\n",
-			       ws->buffer);
-		SEND_ERR(ret);
-
 		if (ws->user_config->dpd > 0) {
 			ret =
 			    cstp_printf(ws, "X-DTLS-DPD: %u\r\n",
@@ -1958,23 +1970,43 @@ static int connect_handler(worker_st * ws)
 			       ws->user_config->keepalive);
 		SEND_ERR(ret);
 
-		if (ws->req.use_psk) {
-			oclog(ws, LOG_INFO, "DTLS ciphersuite: PSK");
+		p = (char *)ws->buffer;
+		for (i = 0; i < sizeof(ws->session_id); i++) {
+			sprintf(p, "%.2x", (unsigned int)ws->session_id[i]);
+			p += 2;
+		}
+
+		if (ws->req.use_psk || !ws->config->dtls_legacy) {
 			ret =
-			    cstp_printf(ws, "X-DTLS-CipherSuite: PSK\r\n");
+			    cstp_printf(ws, "X-DTLS-App-ID: %s\r\n",
+				       ws->buffer);
+			SEND_ERR(ret);
+
+			oclog(ws, LOG_INFO, "DTLS ciphersuite: "DTLS_PROTO_INDICATOR);
+			ret =
+			    cstp_printf(ws, "X-DTLS-CipherSuite: "DTLS_PROTO_INDICATOR"\r\n");
 		} else {
+			ret =
+			    cstp_printf(ws, "X-DTLS-Session-ID: %s\r\n",
+				       ws->buffer);
+			SEND_ERR(ret);
+
 			oclog(ws, LOG_INFO, "DTLS ciphersuite: %s",
 			      ws->req.selected_ciphersuite->oc_name);
 			ret =
 			    cstp_printf(ws, "X-DTLS-CipherSuite: %s\r\n",
 				       ws->req.selected_ciphersuite->oc_name);
+
+			/* only send the X-DTLS-MTU in the legacy protocol, as there
+			 * the DTLS ciphersuite/version is negotiated and we cannot predict
+			 * the actual tunnel size */
+			ret =
+			    cstp_printf(ws, "X-DTLS-MTU: %u\r\n", DATA_MTU(ws, ws->link_mtu));
+			SEND_ERR(ret);
+			oclog(ws, LOG_INFO, "DTLS data MTU %u", DATA_MTU(ws, ws->link_mtu));
 		}
 		SEND_ERR(ret);
 
-		ret =
-		    cstp_printf(ws, "X-DTLS-MTU: %u\r\n", DATA_MTU(ws, ws->link_mtu));
-		SEND_ERR(ret);
-		oclog(ws, LOG_INFO, "DTLS data MTU %u", DATA_MTU(ws, ws->link_mtu));
 	}
 
 	/* hack for openconnect. It uses only a single MTU value */

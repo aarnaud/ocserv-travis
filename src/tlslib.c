@@ -51,6 +51,8 @@
 #include <netinet/tcp.h>
 #include <c-ctype.h>
 
+static void tls_reload_ocsp(main_server_st* s, tls_st *creds);
+
 void cstp_cork(worker_st *ws)
 {
 	if (ws->session) {
@@ -569,8 +571,10 @@ unsigned usage;
 			if (!(usage & GNUTLS_KEY_KEY_ENCIPHERMENT)) {
 				mslog(s, NULL, LOG_WARNING, "server certificate key usage prevents key encipherment; unable to support the RSA ciphersuites; "
 					"if that is not intentional, regenerate the server certificate with the key usage flag 'key encipherment' set.");
-				if (s->perm_config->dh_params_file != NULL)
+#if GNUTLS_VERSION_NUMBER < 0x030506
+				if (s->perm_config->dh_params_file == NULL)
 					mslog(s, NULL, LOG_WARNING, "no DH-params file specified; server will be limited to ECDHE ciphersuites\n");
+#endif
 			}
 		}
 	}
@@ -600,6 +604,11 @@ int ret;
 		gnutls_free(data.data);
 
 		gnutls_certificate_set_dh_params(creds->xcred, creds->dh_params);
+	} else {
+#if GNUTLS_VERSION_NUMBER >= 0x030506
+		/* use pre-generated parameters */
+		gnutls_certificate_set_known_dh_params(creds->xcred, GNUTLS_SEC_PARAM_MEDIUM);
+#endif
 	}
 }
 
@@ -883,13 +892,45 @@ void tls_load_files(main_server_st *s, tls_st *creds)
 						       verify_certificate_cb);
 	}
 
-	if (s->config->ocsp_response != NULL) {
-		ret = gnutls_certificate_set_ocsp_status_request_file(creds->xcred,
-			s->config->ocsp_response, 0);
-		GNUTLS_FATAL_ERR(ret);
-	}
+	tls_reload_ocsp(s, creds);
 
 	return;
+}
+
+static int ocsp_get_func(gnutls_session_t session, void *ptr, gnutls_datum_t *response)
+{
+	tls_st *creds = ptr;
+
+	if (ptr == NULL || creds->ocsp_response.size == 0)
+		return GNUTLS_E_NO_CERTIFICATE_STATUS;
+
+	response->data = gnutls_malloc(creds->ocsp_response.size);
+	if (response->data == NULL)
+		return GNUTLS_E_NO_CERTIFICATE_STATUS;
+
+	memcpy(response->data, creds->ocsp_response.data, creds->ocsp_response.size);
+	response->size = creds->ocsp_response.size;
+
+	return 0;
+}
+
+static void tls_reload_ocsp(main_server_st* s, tls_st *creds)
+{
+	int ret;
+
+	gnutls_free(creds->ocsp_response.data);
+	creds->ocsp_response.data = NULL;
+
+	if (s->config->ocsp_response != NULL) {
+		ret = gnutls_load_file(s->config->ocsp_response, &creds->ocsp_response);
+		if (ret < 0)
+			return;
+
+		gnutls_certificate_set_ocsp_status_request_function(creds->xcred,
+						ocsp_get_func, creds);
+	} else {
+		gnutls_certificate_set_ocsp_status_request_function(creds->xcred, NULL, 0);
+	}
 }
 
 void tls_load_prio(main_server_st *s, tls_st *creds)

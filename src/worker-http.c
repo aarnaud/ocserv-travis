@@ -199,7 +199,7 @@ void header_value_check(struct worker_st *ws, struct http_req_st *req)
 
 	switch (req->next_header) {
 	case HEADER_MASTER_SECRET:
-		if (req->use_psk) /* ignored */
+		if (req->use_psk || !ws->config->dtls_legacy) /* ignored */
 			break;
 
 		if (value_length < TLS_MASTER_SIZE * 2) {
@@ -231,7 +231,27 @@ void header_value_check(struct worker_st *ws, struct http_req_st *req)
 
 		break;
 	case HEADER_DEVICE_TYPE:
-		req->is_mobile = 1;
+		if (value_length + 1 > sizeof(req->devtype)) {
+			req->devtype[0] = 0;
+			goto cleanup;
+		}
+		memcpy(req->devtype, value, value_length);
+		req->devtype[value_length] = 0;
+
+		oclog(ws, LOG_DEBUG,
+		      "Device-type: '%s'", value);
+		break;
+	case HEADER_PLATFORM:
+		if (strncasecmp(value, "apple-ios", 9) == 0 ||
+		    strncasecmp(value, "android", 7) == 0) {
+
+			oclog(ws, LOG_DEBUG,
+			      "Platform: '%s' (mobile)", value);
+			req->is_mobile = 1;
+		} else {
+			oclog(ws, LOG_DEBUG,
+			      "Platform: '%s'", value);
+		}
 		break;
 	case HEADER_SUPPORT_SPNEGO:
 		ws_switch_auth_to(ws, AUTH_TYPE_GSSAPI);
@@ -269,12 +289,14 @@ void header_value_check(struct worker_st *ws, struct http_req_st *req)
 		req->selected_ciphersuite = NULL;
 		str = (char *)value;
 
-		p = strstr(str, "PSK");
-		if (p != NULL && (p[3] == 0 || p[3] == ':')) {
+		p = strstr(str, DTLS_PROTO_INDICATOR);
+		if (p != NULL && (p[sizeof(DTLS_PROTO_INDICATOR)-1] == 0 || p[sizeof(DTLS_PROTO_INDICATOR)-1] == ':')) {
 			/* OpenConnect DTLS setup was detected. */
-			req->use_psk = 1;
-			req->master_secret_set = 1; /* we don't need it */
-			break;
+			if (ws->config->dtls_psk) {
+				req->use_psk = 1;
+				req->master_secret_set = 1; /* we don't need it */
+				break;
+			}
 		}
 
 		if (ws->session != NULL) {

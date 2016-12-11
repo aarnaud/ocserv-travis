@@ -91,7 +91,7 @@ build_triplet = @build@
 host_triplet = @host@
 @LOCAL_TALLOC_TRUE@am__append_1 = -I$(top_srcdir)/src/ccan/talloc
 @LOCAL_HTTP_PARSER_TRUE@am__append_2 = -I$(top_srcdir)/src/http-parser/
-@LOCAL_PROTOBUF_C_TRUE@am__append_3 = -I$(top_srcdir)/src/protobuf/
+@LOCAL_PROTOBUF_C_TRUE@am__append_3 = -I$(top_builddir)/src/protobuf/
 bin_PROGRAMS = ocpasswd$(EXEEXT)
 subdir = src/ocpasswd
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -158,7 +158,7 @@ ocpasswd_OBJECTS = $(am_ocpasswd_OBJECTS)
 am__DEPENDENCIES_1 =
 @NEED_LIBOPTS_FALSE@am__DEPENDENCIES_2 = $(am__DEPENDENCIES_1)
 @NEED_LIBOPTS_TRUE@am__DEPENDENCIES_2 =  \
-@NEED_LIBOPTS_TRUE@	$(top_srcdir)/libopts/libopts.a
+@NEED_LIBOPTS_TRUE@	$(top_builddir)/libopts/libopts.a
 ocpasswd_DEPENDENCIES = ../../gl/libgnu.a $(am__DEPENDENCIES_2) \
 	libcmd-ocpasswd.a $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
@@ -922,6 +922,7 @@ pdfdir = @pdfdir@
 prefix = @prefix@
 program_transform_name = @program_transform_name@
 psdir = @psdir@
+runstatedir = @runstatedir@
 sbindir = @sbindir@
 sharedstatedir = @sharedstatedir@
 srcdir = @srcdir@
@@ -933,13 +934,14 @@ top_srcdir = @top_srcdir@
 AM_CPPFLAGS = $(am__append_1) $(am__append_2) $(am__append_3) \
 	-I$(srcdir)/../../gl/ -I$(builddir)/../../gl/ -I$(srcdir)/ \
 	-I$(srcdir)/../ -I$(builddir)/../../ -I$(builddir) \
-	$(LIBTALLOC_CFLAGS) $(LIBOPTS_CFLAGS) $(CODE_COVERAGE_CFLAGS)
+	$(LIBTALLOC_CFLAGS) $(LIBOPTS_CFLAGS) $(CODE_COVERAGE_CFLAGS) \
+	$(LIBGNUTLS_CFLAGS)
 @NEED_LIBOPTS_FALSE@NEEDED_LIBOPTS = $(LIBOPTS_LDADD)
-@NEED_LIBOPTS_TRUE@NEEDED_LIBOPTS = $(top_srcdir)/libopts/libopts.a
+@NEED_LIBOPTS_TRUE@NEEDED_LIBOPTS = $(top_builddir)/libopts/libopts.a
 @LOCAL_HTTP_PARSER_FALSE@NEEDED_HTTP_PARSER_LIBS = $(HTTP_PARSER_LIBS)
 @LOCAL_HTTP_PARSER_TRUE@NEEDED_HTTP_PARSER_LIBS = 
 @LOCAL_PROTOBUF_C_FALSE@NEEDED_LIBPROTOBUF_LIBS = $(LIBPROTOBUF_C_LIBS)
-@LOCAL_PROTOBUF_C_TRUE@NEEDED_LIBPROTOBUF_LIBS = $(top_srcdir)/src/protobuf/libprotobuf.a
+@LOCAL_PROTOBUF_C_TRUE@NEEDED_LIBPROTOBUF_LIBS = $(top_builddir)/src/protobuf/libprotobuf.a
 EXTRA_DIST = args.def
 BUILT_SOURCES = args.c args.h
 noinst_LIBRARIES = libcmd-ocpasswd.a
@@ -962,9 +964,9 @@ $(srcdir)/Makefile.in:  $(srcdir)/Makefile.am $(srcdir)/../common.mk $(am__confi
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign src/ocpasswd/Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --gnu src/ocpasswd/Makefile'; \
 	$(am__cd) $(top_srcdir) && \
-	  $(AUTOMAKE) --foreign src/ocpasswd/Makefile
+	  $(AUTOMAKE) --gnu src/ocpasswd/Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \
 	  *config.status*) \
@@ -1275,7 +1277,18 @@ uninstall-am: uninstall-binPROGRAMS
 
 
 args.c: $(srcdir)/args.def $(builddir)/../version.inc
-	$(AUTOGEN) $<
+	if test "$(AUTOGEN)" = ":";then \
+		rm -f $(builddir)/args.c; \
+		rm -f $(builddir)/args.h; \
+		cp $(srcdir)/../autogen/ocpasswd-args.c $(builddir)/args.c; \
+		cp $(srcdir)/../autogen/ocpasswd-args.h $(builddir)/args.h; \
+	else \
+		$(AUTOGEN) $<; \
+		if test -d $(srcdir)/autogen;then \
+			cp $(builddir)/args.c $(srcdir)/../autogen/ocpasswd-args.c; \
+			cp $(builddir)/args.h $(srcdir)/../autogen/ocpasswd-args.h; \
+		fi; \
+	fi
 args.h: args.c
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
