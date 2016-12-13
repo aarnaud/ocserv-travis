@@ -6,27 +6,27 @@ Uploaders: Liang Guo <guoliang@debian.org>, Mike Miller <mtmiller@debian.org>
 Build-Depends: autogen (>= 5.18.6),
                debhelper (>= 10),
                dh-systemd,
-               libradcli-dev (>= 1.2.5),
+               libev-dev,
                libgnutls28-dev (>= 3.1.10),
                libhttp-parser-dev,
                libkrb5-dev,
                liblz4-dev,
                libnl-route-3-dev [linux-any],
                liboath-dev,
+               liboauth-dev,
                libopts25-dev,
                libpam0g-dev,
                libpcl1-dev,
                libprotobuf-c0-dev,
+               libradcli-dev (>= 1.2.5),
                libreadline-dev,
                libseccomp-dev [i386 amd64 x32 armhf armel arm64 mips mipsel mips64 mips64el],
                libsystemd-dev,
                libtalloc-dev,
                libwrap0-dev,
-               pkg-config,
-               protobuf-c-compiler,
-               libev-dev,
                nettle-dev,
-               liboauth-dev,
+               pkg-config,
+               protobuf-c-compiler
 Standards-Version: 3.9.8
 Homepage: http://www.infradead.org/ocserv/
 VCS-Browser: https://anonscm.debian.org/cgit/collab-maint/ocserv.git
@@ -34,7 +34,7 @@ VCS-Git: https://anonscm.debian.org/git/collab-maint/ocserv.git
 
 Package: ocserv
 Architecture: any
-Depends: ${misc:Depends}, ${shlibs:Depends}, dbus, lsb-base, ssl-cert
+Depends: dbus, lsb-base, ssl-cert, ${misc:Depends}, ${shlibs:Depends}
 Recommends: ca-certificates
 Description: OpenConnect VPN server compatible with Cisco AnyConnect VPN
  OpenConnect server (ocserv) is an SSL VPN server. Its purpose is to be a
