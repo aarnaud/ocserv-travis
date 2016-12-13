@@ -1,4 +1,4 @@
-Format: http://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
 Upstream-Name: ocserv
 Upstream-Contact: OpenConnect <openconnect-devel@lists.infradead.org>
 Source: http://www.infradead.org/ocserv/
@@ -43,7 +43,7 @@ Files: src/lzs.* src/vasprintf.*
 Copyright: 2008-2015 Intel Corporation
 License: LGPL-2.1
 
-Files: src/occtl-time.c
+Files: src/occtl/time.c
 Copyright: 2014 Nikos Mavrogiannopoulos
            2002 Albert Cahalan
            1996 Charles Blake
