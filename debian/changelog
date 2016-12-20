@@ -1,3 +1,18 @@
+ocserv (0.11.6-1) unstable; urgency=medium
+
+  * New upstream version 0.11.6
+  * Fix "Error in the system's randomness device" (Closes: #839937)
+    (LP: #1634617)
+  * d/p/allow-parallel-build-of-autogen-files.patch: Refresh for new upstream
+    version
+  * Update default ocserv.conf from upstream example
+  * Make the build reproducible by setting MAN_PAGE_DATE
+  * Bump debhelper compat level to 10
+  * Run wrap-and-sort on d/control and d/*.install
+  * d/copyright: Refresh for new upstream version
+
+ -- Mike Miller <mtmiller@debian.org>  Tue, 20 Dec 2016 20:27:17 +0800
+
 ocserv (0.11.4-2) unstable; urgency=high
 
   * d/p/allow-parallel-build-of-autogen-files.patch: Fix parallel build race on
