@@ -1,0 +1,52 @@
+From 3ba8abea378f9278da377705986810556803d26e Mon Sep 17 00:00:00 2001
+From: John Thiltges <jthiltges2@unl.edu>
+Date: Mon, 9 Jan 2017 12:28:19 -0600
+Subject: [PATCH 2/7] ocserv-fw should still create a chain if
+ restrict-user-to-routes is set
+
+ocserv-fw only creates SEC_FORWARD_CHAIN if ports are being blocked. This
+leads to an error if restrict-user-to-routes is used without any port
+blocking.
+
+Since ocserv-fw is only called if restrict-user-to-routes or -ports is set,
+remove the conditional check for creating the chain.
+---
+ src/ocserv-fw | 13 +++++--------
+ 1 file changed, 5 insertions(+), 8 deletions(-)
+
+diff --git a/src/ocserv-fw b/src/ocserv-fw
+index b4c7516..3653364 100755
+--- a/src/ocserv-fw
++++ b/src/ocserv-fw
+@@ -204,12 +204,13 @@ for i in $OCSERV_DNS6;do
+ 	allow_dns6 $i
+ done
+ 
++# create the chain
++FORWARD_CHAIN="${SEC_FORWARD_CHAIN}"
++iptables -N "${FORWARD_CHAIN}"
++ip6tables -N "${FORWARD_CHAIN}"
++
+ # block ports - if needed
+ if test -n "${OCSERV_DENY_PORTS}";then
+-	FORWARD_CHAIN="${SEC_FORWARD_CHAIN}"
+-	iptables -N "${FORWARD_CHAIN}"
+-	ip6tables -N "${FORWARD_CHAIN}"
+-
+ 	set ${OCSERV_DENY_PORTS}
+ 	while test $# -gt 1; do
+ 		proto=$1
+@@ -224,10 +225,6 @@ if test -n "${OCSERV_DENY_PORTS}";then
+ 	done
+ else
+ 	if test -n "${OCSERV_ALLOW_PORTS}";then
+-		FORWARD_CHAIN="${SEC_FORWARD_CHAIN}"
+-		iptables -N "${FORWARD_CHAIN}"
+-		ip6tables -N "${FORWARD_CHAIN}"
+-
+ 		set ${OCSERV_ALLOW_PORTS}
+ 		while test $# -gt 1; do
+ 			proto=$1
+-- 
+2.1.4
+
