@@ -1,6 +1,1 @@
-allow-parallel-build-of-autogen-files.patch
 prevent-parallel-build-of-manpages.patch
-0001-ocserv-fw-should-still-create-a-chain-if-restrict-us.patch
-0002-ocserv-fw-should-send-all-traffic-to-the-device-spec.patch
-0003-worker-vpn-corrected-calculation-for-MTU-via-TCP-MSS.patch
-0004-worker-vpn-use-TCP_INFO-on-linux-to-obtain-accurate-.patch
