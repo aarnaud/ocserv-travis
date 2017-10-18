@@ -1,6 +1,7 @@
 ocserv (0.11.9-1) unstable; urgency=medium
 
   * New upstream version 0.11.9
+  * Bump Standards-Version to 4.1.1, no changes needed
   * Enable geoip option
   * d/copyright: Refresh for new upstream version
   * d/patches: Remove following patches, applied upstream:

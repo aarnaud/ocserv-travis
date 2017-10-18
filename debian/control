@@ -28,7 +28,7 @@ Build-Depends: autogen (>= 5.18.6),
                pkg-config,
                protobuf-c-compiler,
 	       libgeoip-dev,
-Standards-Version: 3.9.8
+Standards-Version: 4.1.1
 Homepage: http://www.infradead.org/ocserv/
 VCS-Browser: https://anonscm.debian.org/cgit/collab-maint/ocserv.git
 VCS-Git: https://anonscm.debian.org/git/collab-maint/ocserv.git
