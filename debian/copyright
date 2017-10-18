@@ -4,8 +4,8 @@ Upstream-Contact: OpenConnect <openconnect-devel@lists.infradead.org>
 Source: http://www.infradead.org/ocserv/
 
 Files: *
-Copyright: 2013-2016 Nikos Mavrogiannopoulos
-           2014-2016 Red Hat, Inc.
+Copyright: 2013-2017 Nikos Mavrogiannopoulos
+           2014-2017 Red Hat, Inc.
            2012-2013 David Woodhouse
            2009-2015 Free Software Foundation, Inc.
 License: GPL-2+

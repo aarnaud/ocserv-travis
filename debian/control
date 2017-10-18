@@ -26,7 +26,8 @@ Build-Depends: autogen (>= 5.18.6),
                libwrap0-dev,
                nettle-dev,
                pkg-config,
-               protobuf-c-compiler
+               protobuf-c-compiler,
+	       libgeoip-dev,
 Standards-Version: 3.9.8
 Homepage: http://www.infradead.org/ocserv/
 VCS-Browser: https://anonscm.debian.org/cgit/collab-maint/ocserv.git

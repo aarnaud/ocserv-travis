@@ -1,3 +1,11 @@
+ocserv (0.11.9-1) unstable; urgency=medium
+
+  * New upstream version 0.11.9
+  * Enable geoip option
+  * d/copyright: Refresh for new upstream version
+
+ -- Liang Guo <guoliang@debian.org>  Thu, 19 Oct 2017 00:00:09 +0800
+
 ocserv (0.11.6-2) unstable; urgency=medium
 
   * Cherry pick upstream patches:
