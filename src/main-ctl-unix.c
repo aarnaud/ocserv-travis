@@ -179,12 +179,30 @@ static void method_status(method_ctx *ctx, int cfd, uint8_t * msg,
 
 	rep.status = 1;
 	rep.pid = getpid();
-	rep.start_time = ctx->s->start_time;
+	rep.start_time = ctx->s->stats.start_time;
 	rep.sec_mod_pid = ctx->s->sec_mod_pid;
-	rep.active_clients = ctx->s->active_clients;
-	rep.secmod_client_entries = ctx->s->secmod_client_entries;
-	rep.stored_tls_sessions = ctx->s->tlsdb_entries;
+	rep.active_clients = ctx->s->stats.active_clients;
+	rep.secmod_client_entries = ctx->s->stats.secmod_client_entries;
+	rep.stored_tls_sessions = ctx->s->stats.tlsdb_entries;
 	rep.banned_ips = main_ban_db_elems(ctx->s);
+
+	rep.session_timeouts = ctx->s->stats.session_timeouts;
+	rep.session_idle_timeouts = ctx->s->stats.session_idle_timeouts;
+	rep.session_errors = ctx->s->stats.session_errors;
+	rep.sessions_closed = ctx->s->stats.sessions_closed;
+	rep.kbytes_in = ctx->s->stats.kbytes_in;
+	rep.kbytes_out = ctx->s->stats.kbytes_out;
+	rep.min_mtu = ctx->s->stats.min_mtu;
+	rep.max_mtu = ctx->s->stats.max_mtu;
+	rep.last_reset = ctx->s->stats.last_reset;
+	rep.avg_auth_time = ctx->s->stats.avg_auth_time;
+	rep.avg_session_mins = ctx->s->stats.avg_session_mins;
+	rep.max_auth_time = ctx->s->stats.max_auth_time;
+	rep.max_session_mins = ctx->s->stats.max_session_mins;
+
+	rep.auth_failures = ctx->s->stats.auth_failures;
+	rep.total_auth_failures = ctx->s->stats.total_auth_failures;
+	rep.total_sessions_closed = ctx->s->stats.total_sessions_closed;
 
 	ret = send_msg(ctx->pool, cfd, CTL_CMD_STATUS_REP, &rep,
 		       (pack_size_func) status_rep__get_packed_size,
@@ -249,6 +267,7 @@ static int append_user_info(method_ctx *ctx,
 	char *ipbuf;
 	char *strtmp;
 	UserInfoRep *rep;
+	char *safe_id;
 
 	list->user =
 	    talloc_realloc(ctx->pool, list->user, UserInfoRep *, (1 + list->n_user));
@@ -257,6 +276,10 @@ static int append_user_info(method_ctx *ctx,
 
 	rep = talloc(ctx->pool, UserInfoRep);
 	if (rep == NULL)
+		return -1;
+
+	safe_id = talloc_size(ctx->pool, SAFE_ID_SIZE);
+	if (safe_id == NULL)
 		return -1;
 
 	list->user[list->n_user] = rep;
@@ -356,8 +379,9 @@ static int append_user_info(method_ctx *ctx,
 	rep->tls_ciphersuite = ctmp->tls_ciphersuite;
 	rep->dtls_ciphersuite = ctmp->dtls_ciphersuite;
 
-	rep->sid.data = ctmp->sid;
-	rep->sid.len = sizeof(ctmp->sid);
+	calc_safe_id(ctmp->sid, sizeof(ctmp->sid), safe_id, SAFE_ID_SIZE);
+	rep->safe_id.data = (unsigned char*)safe_id;
+	rep->safe_id.len = SAFE_ID_SIZE;
 
 	rep->cstp_compr = ctmp->cstp_compr;
 	rep->dtls_compr = ctmp->dtls_compr;

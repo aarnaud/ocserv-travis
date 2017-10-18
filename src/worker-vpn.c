@@ -48,7 +48,7 @@
 #include <signal.h>
 #include <poll.h>
 
-#if defined(__linux__) &&!defined(IPV6_PATHMTU)
+#if defined(__linux__) && !defined(IPV6_PATHMTU)
 # define IPV6_PATHMTU 61
 #endif
 
@@ -73,6 +73,13 @@
 
 #define CSTP_DTLS_OVERHEAD 1
 #define CSTP_OVERHEAD 8
+
+#define IP_HEADER_SIZE 20
+#define IPV6_HEADER_SIZE 40
+#define TCP_HEADER_SIZE 20
+#define UDP_HEADER_SIZE 8
+
+#define MSS_ADJUST(x) x += TCP_HEADER_SIZE + ((ws->proto == AF_INET)?(IP_HEADER_SIZE):(IPV6_HEADER_SIZE))
 
 struct worker_st *global_ws = NULL;
 
@@ -198,6 +205,12 @@ int get_psk_key(gnutls_session_t session,
 	return 0;
 }
 
+#if GNUTLS_VERSION_NUMBER < 0x030318
+# define VERS_STRING "-VERS-TLS-ALL"
+#else
+# define VERS_STRING "-VERS-ALL"
+#endif
+
 #define PSK_LABEL "EXPORTER-openconnect-psk"
 #define PSK_LABEL_SIZE sizeof(PSK_LABEL)-1
 /* We initial a PSK connection with ciphers and MAC matching the TLS negotiated
@@ -215,7 +228,7 @@ static int setup_dtls_psk_keys(gnutls_session_t session, struct worker_st *ws)
 		cipher = gnutls_cipher_get(ws->session);
 		mac = gnutls_mac_get(ws->session);
 
-		snprintf(prio_string, sizeof(prio_string), "%s:-VERS-ALL:-CIPHER-ALL:-MAC-ALL:-KX-ALL:+PSK:+VERS-DTLS-ALL:+%s:+%s",
+		snprintf(prio_string, sizeof(prio_string), "%s:"VERS_STRING":-CIPHER-ALL:-MAC-ALL:-KX-ALL:+PSK:+VERS-DTLS-ALL:+%s:+%s",
 			 ws->config->priorities, gnutls_mac_get_name(mac), gnutls_cipher_get_name(cipher));
 	} else {
 		if (ws->config->match_dtls_and_tls) {
@@ -225,7 +238,7 @@ static int setup_dtls_psk_keys(gnutls_session_t session, struct worker_st *ws)
 
 		/* if we haven't an associated session, enable all ciphers we would have enabled
 		 * otherwise for TLS. */
-		snprintf(prio_string, sizeof(prio_string), "%s:-VERS-ALL:-KX-ALL:+PSK:+VERS-DTLS-ALL",
+		snprintf(prio_string, sizeof(prio_string), "%s:"VERS_STRING":-KX-ALL:+PSK:+VERS-DTLS-ALL",
 			 ws->config->priorities);
 	}
 
@@ -328,13 +341,12 @@ static int setup_dtls_connection(struct worker_st *ws)
 
 	gnutls_session_set_ptr(session, ws);
 
-	if (ws->req.use_psk) {
+	if (ws->req.use_psk && ws->session) {
 		oclog(ws, LOG_INFO, "setting up DTLS-PSK connection");
 		ret = setup_dtls_psk_keys(session, ws);
 	} else {
 		if (!ws->config->dtls_legacy) {
 			oclog(ws, LOG_INFO, "CISCO client compatibility (dtls-legacy) is disabled; will not setup a DTLS session");
-			ret = -1;
 			goto fail;
 		}
 		oclog(ws, LOG_INFO, "setting up DTLS-0.9 connection");
@@ -935,11 +947,45 @@ void mtu_ok(worker_st * ws)
 			x += r % diff; \
 		}
 
+int get_pmtu_approx(worker_st *ws)
+{
+	socklen_t sl;
+	int ret, e;
+
+#if defined(__linux__) && defined(TCP_INFO)
+	struct tcp_info ti;
+	sl = sizeof(ti);
+
+	ret = getsockopt(ws->conn_fd, IPPROTO_TCP, TCP_INFO, &ti, &sl);
+	if (ret == -1) {
+		e = errno;
+		oclog(ws, LOG_INFO, "error in getting TCP_INFO: %s",
+		      strerror(e));
+		return -1; 
+	} else {
+		return ti.tcpi_pmtu;
+	}
+#else
+	int max = -1;
+
+	sl = sizeof(max);
+	ret = getsockopt(ws->conn_fd, IPPROTO_TCP, TCP_MAXSEG, &max, &sl);
+	if (ret == -1) {
+		e = errno;
+		oclog(ws, LOG_INFO, "error in getting TCP_MAXSEG: %s",
+		      strerror(e));
+		return -1;
+	} else {
+		MSS_ADJUST(max);
+		return max;
+	}
+#endif
+}
+
 static
 int periodic_check(worker_st * ws, struct timespec *tnow, unsigned dpd)
 {
-	socklen_t sl;
-	int max, e, ret;
+	int max, ret;
 	time_t now = tnow->tv_sec;
 	time_t periodic_check_time = PERIODIC_CHECK_TIME;
 
@@ -1029,20 +1075,11 @@ int periodic_check(worker_st * ws, struct timespec *tnow, unsigned dpd)
 	}
 
 	if (ws->conn_type != SOCK_TYPE_UNIX && ws->udp_state != UP_DISABLED) {
-		sl = sizeof(max);
-		ret = getsockopt(ws->conn_fd, IPPROTO_TCP, TCP_MAXSEG, &max, &sl);
-		if (ret == -1) {
-			e = errno;
-			oclog(ws, LOG_INFO, "error in getting TCP_MAXSEG: %s",
-			      strerror(e));
-		} else {
-			max -= 13;
-			/*oclog(ws, LOG_DEBUG, "TCP MSS is %u", max); */
-			if (max > 0 && max < ws->link_mtu) {
-				oclog(ws, LOG_DEBUG, "reducing MTU due to TCP MSS to %u",
-				      max);
-				link_mtu_set(ws, max);
-			}
+		max = get_pmtu_approx(ws);
+		if (max > 0 && max < ws->link_mtu) {
+			oclog(ws, LOG_DEBUG, "reducing MTU due to TCP/PMTU to %u",
+			      max);
+			link_mtu_set(ws, max);
 		}
 	}
 
@@ -1485,11 +1522,6 @@ static void set_socket_timeout(worker_st * ws, int fd)
 	}
 }
 
-#define IP_HEADER_SIZE 20
-#define IPV6_HEADER_SIZE 40
-#define TCP_HEADER_SIZE 8
-#define UDP_HEADER_SIZE 8
-
 /* wild but conservative guess; this ciphersuite has the largest overhead */
 #define MAX_CSTP_CRYPTO_OVERHEAD (CSTP_OVERHEAD+tls_get_overhead(GNUTLS_TLS1_0, GNUTLS_CIPHER_AES_128_CBC, GNUTLS_MAC_SHA1))
 #define MAX_DTLS_CRYPTO_OVERHEAD (CSTP_DTLS_OVERHEAD+tls_get_overhead(GNUTLS_DTLS1_0, GNUTLS_CIPHER_AES_128_CBC, GNUTLS_MAC_SHA1))
@@ -1569,7 +1601,7 @@ static int connect_handler(worker_st * ws)
 	struct http_req_st *req = &ws->req;
 	struct pollfd pfd[4];
 	unsigned pfd_size;
-	int e, max, ret, t;
+	int max, ret, t;
 	char *p;
 	unsigned rnd;
 #ifdef HAVE_PPOLL
@@ -1578,7 +1610,6 @@ static int connect_handler(worker_st * ws)
 	unsigned tls_pending, dtls_pending = 0, i;
 	struct timespec tnow;
 	unsigned ip6;
-	socklen_t sl;
 	sigset_t emptyset, blockset;
 
 	sigemptyset(&blockset);
@@ -1691,19 +1722,11 @@ static int connect_handler(worker_st * ws)
 	/* Attempt to use the TCP connection maximum segment size to set a more
 	 * precise MTU. */
 	if (ws->conn_type != SOCK_TYPE_UNIX) {
-		sl = sizeof(max);
-		ret = getsockopt(ws->conn_fd, IPPROTO_TCP, TCP_MAXSEG, &max, &sl);
-		if (ret == -1) {
-			e = errno;
-			oclog(ws, LOG_INFO, "error in getting TCP_MAXSEG: %s",
-			      strerror(e));
-		} else {
-			max -= 13;
-			if (max > 0 && max < ws->vinfo.mtu) {
-				oclog(ws, LOG_INFO,
-				      "reducing MTU due to TCP MSS to %u (from %u)", max, ws->vinfo.mtu);
-				ws->vinfo.mtu = max;
-			}
+		max = get_pmtu_approx(ws);
+		if (max > 0 && max < ws->vinfo.mtu) {
+			oclog(ws, LOG_DEBUG, "reducing MTU due to TCP/PMTU to %u",
+			      max);
+			link_mtu_set(ws, max);
 		}
 	}
 
@@ -1996,6 +2019,7 @@ static int connect_handler(worker_st * ws)
 			ret =
 			    cstp_printf(ws, "X-DTLS-CipherSuite: %s\r\n",
 				       ws->req.selected_ciphersuite->oc_name);
+			SEND_ERR(ret);
 
 			/* only send the X-DTLS-MTU in the legacy protocol, as there
 			 * the DTLS ciphersuite/version is negotiated and we cannot predict

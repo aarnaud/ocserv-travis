@@ -488,7 +488,7 @@ static void update_fd_limits(main_server_st *s, unsigned main)
 
 		if (max > def_set.rlim_cur) {
 			new_set.rlim_cur = max;
-			new_set.rlim_max = new_set.rlim_cur;
+			new_set.rlim_max = def_set.rlim_max;
 			ret = setrlimit(RLIMIT_NOFILE, &new_set);
 			if (ret < 0) {
 				fprintf(stderr, "error in setrlimit(%u): %s (cur: %u)\n", max, strerror(errno), (unsigned)def_set.rlim_cur);
@@ -498,7 +498,7 @@ static void update_fd_limits(main_server_st *s, unsigned main)
 		/* set limits for worker processes */
 		ret = setrlimit(RLIMIT_NOFILE, &def_set);
 		if (ret < 0) {
-			fprintf(stderr, "error in setrlimit(%u): %s\n", (unsigned)def_set.rlim_cur, strerror(errno));
+			mslog(s, NULL, LOG_INFO, "cannot update file limit(%u): %s\n", (unsigned)def_set.rlim_cur, strerror(errno));
 		}
 	}
 #endif
@@ -1080,9 +1080,9 @@ static void listen_watcher_cb (EV_P_ ev_io *w, int revents)
 		set_block(fd);
 #endif
 
-		if (s->config->max_clients > 0 && s->active_clients >= s->config->max_clients) {
+		if (s->config->max_clients > 0 && s->stats.active_clients >= s->config->max_clients) {
 			close(fd);
-			mslog(s, NULL, LOG_INFO, "reached maximum client limit (active: %u)", s->active_clients);
+			mslog(s, NULL, LOG_INFO, "reached maximum client limit (active: %u)", s->stats.active_clients);
 			return;
 		}
 
@@ -1262,7 +1262,7 @@ int main(int argc, char** argv)
 	}
 	s->main_pool = main_pool;
 	s->creds = &creds;
-	s->start_time = time(0);
+	s->stats.start_time = s->stats.last_reset = time(0);
 	s->top_fd = -1;
 	s->ctl_fd = -1;
 

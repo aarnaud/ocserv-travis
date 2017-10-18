@@ -1,7 +1,788 @@
-2016-11-14  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+2017-10-09  Nikos Mavrogiannopoulos <nmav@gnutls.org>
 
-	* src/Makefile.am, src/ocpasswd/Makefile.am: only copy files in
-	autogen/ if the directory exists
+	* src/ocpasswd/ocpasswd-args.c.in, src/ocpasswd/ocpasswd-args.h.in,
+	src/ocserv-args.c.in, src/ocserv-args.h.in: updated auto-generated
+	files Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2017-10-09  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* NEWS: released 0.11.9 Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2017-10-09  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* configure.ac: bumped version Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2017-10-09  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* NEWS: doc update Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2017-09-12  Frank Huang <chuang213@gmail.com>
+
+	* tests/ocpasswd-test: Update ocpasswd-test Signed-off-by: Frank Huang <chuang213@gmail.com>
+
+2017-09-03  Frank Huang <chuang213@gmail.com>
+
+	* src/ocpasswd/ocpasswd.c: ocpasswd: the lock command -l will add
+	multiple lock mark to the password file The changes will check if it is already locked before apply the
+	locking.  This would be consistent with passwd like facilities.  Signed-off-by: Frank Huang <chuang213@gmail.com>
+
+2017-09-09  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* tests/test-pass-script: tests: test-pass-script: only run when
+	openconnect supports --local-hostname Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2017-09-09  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* README.md: README: updated to reflect the fact that more tests run
+	under CI Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2017-09-09  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* .gitlab-ci.yml, tests/common.sh: .gitlab-ci.yml: root tests are
+	run on CI systems Because these tests can only be run in-tree, the CI builds were
+	switched to be in-tree, except for FreeBSD build which now runs
+	out-of-tree.  Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2017-09-09  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* configure.ac, tests/Makefile.am: Separate root from docker tests This allows running the root tests under CI, even if the docker
+	tests (which cannot be run) are not.  Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2017-09-09  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* README.md: clarify coverage report [ci skip] Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2017-09-09  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* .gitlab-ci.yml: .gitlab-ci.yml: use fedora26 for address sanitizer Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2017-09-09  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* .gitlab-ci.yml: .gitlab-ci.yml: centos7: skip tests with
+	gssntlmssp They do not seem to run reliably.  Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2017-09-08  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* configure.ac: configure.ac: also check /lib/security for PAMDIR This is the path used in Debian.  Signed-off-by: Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+2017-09-08  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* tests/Makefile.am, tests/data/test-gssapi-local-map.config,
+	tests/data/test-gssapi.config, tests/test-gssapi: tests: test-gssapi
+	is now run as non-root Signed-off-by: Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+2017-09-08  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* tests/test-pam: tests: provide more verbose output on test-pam Signed-off-by: Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+2017-09-08  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* .gitlab-ci.yml: .gitlab-ci.yml: use fedora26 builds Signed-off-by: Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+2017-09-07  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* .gitlab-ci.yml: .gitlab-ci.yml: added static analyzers Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2017-09-07  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/occtl/unix.c: occtl: disable code during static analysis that
+	causes trouble to clang Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2017-09-07  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/config.c: config: avoid compiler warning Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2017-09-07  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/main-sec-mod-cmd.c: sec-mod: avoid null pointer dereference Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2017-09-07  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/occtl/unix.c: occtl: avoid null pointer dereference Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2017-09-07  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/occtl/unix.c: occtl: removed unused variables Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2017-09-07  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/acct/radius.c, src/worker-auth.c, src/worker-kkdcp.c,
+	src/worker-vpn.c: removed dead assignments Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2017-08-23  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* NEWS: doc update Signed-off-by: Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+2017-08-23  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* configure.ac, tests/Makefile.am,
+	tests/certs/server-cert-ed25519.pem,
+	tests/certs/server-cert-rsa-pss.pem,
+	tests/certs/server-key-ed25519.pem,
+	tests/certs/server-key-rsa-pss.pem, tests/data/test-ed25519.config,
+	tests/data/test-rsa-pss.config, tests/server-cert-ed25519,
+	tests/server-cert-rsa-pss: tests: check server functionality with
+	Ed25519/RSA-PSS certs Signed-off-by: Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+2017-08-23  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* src/defs.h, src/ipc.proto, src/sec-mod.c, src/tlslib.c: ocserv:
+	handle RSA-PSS and ed25519 key types when compiled with gnutls 3.6.0 That is, enhance the security module to accept and understand more
+	elaborate signing commands.  Signed-off-by: Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+2017-08-23  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* NEWS: doc update Signed-off-by: Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+2017-08-23  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* src/ip-lease.c: is_ipv4_ok: corrected access to mask This prevents the acceptance of an invalid IPv4 address as valid.  Resolves #112 Signed-off-by: Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+2017-08-23  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* tests/data/test1.config, tests/data/test1.passwd, tests/test-pass: 
+	tests: verify correct operation with locked account That checks whether connecting to a locked account will have
+	unexpected effects (e.g., login allowed).  Signed-off-by: Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+2017-08-23  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* NEWS: doc update Signed-off-by: Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+2017-08-23  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* src/auth/plain.c: plain: avoid crash on locked accounts That is, avoid a null pointer dereference when crypt() fails.  Resolves #114 Signed-off-by: Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+2017-07-21  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* .gitlab-ci.yml: .gitlab-ci.yml: enabled build for freebsd Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2017-07-08  Aaron LI <aly@aaronly.me>
+
+	* src/tun.c: Fix build on DragonFly BSD With this fix, I can successfully build `ocserv-0.11.8` on DragonFly
+	BSD (4.9-DEVELOPMENT) using the `net/ocserv` port from FreeBSD [1]
+	without any further modifications.  [1] https://github.com/freebsd/freebsd-ports/tree/master/net/ocserv Signed-off-by: Aaron LI <aly@aaronly.me>
+
+2017-06-16  Lele Long <schemacs@gmail.com>
+
+	* src/ocserv-args.def: Update --load-ca-certificate argument to
+	ca-cert.pem in examples Signed-off-by: Lele Long <schemacs@gmail.com>
+
+2017-06-14  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* .gitlab-ci.yml: .gitlab-ci.yml: disabled freebsd builds; system no
+	longer available [ci skip] Signed-off-by: Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+2017-05-31  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* doc/sample.config, src/ocserv-args.def: document that not all
+	methods can be combined Signed-off-by: Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+2017-05-18  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* NEWS, src/worker-vpn.c: Avoid the use of the VERS-ALL priority
+	string when gnutls < 3.3.24 is present That priority string is only available on gnutls 3.3.24+ versions of
+	gnutls.  Signed-off-by: Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+2017-05-03  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* NEWS: doc update Signed-off-by: Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+2017-05-03  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* .gitlab-ci.yml: .gitlab-ci.yml: compile using GeoIP-devel in
+	F25/Centos7 Signed-off-by: Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+2017-05-03  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* NEWS: doc update Signed-off-by: Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+2017-05-03  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* configure.ac: configure: allow disabling libgeoip detection Signed-off-by: Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+2017-05-02  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* configure.ac, src/Makefile.am, src/occtl/geoip.c,
+	src/occtl/geoip.h, src/occtl/unix.c: occtl: print peer location on
+	show user info That utilizes libgeoip.  Signed-off-by: Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+2017-05-02  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* src/occtl/unix.c: occtl: print Status grouped with general info Signed-off-by: Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+2017-04-29  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* src/worker-kkdcp.c: kkdcp: increased read timeout and made it a
+	definition Signed-off-by: Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+2017-04-28  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* NEWS: doc update Signed-off-by: Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+2017-04-28  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* src/worker-kkdcp.c: kkdcp: increase maximum packet size to 64kb There are cases where our previous limit (16kb) was insufficient
+	(see #100), and it is reasonable to switch to a limit related to
+	maximum UDP packet size.  Signed-off-by: Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+2017-04-27  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* NEWS: doc update Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2017-04-27  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/main-worker-cmd.c: handle_worker_commands: fix use of
+	send_msg_to_worker Relates #100 Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2017-04-25  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/ocpasswd/ocpasswd-args.c.in, src/ocpasswd/ocpasswd-args.h.in,
+	src/ocserv-args.c.in, src/ocserv-args.h.in: updated auto-generated
+	files [ci skip] Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2017-04-25  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* configure.ac: configure: bumped version Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2017-04-24  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/occtl/occtl.c, src/occtl/occtl.h, src/occtl/unix.c: occtl:
+	combined stats and status cmd Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2017-04-23  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* NEWS: doc update Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2017-04-23  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* NEWS, doc/sample.config, src/ocserv-args.def: config: increased
+	the default max-ban-score to 8 wrong password attempts This still prevents abuse, while allowing few more attempts than 5,
+	which are typically easily reached through software which remembers
+	passwords.  At the same time increase the default ban time to 20
+	minutes.  Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2017-04-19  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/occtl/unix.c: occtl: always print the stats reset time Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2017-04-14  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* NEWS, TODO: doc update [ci skip] Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2017-04-14  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/main-sec-mod-cmd.c: reset_stats: print session statistics
+	prior to reset Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2017-03-22  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* NEWS: doc update Signed-off-by: Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+2017-03-22  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* doc/sample.config: sample.config: added server-stats-reset-time Signed-off-by: Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+2017-03-22  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* src/ctl.proto, src/main-ctl-unix.c, src/occtl/unix.c: occtl:
+	improved presentation of printed statistics Also added different values to keep authentication failures and
+	closed sessions, in total and per accounting period.  Signed-off-by: Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+2017-03-12  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/config.c, src/main-sec-mod-cmd.c, src/main.h,
+	src/ocserv-args.def, src/sec-mod.c, src/sec-mod.h, src/vpn.h: Reset
+	periodically the server statistics kept Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2017-03-11  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/defs.h, src/ipc.proto, src/main-sec-mod-cmd.c,
+	src/sec-mod-auth.c, src/sec-mod.c: secmod sends periodically stats
+	to main That ensures that statistics will reach main even if no users are
+	logged in/logged out.  Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2017-03-11  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/ctl.proto, src/main-ctl-unix.c, src/occtl/occtl-args.def,
+	src/occtl/occtl.c, src/occtl/occtl.h, src/occtl/unix.c: occtl: print
+	statistics provided by main Also introduced the --debug option.  Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2017-03-11  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/ipc.proto, src/main-ctl-unix.c, src/main-proc.c,
+	src/main-sec-mod-cmd.c, src/main.c, src/main.h, src/sec-mod-auth.c,
+	src/sec-mod.h: main: store additional statistics globally That is, store:  * number of timed out sessions  * number of timed out due being idle sessions  * number of errored sessions  * total number of session handled (closed)  * total number of kbytes sent  * total number of kbytes received  * minimum MTU seen  * maximum MTU seen  * total authentication failures  * average/max authentication time (in secs)  * average/max session time (in minutes) Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2017-04-14  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/tun.c: tun: defined undeclared variable 'e' Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2017-04-14  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* .gitlab-ci.yml: update fedora build to F25 Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2017-04-14  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* .gitlab-ci.yml: .gitlab-ci.yml: explicitly install make in
+	Centos/Fedora Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2017-04-14  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* doc/sample.config, src/ocserv-args.def: doc update Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2017-03-30  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* src/tun.c: tun: be more verbose in bsd tun device creation errors Signed-off-by: Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+2017-03-26  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* tests/Makefile.am, tests/proxyproto-v1.c: tests: added unit test
+	for proxy protocol v1 Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2017-03-25  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* tests/Makefile.am,
+	tests/docker-ocserv/Dockerfile-fedora-proxyproto-v1,
+	tests/docker-ocserv/haproxy-proxyproto-v1.cfg,
+	tests/docker-ocserv/ocserv-proxyproto-v1.conf,
+	tests/proxyproto-v1-test: tests: added check for proxy protocol v1 Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2017-03-25  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* NEWS, doc/sample.config, src/ocserv-args.def: doc update Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2017-03-25  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/worker-proxyproto.c: worker: added support for proxy protocol
+	v1 Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2017-03-25  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* doc/sample.config, src/ocserv-args.def: doc: document limitations
+	of listen-clear-file Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2017-03-24  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/worker-proxyproto.c: worker-proxyproto: improved error message Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2017-03-24  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/main.h, src/tlslib.c, src/tlslib.h, src/worker.h,
+	tests/Makefile.am, tests/cstp-recv.c: tests: added unit test for
+	cstp_recv_nb() Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2017-03-18  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/tlslib.c, src/tlslib.h: cstp_recv_nb: improve operation under
+	receiving from UNIX socket That is, ensure that all possible packet size combinations are
+	correctly received.  Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2017-03-23  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* tests/docker-kerberos/Dockerfile-fedora-client,
+	tests/docker-kerberos/Dockerfile-fedora-kerberos: tests: kerberos
+	tests use F25 Signed-off-by: Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+2017-03-23  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* tests/test-user-config: tests: test-user-config: fixed check for
+	401 error Signed-off-by: Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+2017-03-23  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* src/tlslib.c: Revert "cstp_recv_nb: improve operation under
+	receiving from UNIX socket" This reverts commit 409f114d9ee8aa556059163b612cb8cb45c9aed3.
+
+2017-03-20  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* NEWS: doc update
+
+2017-03-20  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* src/config.c, src/worker-vpn.c: Disable DTLS-PSK protocol when run
+	under a unix socket It is not possible to derive PSK keys when only the TCP CSTP session
+	is available, without the TLS session.  Relates #22 Signed-off-by: Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+2017-03-18  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/tlslib.c: cstp_recv_nb: improve operation under receiving from
+	UNIX socket That is, ensure that all possible packet size combinations are
+	correctly received.  Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2017-03-11  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/defs.h: doc update Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2017-02-22  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* NEWS: doc update Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2017-02-23  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* src/worker-vpn.c: worker-vpn: use TCP_INFO on linux to obtain
+	accurate MTU information This provides a more accurate value than the one obtained using the
+	TCP MSS value. The latter is affected by many factors (such as tcp
+	options), to provide a reliable value.  Signed-off-by: Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+2017-02-22  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* src/worker-vpn.c: worker-vpn: corrected calculation for MTU via
+	TCP MSS Signed-off-by: Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+2017-02-12  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* tests/Makefile.am: tests: added missing file to dist files
+
+2017-02-12  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/ocpasswd/ocpasswd-args.c.in, src/ocpasswd/ocpasswd-args.h.in,
+	src/ocserv-args.c.in, src/ocserv-args.h.in: updated auto-generated
+	files
+
+2017-02-12  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* NEWS, configure.ac: bumped version
+
+2017-01-29  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/occtl/unix.c: occtl: added compatibility with the 0.11.6
+	output Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2017-01-29  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/occtl/occtl.c, src/occtl/unix.c: occtl: renamed cookie to
+	session That reflects more close the actual use of the printed identifier.  Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2017-01-29  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/common/common.c, src/common/common.h, src/worker-auth.c: 
+	worker: do not log real session ID but rather the masked one Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2017-01-29  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/ctl.proto, src/ipc.proto: Explicitly specify the protocol
+	buffers syntax used in .proto files.  Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2017-01-29  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/sec-mod-auth.c: sec-mod: Do not log any received invalid SID Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2017-02-06  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* tests/Makefile.am, tests/docker-ocserv/Dockerfile-fedora-fw,
+	tests/docker-ocserv/Dockerfile-fedora-fw-neg,
+	tests/docker-ocserv/Makefile.am, tests/docker-ocserv/fw-script,
+	tests/docker-ocserv/ocserv-fw-neg.conf,
+	tests/docker-ocserv/ocserv-fw.conf, tests/firewall-neg-test,
+	tests/firewall-test: tests: removed firewall tests These were no longer up-to-date and were not checking the provided
+	functionality.  Signed-off-by: Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+2017-01-29  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* NEWS: doc update
+
+2017-01-25  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/acct/radius.c, src/common/common.c, src/common/common.h,
+	src/ctl.proto, src/ipc.proto, src/main-ctl-unix.c,
+	src/occtl/unix.c, src/sec-mod-auth.c, src/sec-mod-cookies.c,
+	src/sec-mod-db.c, src/sec-mod.h, src/tlslib.h: Do not log the
+	internal session ID nor re-use it in radius Use instead a value derived from it, to avoid access to the
+	debugging log files, or radius result to access to the server.  Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2017-01-29  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* doc/sample.config, src/occtl/occtl-args.def,
+	src/ocpasswd/ocpasswd-args.def, src/ocserv-args.def: doc update [ci
+	skip]
+
+2017-01-28  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* NEWS: doc update
+
+2017-01-28  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/auth/radius.c, src/auth/radius.h: radius: use the reply
+	message from server on rejection That is, log it, and forward it to the worker process in order to
+	deliver it to the user.  Resolves #72 Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2017-01-28  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/auth/pam.c: auth: pam: minor cleanups Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2017-01-28  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* NEWS: doc update Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2017-01-28  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* tests/Makefile.am, tests/certs/user-san-cert.pem,
+	tests/common.sh, tests/data/test-san-cert.config,
+	tests/test-san-cert: tests: Added check for certificate alternative
+	name checking Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2017-01-24  Johannes Sjøkvist <johannes@konsept-it.no>
+
+	* doc/sample.config, src/config.c, src/ocserv-args.def,
+	src/worker-auth.c: Add support for oid 2.5.29.17 RFC822Name This is needed to be able to retreive email from the Subject
+	Alternative Name from the certificate.  Signed-off-by: Johannes SjÃ¸kvist <johannes@konsept-it.no>
+	Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2017-01-26  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* src/acct/radius.c: radius: removed error checking from
+	rc_avpair_add() When a dictionary misses an element, we would previously bail out
+	and not send any following value pairs. With that change we ensure
+	that we send as many value-pairs as are available in the dictionary.  Signed-off-by: Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+2017-01-19  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* src/worker-auth.c, src/worker-kkdcp.c: worker: avoid sending an
+	X-Reason header HTTP/1.x allows sending any arbitrary reason we would like after the
+	error code. We now do that.  Signed-off-by: Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+2017-01-19  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* src/sec-mod.c: sec-mod: reduced level of error processing ... in
+	worker commands This was providing virtually no information since more specific
+	errors are typically printed prior to it.  Signed-off-by: Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+2017-01-18  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* NEWS: doc update
+
+2017-01-18  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* tests/docker-ocserv/Dockerfile-fedora-radius,
+	tests/docker-ocserv/freeradius-users,
+	tests/docker-ocserv/ocserv-radius.conf, tests/radius-test: 
+	radius-test: check whether the special IP values are handled In particular we check whether 255.255.255.254 is correctly and the
+	expected IP is assigned to client.
+
+2017-01-18  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* tests/docker-ocserv/Dockerfile-fedora-fw,
+	tests/docker-ocserv/Dockerfile-fedora-fw-neg,
+	tests/docker-ocserv/Dockerfile-fedora-otp,
+	tests/docker-ocserv/Dockerfile-fedora-proxyproto,
+	tests/docker-ocserv/Dockerfile-fedora-proxyproto-unix,
+	tests/docker-ocserv/Dockerfile-fedora-radius,
+	tests/docker-ocserv/Dockerfile-fedora-radius-config,
+	tests/docker-ocserv/Dockerfile-fedora-radius-group,
+	tests/docker-ocserv/Dockerfile-fedora-reload,
+	tests/docker-ocserv/Dockerfile-fedora-tcp,
+	tests/docker-ocserv/Dockerfile-fedora-unix: tests: use fedora 25 for
+	docker tests Signed-off-by: Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+2017-01-17  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* src/auth/radius.c: radius: handle the special Framed-IP-Address
+	values That is if 0xFFFFFFFF or 0xFFFFFFFE are given ignore the value and
+	ensure they are allocated from our pool.  Signed-off-by: Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+2017-01-10  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* CONTRIBUTING.md, Makefile.am, doc/DCO.txt, doc/Makefile.am: Added
+	contribution guide and require DCO Signed-off-by: Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+2017-01-10  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* NEWS: doc update
+
+2017-01-09  John Thiltges <jthiltges2@unl.edu>
+
+	* src/ocserv-fw: ocserv-fw should send all traffic to the
+	device-specific forwarding chain After adding port-specific rules to FORWARD and creating
+	SEC_FORWARD_CHAIN with route-specific rules, send any remaining
+	FORWARD traffic to SEC_FORWARD_CHAIN.
+
+2017-01-09  John Thiltges <jthiltges2@unl.edu>
+
+	* src/ocserv-fw: ocserv-fw should still create a chain if
+	restrict-user-to-routes is set ocserv-fw only creates SEC_FORWARD_CHAIN if ports are being blocked.
+	This leads to an error if restrict-user-to-routes is used without
+	any port blocking.  Since ocserv-fw is only called if restrict-user-to-routes or -ports
+	is set, remove the conditional check for creating the chain.
+
+2017-01-04  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* src/worker-auth.c: worker: increase the waiting time of cookie
+	auth message This allows the connect-script to run for more time than the default
+	socket timeout, and be limited by the configured authentication
+	timeout ("auth-timeout").
+
+2017-01-04  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* NEWS: doc update
+
+2016-12-21  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* doc/sample.config, src/ocserv-args.def: improved documentation of
+	user-profile option
+
+2016-12-21  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/config.c, src/vpn.h, src/worker-auth.c,
+	src/worker-http-handlers.c, src/worker-http.c: Send "config client"
+	XML field after successful auth This allows to advertise the XML configuration file for the client
+	to download, in recent openconnect clients. In addition made support
+	for the client XML file unconditional (no longer depending on the
+	anyconnect client compatibility flag).
+
+2016-12-23  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/main.c: improved message on file limit update Relates #85
+
+2016-12-23  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/main.c: when setting limits keep untouched the maximum number Relates #85
+
+2016-12-21  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/config.c: Improve output of --version
+
+2016-12-23  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/main-auth.c: optimized loop in check_multiple_users That is return early, once exceeding entries have been detected.
+
+2016-12-22  Mike Miller <mtmiller@debian.org>
+
+	* tests/common.sh: tests: allow running tests with alternate
+	OpenConnect Allow $OPENCONNECT in the caller's environment to override the
+	default openconnect system installation.  Signed-off-by: Mike Miller <mtmiller@debian.org>
+
+2016-12-23  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* : commit 888cbeabc79915d0523f37edbba9899a0f65b469 Author: Mike
+	Miller <mtmiller@debian.org> Date:   Thu Dec 22 18:48:23 2016 -0800
+
+2016-12-18  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* : commit dc222463e0a18292c82143ed308f94c2fbae4340 Author: Mike
+	Miller <mtmiller@debian.org> Date:   Thu Dec 15 15:01:39 2016 -0800
+
+2016-12-16  Mike Miller <mtmiller@debian.org>
+
+	* .gitlab-ci.yml: .gitlab-ci.yml: add gnutls-bin to Debian build
+	environment Signed-off-by: Mike Miller <mtmiller@debian.org>
+
+2016-12-16  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* : commit b18cd67917be218e154868dbdb30516f2cf7d6bb Author: Nikos
+	Mavrogiannopoulos <nmav@redhat.com> Date:   Fri Dec 16 09:37:40 2016
+	+0100
+
+2016-12-15  Mike Miller <mtmiller@debian.org>
+
+	* tests/test-gssapi: tests: allow test-gssapi to run on Debian Check for alternate filename of ntlmssp.conf on Debian-based
+	systems.  Resolves #82 Signed-off-by: Mike Miller <mtmiller@debian.org>
+
+2016-12-15  Mike Miller <mtmiller@debian.org>
+
+	* tests/common.sh: tests: ensure unique temporary config file names Some unit tests share the same ocserv config file. Ensure that the
+	file written and used by each test script has a unique name.  Resolves #83 Signed-off-by: Mike Miller <mtmiller@debian.org>
+
+2016-12-15  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* tests/test-pam, tests/test-pam-noauth: tests: coverted to bash
+	tests which had bashishms
+
+2016-12-14  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* .gitlab-ci.yml: .gitlab-ci.yml: added Debian:stretch build
+
+2016-12-13  Mike Miller <mtmiller@debian.org>
+
+	* configure.ac: configure: discover pam_wrapper directory from
+	pkg-config Signed-off-by: Mike Miller <mtmiller@debian.org>
+
+2016-12-14  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* src/Makefile.am: Makefile.am: corrected typo
+
+2016-12-14  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* README.md: README.md: corrected name of pam-oath in debian Also added packages where were not previously mentioned in Debian.
+
+2016-12-12  Mike Miller <mtmiller@debian.org>
+
+	* README.md, doc/README-radius.md, doc/sample.config,
+	src/occtl/occtl-args.def, src/ocserv-args.def,
+	src/worker-proxyproto.c, tests/docker-kerberos/ocserv.conf,
+	tests/docker-ocserv/ocserv-fw-neg.conf,
+	tests/docker-ocserv/ocserv-fw.conf,
+	tests/docker-ocserv/ocserv-otp.conf,
+	tests/docker-ocserv/ocserv-proxyproto-unix.conf,
+	tests/docker-ocserv/ocserv-proxyproto.conf,
+	tests/docker-ocserv/ocserv-radius-config.conf,
+	tests/docker-ocserv/ocserv-radius-group.conf,
+	tests/docker-ocserv/ocserv-radius.conf,
+	tests/docker-ocserv/ocserv-reload.conf,
+	tests/docker-ocserv/ocserv-unix.conf,
+	tests/docker-ocserv/ocserv.conf: Fix typos in man pages, config
+	files, and comments Signed-off-by: Mike Miller <mtmiller@debian.org>
+
+2016-12-13  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* Makefile.am, configure.ac, src/Makefile.am, src/ccan/Makefile.am,
+	src/common.mk, src/common/Makefile.am, src/occtl/Makefile.am,
+	src/ocpasswd/Makefile.am, src/pcl/Makefile.am,
+	src/protobuf/Makefile.am, tests/Makefile.am: Reverted recursive make
+	in src/ This simplifies the make process and allows for greater parallelism
+	during build.
+
+2016-12-13  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* Makefile.am, configure.ac, doc/Makefile.am,
+	src/occtl/Makefile.am, src/occtl/{args.def => occtl-args.def},
+	src/ocpasswd/Makefile.am, src/ocpasswd/{args.c.in =>
+	ocpasswd-args.c.in}, src/ocpasswd/{args.def => ocpasswd-args.def},
+	src/ocpasswd/{args.h.in => ocpasswd-args.h.in},
+	src/ocpasswd/ocpasswd.c: Use unique names for autogen files This addresses issue in parallel builds caused by autogen using the
+	same temporary files for both occtl and ocpasswd files.  Resolves #76
+
+2016-12-10  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/Makefile.am, src/ocpasswd/Makefile.am: use stamp files to
+	allow parallel build of autogen files Autogen seems to output on the creates files gradually, something
+	that makes 'make' believe that the command is complete prior to the
+	output file being fully populated. The current approach uses stamp
+	files to ensure that no incomplete files are used for compilation.
+
+2016-11-17  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* NEWS: doc update
+
+2016-11-17  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* .gitlab-ci.yml: .gitlab-ci.yml: update autogenerated files prior
+	to make dist
+
+2016-11-17  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* .gitlab-ci.yml: .gitlab-ci.yml: cleanups
+
+2016-11-16  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* Makefile.am, configure.ac, src/Makefile.am,
+	src/ocpasswd/Makefile.am, src/ocpasswd/args.c.in,
+	src/ocpasswd/args.h.in, src/ocserv-args.c.in, src/ocserv-args.h.in: 
+	autogen: store and use auto-generated autogen .in files in git
+	builds This simplifies the generation of the files (delegated to
+	configure), and allows systems without autogen to be used to compile
+	git sources.
+
+2016-11-16  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* .gitlab-ci.yml, src/Makefile.am, src/autogen/ocpasswd-args.c,
+	src/autogen/ocpasswd-args.h, src/autogen/ocserv-args.c,
+	src/autogen/ocserv-args.h, src/ocpasswd/Makefile.am: Revert
+	"autogen: store and use auto-generated autogen files in git builds" This reverts commit d0908f2c522d82126f5482b59a14175d4f47fd9d.
+
+2016-11-15  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* doc/sample.config: sample.config: include switch-to-tcp-timeout
+	directive
 
 2016-11-14  Nikos Mavrogiannopoulos <nmav@gnutls.org>
 

@@ -110,7 +110,9 @@ int der_encode_inplace(uint8_t *raw, unsigned *raw_size, unsigned max_size, int 
 	
 }
 
-#define BUF_SIZE 16*1024
+/* max UDP size */
+#define KKDCP_READ_TIMEOUT 20
+#define BUF_SIZE 64*1024
 int post_kkdcp_handler(worker_st *ws, unsigned http_ver)
 {
 	int ret, e, fd = -1;
@@ -149,14 +151,13 @@ int post_kkdcp_handler(worker_st *ws, unsigned http_ver)
 	buf = talloc_size(ws, length);
 	if (buf == NULL) {
 		oclog(ws, LOG_ERR, "kkdcp: memory error");
-		reason = "memory error";
 		return -1;
 	}
 
 	ret = der_decode((uint8_t*)req->body, req->body_length, buf, &length, realm, sizeof(realm), &e);
 	if (ret < 0) {
 		oclog(ws, LOG_ERR, "kkdcp: DER decoding error: %s", asn1_strerror(e));
-		reason = "DER decoding error";
+		reason = "kkdcp: DER decoding error";
 		goto fail;
 	}
 
@@ -176,7 +177,7 @@ int post_kkdcp_handler(worker_st *ws, unsigned http_ver)
 	if (fd == -1) {
 		e = errno;
 		oclog(ws, LOG_ERR, "kkdcp: socket error: %s", strerror(e));
-		reason = "socket error";
+		reason = "kkdcp: socket error";
 		goto fail;
 	}
 
@@ -184,7 +185,7 @@ int post_kkdcp_handler(worker_st *ws, unsigned http_ver)
 	if (ret == -1) {
 		e = errno;
 		oclog(ws, LOG_ERR, "kkdcp: connect error: %s", strerror(e));
-		reason = "connect error";
+		reason = "kkdcp: error connecting to server";
 		goto fail;
 	}
 
@@ -197,7 +198,7 @@ int post_kkdcp_handler(worker_st *ws, unsigned http_ver)
 		} else {
 			oclog(ws, LOG_ERR, "kkdcp: send error: only %d were sent", ret);
 		}
-		reason = "send error";
+		reason = "kkdcp: error sending to server";
 		goto fail;
 	}
 
@@ -206,7 +207,7 @@ int post_kkdcp_handler(worker_st *ws, unsigned http_ver)
 		if (ret == -1) {
 			e = errno;
 			oclog(ws, LOG_ERR, "kkdcp: recv error: %s", strerror(e));
-			reason = "recv error";
+			reason = "kkdcp: error receiving from server";
 			goto fail;
 		}
 
@@ -216,8 +217,7 @@ int post_kkdcp_handler(worker_st *ws, unsigned http_ver)
 		if (ret < 4) {
 			e = errno;
 			oclog(ws, LOG_ERR, "kkdcp: recv error: %s", strerror(e));
-			reason = "Recv error";
-			ret = -1;
+			reason = "kkdcp: error receiving from server";
 			goto fail;
 		}
 
@@ -225,16 +225,15 @@ int post_kkdcp_handler(worker_st *ws, unsigned http_ver)
 		mlength = ntohl(mlength);
 		if (mlength >= BUF_SIZE-4) {
 			oclog(ws, LOG_ERR, "kkdcp: too long message (%d bytes)", (int)mlength);
-			reason = "recv error";
-			ret = -1;
+			reason = "kkdcp: error receiving from server";
 			goto fail;
 		}
 
-		ret = force_read_timeout(fd, buf+4, mlength, 5);
+		ret = force_read_timeout(fd, buf+4, mlength, KKDCP_READ_TIMEOUT);
 		if (ret == -1) {
 			e = errno;
 			oclog(ws, LOG_ERR, "kkdcp: recv error: %s", strerror(e));
-			reason = "recv error";
+			reason = "kkdcp: error receiving from server";
 			goto fail;
 		}
 		length = ret + 4;
@@ -257,7 +256,7 @@ int post_kkdcp_handler(worker_st *ws, unsigned http_ver)
 	ret = der_encode_inplace(buf, &length, BUF_SIZE, &e);
 	if (ret < 0) {
 		oclog(ws, LOG_ERR, "kkdcp: DER encoding error: %s", asn1_strerror(e));
-		reason = "DER encoding error";
+		reason = "kkdcp: DER encoding error";
 		goto fail;
 	}
 
@@ -293,7 +292,7 @@ int post_kkdcp_handler(worker_st *ws, unsigned http_ver)
 	goto cleanup;
  fail:
 	cstp_printf(ws,
-		   "HTTP/1.%u 502 Bad Gateway\r\nX-Reason: %s\r\n\r\n",
+		   "HTTP/1.%u 502 %s\r\n\r\n",
 		   http_ver, reason);
 	ret = -1;
 

@@ -47,10 +47,26 @@ struct  _StatusRep
   uint32_t stored_tls_sessions;
   uint32_t banned_ips;
   uint32_t secmod_client_entries;
+  uint64_t session_timeouts;
+  uint64_t session_idle_timeouts;
+  uint64_t session_errors;
+  uint64_t sessions_closed;
+  uint64_t kbytes_in;
+  uint64_t kbytes_out;
+  uint32_t min_mtu;
+  uint32_t max_mtu;
+  uint32_t last_reset;
+  uint32_t avg_auth_time;
+  uint32_t avg_session_mins;
+  uint32_t max_auth_time;
+  uint32_t max_session_mins;
+  uint64_t auth_failures;
+  uint64_t total_sessions_closed;
+  uint64_t total_auth_failures;
 };
 #define STATUS_REP__INIT \
  { PROTOBUF_C_MESSAGE_INIT (&status_rep__descriptor) \
-    , 0, 0, 0, 0, 0, 0, 0, 0 }
+    , 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }
 
 
 struct  _BoolMsg
@@ -114,9 +130,9 @@ struct  _UserInfoRep
   size_t n_fw_ports;
   FwPortSt **fw_ports;
   /*
-   * the cookie 
+   * a value derived from the cookie 
    */
-  ProtobufCBinaryData sid;
+  ProtobufCBinaryData safe_id;
 };
 #define USER_INFO_REP__INIT \
  { PROTOBUF_C_MESSAGE_INIT (&user_info_rep__descriptor) \

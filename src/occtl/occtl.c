@@ -56,7 +56,7 @@ static const commands_st commands[] = {
 	ENTRY("reload", NULL, handle_reload_cmd,
 	      "Reloads the server configuration", 1, 1),
 	ENTRY("show status", NULL, handle_status_cmd,
-	      "Prints the status of the server", 1, 1),
+	      "Prints the status and statistics of the server", 1, 1),
 	ENTRY("show users", NULL, handle_list_users_cmd,
 	      "Prints the connected users", 1, 1),
 	ENTRY("show ip bans", NULL, handle_list_banned_ips_cmd,
@@ -65,10 +65,10 @@ static const commands_st commands[] = {
 	      "Prints all the known IP addresses which have points", 1, 1),
 	ENTRY("show iroutes", NULL, handle_list_iroutes_cmd,
 	      "Prints the routes provided by users of the server", 1, 1),
-	ENTRY("show cookies all", NULL, handle_list_all_cookies_cmd,
-	      "Prints all the cookies", 1, 1),
-	ENTRY("show cookies valid", NULL, handle_list_valid_cookies_cmd,
-	      "Prints all the valid for reconnection cookies", 1, 1),
+	ENTRY("show sessions all", NULL, handle_list_all_cookies_cmd,
+	      "Prints all the session IDs", 1, 1),
+	ENTRY("show sessions valid", NULL, handle_list_valid_cookies_cmd,
+	      "Prints all the valid for reconnection sessions", 1, 1),
 	ENTRY("show user", "[NAME]", handle_show_user_cmd,
 	      "Prints information on the specified user", 1, 1),
 	ENTRY("show id", "[ID]", handle_show_id_cmd,
@@ -84,6 +84,10 @@ static const commands_st commands[] = {
 	/* hidden options */
 	ENTRY("?", NULL, handle_help_cmd, "Prints this help", -1, 0),
 	ENTRY("quit", NULL, handle_exit_cmd, "Exits this application", -1, 0),
+	ENTRY("show cookies all", NULL, handle_list_all_cookies_cmd,
+	      "Alias for show sessions all", -1, 1),
+	ENTRY("show cookies valid", NULL, handle_list_valid_cookies_cmd,
+	      "Alias for show sessions valid", -1, 1),
 	{NULL, 0, NULL, NULL}
 };
 
@@ -164,6 +168,7 @@ void usage(void)
 	printf("occtl: [OPTIONS...] {COMMAND}\n\n");
 	printf("  -s --socket-file       Specify the server's occtl socket file\n");
 	printf("  -h --help              Show this help\n");
+	printf("     --debug             Enable more verbose information in some commands\n");
 	printf("  -v --version           Show the program's version\n");
 	printf("  -j --json              Use JSON formatting for output\n");
 	printf("\n");
@@ -176,7 +181,7 @@ void version(void)
 {
 	fprintf(stderr,
 		"OpenConnect server control (occtl) version %s\n", VERSION);
-	fprintf(stderr, "Copyright (C) 2014-2016 Red Hat and others.\n");
+	fprintf(stderr, "Copyright (C) 2014-2017 Red Hat and others.\n");
 	fprintf(stderr,
 		"ocserv comes with ABSOLUTELY NO WARRANTY. This is free software,\n");
 	fprintf(stderr,
@@ -551,14 +556,22 @@ int main(int argc, char **argv)
 
 				argv += 1;
 				argc -= 1;
-
 			} else if (argv[1][1] == 'n'
 			    || (argv[1][1] == '-' && argv[1][2] == 'n')) {
 				params.no_pager = 1;
 
 				argv += 1;
 				argc -= 1;
+			} else if (argv[1][1] == '-' && argv[1][2] == 'd') {
+				params.debug = 1;
 
+				argv += 1;
+				argc -= 1;
+
+				if (argc == 1) {
+					params.json = 0;
+					goto interactive;
+				}
 			} else if (argv[1][1] == 'v'
 			    || (argv[1][1] == '-' && argv[1][2] == 'v')) {
 				version();
@@ -568,6 +581,7 @@ int main(int argc, char **argv)
 				file = talloc_strdup(gl_pool, argv[2]);
 
 				if (argc == 3) {
+					params.json = 0;
 					goto interactive;
 				}
 
@@ -594,7 +608,7 @@ int main(int argc, char **argv)
 		if (line == NULL)
 			return 0;
 
-		handle_cmd(conn, line, 0);
+		handle_cmd(conn, line, &params);
 	}
 
 	conn_close(conn);

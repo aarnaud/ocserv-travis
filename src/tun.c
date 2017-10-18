@@ -48,12 +48,15 @@
 #include <main.h>
 #include <ccan/list/list.h>
 
-#if defined(__FreeBSD__) || defined(__OpenBSD__)
+#if defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__DragonFly__)
 # include <net/if_var.h>
 # include <netinet/in_var.h>
 #endif
 #if defined(__OpenBSD__)
 # include <netinet6/in6_var.h>
+#endif
+#if defined(__DragonFly__)
+# include <net/tun/if_tun.h>
 #endif
 
 #ifdef __linux__
@@ -436,7 +439,7 @@ static int set_network_info(main_server_st * s, struct proc_st *proc)
 #ifndef __linux__
 static int bsd_open_tun(main_server_st * s)
 {
-	int fd;
+	int fd, e;
 	int sock;
 	char tun_name[80];
 	struct ifreq ifr;
@@ -445,6 +448,8 @@ static int bsd_open_tun(main_server_st * s)
 	fd = open("/dev/tun", O_RDWR);
 	if (fd == -1) {
 		/* try iterating */
+		e = errno;
+		mslog(s, NULL, LOG_DEBUG, "cannot open /dev/tun; falling back to iteration: %s", strerror(e));
 		for (unit_nr = 0; unit_nr < 255; unit_nr++) {
 			snprintf(tun_name, sizeof(tun_name), "/dev/tun%d", unit_nr);
 			fd = open(tun_name, O_RDWR);
@@ -452,8 +457,11 @@ static int bsd_open_tun(main_server_st * s)
 			if (fd == -1) {
 				/* cannot open tunXX, try creating it */
 				sock = socket(AF_INET, SOCK_DGRAM, 0);
-				if (sock < 0)
+				if (sock < 0) {
+					e = errno;
+					mslog(s, NULL, LOG_ERR, "cannot create tun socket: %s", strerror(e));
 					return -1;
+				}
 
 				memset(&ifr, 0, sizeof(ifr));
 				strncpy(ifr.ifr_name, tun_name + 5, sizeof(ifr.ifr_name) - 1);
@@ -518,7 +526,6 @@ static int bsd_open_tun(main_server_st * s)
 #endif /* TUNSIFHEAD */
 
 	}
-
 
 	return fd;
 }
@@ -687,7 +694,7 @@ static void reset_ipv4_addr(struct proc_st *proc)
 
 	if (proc->ipv4 == NULL || proc->ipv4->lip_len == 0)
 		return;
-	
+
 #if defined(SIOCDIFADDR) && !defined(__linux__)
 	fd = socket(AF_INET, SOCK_DGRAM, 0);
 

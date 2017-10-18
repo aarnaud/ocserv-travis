@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014, 2015 Red Hat
+ * Copyright (C) 2014-2017 Red Hat
  *
  * Author: Nikos Mavrogiannopoulos
  *
@@ -45,8 +45,13 @@
 #include <sys/un.h>
 #include <assert.h>
 #include "hex.h"
+#include "geoip.h"
 #include <vpn.h>
 #include <base64-helper.h>
+
+/* In JSON output include fields which were no longer available after 0.11.7
+ */
+#define OCSERV_0_11_6_COMPAT 1
 
 static
 int common_info_cmd(UserListRep *args, FILE *out, cmd_params_st *params);
@@ -203,8 +208,10 @@ int handle_status_cmd(struct unix_ctx *ctx, const char *arg, cmd_params_st *para
 	init_reply(&raw);
 
 	print_start_block(stdout, params);
-	if (NO_JSON(params))
-		printf("OpenConnect SSL VPN server\n");
+	if (NO_JSON(params)) {
+		printf("Note: the printed statistics are not real-time; session time\n");
+		printf("as well as RX and TX data are updated on user disconnect\n");
+	}
 
 	ret = send_cmd(ctx, CTL_CMD_STATUS, NULL, NULL, NULL, &raw);
 	if (ret < 0) {
@@ -216,21 +223,73 @@ int handle_status_cmd(struct unix_ctx *ctx, const char *arg, cmd_params_st *para
 		goto error_status;
 
 
-	print_single_value(stdout, params, "Status", rep->status != 0 ? "online" : "error", 1);
+	if (rep->status) {
+		print_separator(stdout, params);
 
-	t = rep->start_time;
-	tm = localtime(&t);
-	print_time_ival7(buf, time(0), t);
-	strftime(str_since, sizeof(str_since), DATE_TIME_FMT, tm);
+		if (NO_JSON(params))
+			printf("General info:\n");
 
-	print_single_value_ex(stdout, params, "Up since", str_since, buf, 1);
-	print_single_value_int(stdout, params, "Clients", rep->active_clients, 1);
-	print_single_value_int(stdout, params, "Sec-mod client entries", rep->secmod_client_entries, 1);
-	print_single_value_int(stdout, params, "IPs in ban list", rep->banned_ips, 1);
-	print_single_value_int(stdout, params, "TLS DB entries", rep->stored_tls_sessions, 1);
-	print_separator(stdout, params);
-	print_single_value_int(stdout, params, "Server PID", rep->pid, 1);
-	print_single_value_int(stdout, params, "Sec-mod PID", rep->sec_mod_pid, 0);
+		print_single_value(stdout, params, "Status", rep->status != 0 ? "online" : "error", 1);
+		print_single_value_int(stdout, params, "Server PID", rep->pid, 1);
+		print_single_value_int(stdout, params, "Sec-mod PID", rep->sec_mod_pid, 0);
+
+		t = rep->start_time;
+		tm = localtime(&t);
+		print_time_ival7(buf, time(0), t);
+		strftime(str_since, sizeof(str_since), DATE_TIME_FMT, tm);
+
+		print_single_value_ex(stdout, params, "Up since", str_since, buf, 1);
+		print_single_value_int(stdout, params, "Active sessions", rep->active_clients, 1);
+		print_single_value_int(stdout, params, "Total sessions", rep->total_sessions_closed, 1);
+		print_single_value_int(stdout, params, "Total authentication failures", rep->total_auth_failures, 1);
+		print_single_value_int(stdout, params, "IPs in ban list", rep->banned_ips, 1);
+		if (params && params->debug) {
+			print_single_value_int(stdout, params, "Sec-mod client entries", rep->secmod_client_entries, 1);
+			print_single_value_int(stdout, params, "TLS DB entries", rep->stored_tls_sessions, 1);
+		}
+
+		print_separator(stdout, params);
+		if (NO_JSON(params))
+			printf("Current stats period:\n");
+
+		t = rep->last_reset;
+		if (t > 0) {
+			tm = localtime(&t);
+			print_time_ival7(buf, time(0), t);
+			strftime(str_since, sizeof(str_since), DATE_TIME_FMT, tm);
+
+			print_single_value_ex(stdout, params, "Last stats reset", str_since, buf, 1);
+		}
+
+		print_single_value_int(stdout, params, "Sessions handled", rep->sessions_closed, 1);
+		print_single_value_int(stdout, params, "Timed out sessions", rep->session_timeouts, 1);
+		print_single_value_int(stdout, params, "Timed out (idle) sessions", rep->session_idle_timeouts, 1);
+		print_single_value_int(stdout, params, "Closed due to error sessions", rep->session_errors, 1);
+		print_single_value_int(stdout, params, "Authentication failures", rep->auth_failures, 1);
+
+		print_time_ival7(buf, rep->avg_auth_time, 0);
+		print_single_value(stdout, params, "Average auth time", buf, 1);
+
+		print_time_ival7(buf, rep->max_auth_time, 0);
+		print_single_value(stdout, params, "Max auth time", buf, 1);
+
+		print_time_ival7(buf, rep->avg_session_mins*60, 0);
+		print_single_value(stdout, params, "Average session time", buf, 1);
+
+		print_time_ival7(buf, rep->max_session_mins*60, 0);
+		print_single_value(stdout, params, "Max session time", buf, 1);
+
+		bytes2human(rep->kbytes_in*1000, buf, sizeof(buf), "");
+		print_single_value(stdout, params, "RX", buf, 1);
+		bytes2human(rep->kbytes_out*1000, buf, sizeof(buf), "");
+		print_single_value(stdout, params, "TX", buf, 1);
+
+		if (rep->min_mtu > 0)
+			print_single_value_int(stdout, params, "Min MTU", rep->min_mtu, 1);
+		if (rep->max_mtu > 0)
+			print_single_value_int(stdout, params, "Max MTU", rep->max_mtu, 1);
+	}
+
 	print_end_block(stdout, params, 0);
 
 	status_rep__free_unpacked(rep, &pa);
@@ -611,15 +670,18 @@ int handle_list_users_cmd(struct unix_ctx *ctx, const char *arg, cmd_params_st *
 	return ret;
 }
 
-static char *cookie_to_str(void *cookie, unsigned cookie_size, unsigned small)
+static char *shorten(void *cookie, unsigned cookie_size, unsigned small)
 {
-	static char psid[BASE64_ENCODE_RAW_LENGTH(SID_SIZE) + 1];
+	static char psid[SAFE_ID_SIZE];
 
-	assert(cookie_size == SID_SIZE);
-	oc_base64_encode((char *)cookie, cookie_size, (char *)psid, sizeof(psid));
+	assert(cookie_size <= SAFE_ID_SIZE);
+	memcpy(psid, cookie, cookie_size);
 
 	if (small)
 		psid[6] = 0;
+	else
+		psid[SAFE_ID_SIZE-1] = 0;
+
 	return psid;
 }
 
@@ -647,7 +709,7 @@ void cookie_list(struct unix_ctx *ctx, SecmListCookiesReplyMsg *rep, FILE *out, 
 		/* add header */
 		if (i == 0) {
 			fprintf(out, "%6s %8s %8s %14s %24s %8s %8s\n",
-				"cookie", "user", "group", "ip", "user agent", "updated", "status");
+				"session", "user", "group", "ip", "user agent", "updated", "status");
 		}
 
 		t = rep->cookies[i]->last_modified;
@@ -665,7 +727,7 @@ void cookie_list(struct unix_ctx *ctx, SecmListCookiesReplyMsg *rep, FILE *out, 
 
 
 		fprintf(out, "%.6s %8s %8s %14s %.24s %8s %8s\n",
-			cookie_to_str(rep->cookies[i]->sid.data, rep->cookies[i]->sid.len, 1),
+			shorten(rep->cookies[i]->safe_id.data, rep->cookies[i]->safe_id.len, 1),
 			username, groupname, rep->cookies[i]->remote_ip,
 			rep->cookies[i]->user_agent, tmpbuf, ps_status_to_str(rep->cookies[i]->status, 1));
 	}
@@ -988,7 +1050,8 @@ int common_info_cmd(UserListRep * args, FILE *out, cmd_params_st *params)
 			print_pair_value(out, params, "Device", args->user[i]->tun, "MTU", int2str(tmpbuf, args->user[i]->mtu), 1);
 		else
 			print_single_value(out, params, "Device", args->user[i]->tun, 1);
-		print_pair_value(out, params, "Remote IP", args->user[i]->ip, "Local Device IP", args->user[i]->local_dev_ip, 1);
+		print_pair_value(out, params, "Remote IP", args->user[i]->ip, "Location", geo_lookup(args->user[i]->ip, tmpbuf, sizeof(tmpbuf)), 1);
+		print_single_value(out, params, "Local Device IP", args->user[i]->local_dev_ip, 1);
 
 		if (args->user[i]->local_ip != NULL && args->user[i]->local_ip[0] != 0 &&
 		    args->user[i]->remote_ip != NULL && args->user[i]->remote_ip[0] != 0) {
@@ -1029,9 +1092,15 @@ int common_info_cmd(UserListRep * args, FILE *out, cmd_params_st *params)
 		print_time_ival7(tmpbuf, time(0), t);
 		print_single_value_ex(out, params, "Connected at", str_since, tmpbuf, 1);
 
-		if (HAVE_JSON(params))
-			print_single_value(out, params, "Raw cookie", cookie_to_str(args->user[i]->sid.data, args->user[i]->sid.len, 0), 1);
-		print_single_value(out, params, "Cookie", cookie_to_str(args->user[i]->sid.data, args->user[i]->sid.len, 1), 1);
+		if (HAVE_JSON(params)) {
+			print_single_value(out, params, "Full session", shorten(args->user[i]->safe_id.data, args->user[i]->safe_id.len, 0), 1);
+#ifdef OCSERV_0_11_6_COMPAT
+			/* compat with previous versions */
+			print_single_value(out, params, "Raw cookie", shorten(args->user[i]->safe_id.data, args->user[i]->safe_id.len, 0), 1);
+			print_single_value(out, params, "Cookie", shorten(args->user[i]->safe_id.data, args->user[i]->safe_id.len, 1), 1);
+#endif
+		}
+		print_single_value(out, params, "Session", shorten(args->user[i]->safe_id.data, args->user[i]->safe_id.len, 1), 1);
 
 		print_single_value(out, params, "TLS ciphersuite", args->user[i]->tls_ciphersuite, 1);
 		print_single_value(out, params, "DTLS cipher", args->user[i]->dtls_ciphersuite, 1);
@@ -1148,8 +1217,15 @@ int cookie_info_cmd(SecmListCookiesReplyMsg * args, FILE *out, cmd_params_st *pa
 
 		print_single_value(out, params, "Last Modified", str_since, 1);
 
-		print_single_value(out, params, "Raw cookie", cookie_to_str(args->cookies[i]->sid.data, args->cookies[i]->sid.len, 0), 1);
-		print_single_value(out, params, "Cookie", cookie_to_str(args->cookies[i]->sid.data, args->cookies[i]->sid.len, 1), 1);
+#ifdef OCSERV_0_11_6_COMPAT
+		if (HAVE_JSON(params)) {
+			/* compat with previous versions */
+			print_single_value(out, params, "Raw cookie", shorten(args->cookies[i]->safe_id.data, args->cookies[i]->safe_id.len, 0), 1);
+			print_single_value(out, params, "Cookie", shorten(args->cookies[i]->safe_id.data, args->cookies[i]->safe_id.len, 1), 1);
+		}
+#endif
+		print_single_value(out, params, "Full session", shorten(args->cookies[i]->safe_id.data, args->cookies[i]->safe_id.len, 0), 1);
+		print_single_value(out, params, "Session", shorten(args->cookies[i]->safe_id.data, args->cookies[i]->safe_id.len, 1), 1);
 
 		print_end_block(out, params, i<(args->n_cookies-1)?1:0);
 
@@ -1237,11 +1313,11 @@ int handle_events_cmd(struct unix_ctx *ctx, const char *arg, cmd_params_st *para
 	uint32_t slength;
 	unsigned data_size;
 	uint8_t *data = NULL;
-	char *groupname;
 	char tmpbuf[MAX_TMPSTR_SIZE];
 	PROTOBUF_ALLOCATOR(pa, ctx);
 	struct termios tio_old, tio_new;
 	SIGHANDLER_T old_sighandler;
+	fd_set rfds;
 
 	init_reply(&raw);
 
@@ -1270,10 +1346,11 @@ int handle_events_cmd(struct unix_ctx *ctx, const char *arg, cmd_params_st *para
 
 	/* start listening for updates */
 	while(1) {
-		fd_set rfds;
-
 		FD_ZERO(&rfds);
+#ifndef __clang_analyzer__
+		/* for some reason this confuses the clang static analyzer */
 		FD_SET(STDIN_FILENO, &rfds);
+#endif
 		FD_SET(ctx->fd, &rfds);
 
 		ret = select(MAX(STDIN_FILENO,ctx->fd)+1, &rfds, NULL, NULL, NULL);
@@ -1352,10 +1429,6 @@ int handle_events_cmd(struct unix_ctx *ctx, const char *arg, cmd_params_st *para
 		if (HAVE_JSON(params)) {
 			common_info_cmd(rep2->user, stdout, params);
 		} else {
-			groupname = rep2->user->user[0]->groupname;
-			if (groupname == NULL || groupname[0] == 0)
-				groupname = NO_GROUP;
-
 			if (rep2->connected) {
 				printf("connected user '%s' (%u) from %s with IP %s\n",
 					rep2->user->user[0]->username,

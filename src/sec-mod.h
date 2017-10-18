@@ -25,6 +25,7 @@
 #include <ccan/htable/htable.h>
 #include <nettle/base64.h>
 #include <tlslib.h>
+#include "common/common.h"
 
 #define SESSION_STR "(session: %.6s)"
 #define MAX_GROUPS 32
@@ -39,6 +40,11 @@ typedef struct sec_mod_st {
 	int cmd_fd_sync;
 
 	tls_sess_db_st tls_db;
+	uint64_t auth_failures; /* auth failures since the last update (SECM_CLI_STATS) we sent to main */
+	uint32_t max_auth_time; /* the maximum time spent in (sucessful) authentication */
+	uint32_t avg_auth_time; /* the average time spent in (sucessful) authentication */
+	uint32_t total_authentications; /* successful authentications: to calculate the average above */
+	time_t last_stats_reset;
 
 	struct config_mod_st *config_module;
 } sec_mod_st;
@@ -60,7 +66,7 @@ typedef struct common_auth_init_st {
 typedef struct common_acct_info_st {
 	char username[MAX_USERNAME_SIZE*2];
 	char groupname[MAX_GROUPNAME_SIZE]; /* the owner's group */
-	char psid[BASE64_ENCODE_RAW_LENGTH(SID_SIZE) + 1]; /* printable */
+	char safe_id[SAFE_ID_SIZE]; /* an ID to be sent to external apps - printable */
 	char remote_ip[MAX_IP_STR];
 	char user_agent[MAX_AGENT_NAME];
 	char our_ip[MAX_IP_STR];

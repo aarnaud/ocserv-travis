@@ -31,7 +31,7 @@
 #include <gnutls/crypto.h>	/* for random */
 #include <sys/types.h>
 #include <sys/stat.h>
-#include "args.h"
+#include "ocpasswd-args.h"
 
 /* Gnulib portability files. */
 #include <getpass.h>
@@ -258,10 +258,14 @@ lock_user(const char *fpasswd, const char *username)
 				continue;
 			p++;
 
-			l = p-line;
-			fwrite(line, 1, l, fd2);
-			fputc('!', fd2);
-			fwrite(p, 1, len-l, fd2);
+			if(*p != '!') {
+				l = p-line;
+				fwrite(line, 1, l, fd2);
+				fputc('!', fd2);
+				fwrite(p, 1, len-l, fd2);
+			} else {
+				fwrite(line, 1, len, fd2);
+			}
 		} else {
 			fwrite(line, 1, len, fd2);
 		}

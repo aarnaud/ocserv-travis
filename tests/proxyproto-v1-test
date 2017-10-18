@@ -27,9 +27,9 @@ if [ $? != 0 ];then
 fi
 
 PORT_OCSERV=443
-CONFIG="fw-neg"
-IMAGE=ocserv-fw-neg-test
-IMAGE_NAME=test_fw_neg_ocserv
+CONFIG="proxyproto-v1"
+IMAGE=proxyproto-v1-test
+IMAGE_NAME=test_proxyproto_v1_ocserv
 TMP=$IMAGE_NAME.tmp
 PIDFILE="$IMAGE_NAME.$$.pid.tmp"
 . ./docker-common.sh
@@ -42,7 +42,6 @@ fi
 
 echo "ocserv image was run"
 #wait for ocserv to server
-
 sleep 5
 
 get_ip
@@ -54,20 +53,6 @@ echo "Detected IP: $IP"
 
 if test ! -z "$QUIT_ON_INIT";then
 	exit 0
-fi
-
-$ECHO_E "testuser" >pass-full$TMP
-$OPENCONNECT $IP:$PORT_OCSERV -u test --passwd-on-stdin -v --servercert=d66b507ae074d03b02eafca40d35f87dd81049d3 --cookieonly < pass-full$TMP
-if test $? = 0;then
-	echo "Authentication with wrong password succeeded!"
-	stop
-fi
-
-$ECHO_E "test" >pass-full$TMP
-$OPENCONNECT $IP:$PORT_OCSERV -u testuser --passwd-on-stdin -v --servercert=d66b507ae074d03b02eafca40d35f87dd81049d3 --cookieonly < pass-full$TMP
-if test $? = 0;then
-	echo "Authentication with wrong username succeeded!"
-	stop
 fi
 
 echo ""
@@ -89,43 +74,72 @@ if [ ! -f $PIDFILE ];then
 fi
 
 PID=`cat $PIDFILE`
+rm -f $PIDFILE
 
-ping -w 5 192.168.31.1 -s 400
+# The client IP depends on the username so it shouldn't change.
+ping -w 5 192.168.194.1
 if test $? != 0;then
 	kill -INT $PID
 	echo "Cannot ping ocserv"
 	stop
 fi
 
-retrieve_user_info test "Restricted to routes: True"
+ping -w 5 192.168.194.1 -s 1500
+if test $? != 0;then
+	kill -INT $PID
+	echo "Cannot ping ocserv"
+	stop
+fi
+
+retrieve_user_info test
 
 # There is an issue in nuttcp that makes it crash under docker if
 # /proc/sys/net/ipv4/tcp_adv_win_scale does not exist.
 if test "$FEDORA" = 1;then
-
-nuttcp -p 6001 -P 6000 -T 10 -t 192.168.31.1
-if test $? = 0;then
-	echo "Could access ocserv although we are blocked"
-	kill -INT $PID
-	stop
-	exit 1
-fi
-
-nuttcp -T 10 -t 192.168.31.1
+nuttcp -T 10 -t 192.168.194.1
 if test $? != 0;then
-	echo "Could not access ocserv"
+	echo "Cannot send to ocserv"
 	kill -INT $PID
 	stop
-	exit 1
+	exit 77
 fi
 
-
+nuttcp -T 10 -r 192.168.194.1
+if test $? != 0;then
+	echo "Cannot recv from ocserv"
+	kill -INT $PID
+	stop
+	exit 77
+fi
 fi
 
 sleep 2
 
 kill -INT $PID
-rm -f $PIDFILE
+
+sleep 3
+
+check_for_file /tmp/connect/ok
+if test $? != 0;then
+	echo "There was an issue in connect script"
+	stop
+fi
+$DOCKER exec $IMAGE_NAME cat /tmp/connect/ok
+
+sleep 4
+
+#check whether /tmp/disconnect/ok was created
+check_for_file /tmp/disconnect/not-ok
+if test $? = 0;then
+	echo "There was an issue"
+	stop
+fi
+
+check_for_file /tmp/disconnect/ok
+if test $? != 0;then
+	echo "There was an issue getting stats"
+	ret=77
+fi
 
 $DOCKER stop $IMAGE_NAME
 $DOCKER rm $IMAGE_NAME

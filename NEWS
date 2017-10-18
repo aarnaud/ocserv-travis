@@ -1,3 +1,56 @@
+* Version 0.11.9 (released 2017-10-09)
+- Fixed bug which caused the acceptable of invalid IPv4 address as valid (#112).
+- Fixed compatibility with gnutls 3.3.8 (used in debian jessie) by avoiding the
+  use of the 'VERS-ALL' priority string which was introduced in 3.3.24.
+- Fixed null pointer dereference when parsing locked accounts in plain
+  password authentication.
+- Add support for RSA-PSS and Ed25519 private keys when used with GnuTLS 3.6.0.
+- ocpasswd: when locking an account multiple times, add the '!' character
+  only once. Based on patch by Frank Huang.
+
+
+* Version 0.11.8 (released 2017-05-03)
+- Corrected MTU adjustment due to MSS. Previously the MSS value was converted to a
+  lower than the actual MTU resulting to worse (lower) MTU estimates.
+  Furthermore, in Linux systems switch to the more accurate TCP_INFO socket option to
+  obtain MTU information.
+- Disable DTLS-PSK when operating under a unix socket. When no TLS session is available
+  it is not possible to derive PSK keys.
+- Fixed several issues in KKDCP protocol support; i.e., allow larger messages
+  than 16kb and address issue with communication with main.
+- Added support for haproxy's protocol v1 format. That allows to utilize
+  ocserv, even with servers supporting the old protocol.
+- Report additional statistics to syslog and occtl, such as authentication failures,
+  total sessions handled, total amount of data transferred, average session and
+  authentication time.
+- Fix crash in main on sending reply message to worker for a banned IP.
+- Increased the default max-ban-score to 8 wrong password attempts, and
+  increased the default IP ban time to 20 minutes.
+- occtl: added support for displaying user country in 'show user' output.
+  Requires occtl to be compiled with libgeoip support.
+
+
+* Version 0.11.7 (released 2017-02-12)
+- Fixed compilation issue related to autogen file re-use
+- Send the "vpn-profile-manifest" fields after successful authentication.
+  This enables openconnect to retrieve the XML configuration.
+- Enhanced the cert-user-oid config option to read the SAN(rfc822name) value.
+  In that case, the username will be read from the subject alternative
+  name of the certificate rather than the DN. Based on patch by Johannes Sjøkvist.
+- Do not log the real internal session ID as part of occtl or radius, 
+  but instead log a masked value. That ensures that access to log files or
+  radius is not sufficient to access an existing session.
+- radius: Handle the special Framed-IP-Address values 255.255.255.254 and
+  255.255.255.255. They are currently handled as if the Framed-IP-Address
+  field was not present; in both cases the server assigns the address.
+- radius: on wrong password, forward any message received by radius server
+  to the client as prompt. That utilizes the Reply-Message field as sent
+  by the server.
+- ocserv-fw: Fixed chain creation when only restrict-user-to-routes is set,
+  and end all traffic to the device-specific forwarding chain. Patch by
+  John Thiltges.
+
+
 * Version 0.11.6 (released 2016-11-14)
 - ocserv: Improved detection of mobile clients (for android and ios clients)
 - ocserv: Update the worker's ID on Radius accounting messages.

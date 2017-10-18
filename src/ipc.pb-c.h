@@ -32,8 +32,10 @@ typedef struct _SecAuthInitMsg SecAuthInitMsg;
 typedef struct _SecAuthContMsg SecAuthContMsg;
 typedef struct _SecAuthReplyMsg SecAuthReplyMsg;
 typedef struct _SecOpMsg SecOpMsg;
+typedef struct _SecGetPkMsg SecGetPkMsg;
 typedef struct _SecmSessionOpenMsg SecmSessionOpenMsg;
 typedef struct _SecmSessionCloseMsg SecmSessionCloseMsg;
+typedef struct _SecmStatsMsg SecmStatsMsg;
 typedef struct _SecmSessionReplyMsg SecmSessionReplyMsg;
 typedef struct _CookieIntMsg CookieIntMsg;
 typedef struct _SecmListCookiesReplyMsg SecmListCookiesReplyMsg;
@@ -272,20 +274,10 @@ struct  _CliStatsMsg
   char *ipv6;
   protobuf_c_boolean has_discon_reason;
   uint32_t discon_reason;
-  /*
-   * from sec-mod to main only 
-   */
-  protobuf_c_boolean has_secmod_client_entries;
-  uint32_t secmod_client_entries;
-  /*
-   * from sec-mod to main only 
-   */
-  protobuf_c_boolean has_secmod_tlsdb_entries;
-  uint32_t secmod_tlsdb_entries;
 };
 #define CLI_STATS_MSG__INIT \
  { PROTOBUF_C_MESSAGE_INIT (&cli_stats_msg__descriptor) \
-    , 0, 0, 0,{0,NULL}, 0, NULL, NULL, NULL, 0,0, 0,0, 0,0 }
+    , 0, 0, 0,{0,NULL}, 0, NULL, NULL, NULL, 0,0 }
 
 
 /*
@@ -452,10 +444,22 @@ struct  _SecOpMsg
   protobuf_c_boolean has_key_idx;
   uint32_t key_idx;
   ProtobufCBinaryData data;
+  uint32_t sig;
 };
 #define SEC_OP_MSG__INIT \
  { PROTOBUF_C_MESSAGE_INIT (&sec_op_msg__descriptor) \
-    , 0,0, {0,NULL} }
+    , 0,0, {0,NULL}, 0 }
+
+
+struct  _SecGetPkMsg
+{
+  ProtobufCMessage base;
+  uint32_t key_idx;
+  uint32_t pk;
+};
+#define SEC_GET_PK_MSG__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&sec_get_pk_msg__descriptor) \
+    , 0, 0 }
 
 
 /*
@@ -501,6 +505,32 @@ struct  _SecmSessionCloseMsg
 
 
 /*
+ * SECM_STATS 
+ */
+struct  _SecmStatsMsg
+{
+  ProtobufCMessage base;
+  uint32_t secmod_client_entries;
+  uint32_t secmod_tlsdb_entries;
+  /*
+   * failures since last update 
+   */
+  uint64_t secmod_auth_failures;
+  /*
+   * average auth time in seconds 
+   */
+  uint32_t secmod_avg_auth_time;
+  /*
+   * max auth time in seconds 
+   */
+  uint32_t secmod_max_auth_time;
+};
+#define SECM_STATS_MSG__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&secm_stats_msg__descriptor) \
+    , 0, 0, 0, 0, 0 }
+
+
+/*
  * SECM_SESSION_REPLY 
  */
 struct  _SecmSessionReplyMsg
@@ -526,7 +556,7 @@ struct  _SecmSessionReplyMsg
 struct  _CookieIntMsg
 {
   ProtobufCMessage base;
-  ProtobufCBinaryData sid;
+  ProtobufCBinaryData safe_id;
   protobuf_c_boolean session_is_open;
   protobuf_c_boolean tls_auth_ok;
   uint32_t last_modified;
@@ -881,6 +911,25 @@ SecOpMsg *
 void   sec_op_msg__free_unpacked
                      (SecOpMsg *message,
                       ProtobufCAllocator *allocator);
+/* SecGetPkMsg methods */
+void   sec_get_pk_msg__init
+                     (SecGetPkMsg         *message);
+size_t sec_get_pk_msg__get_packed_size
+                     (const SecGetPkMsg   *message);
+size_t sec_get_pk_msg__pack
+                     (const SecGetPkMsg   *message,
+                      uint8_t             *out);
+size_t sec_get_pk_msg__pack_to_buffer
+                     (const SecGetPkMsg   *message,
+                      ProtobufCBuffer     *buffer);
+SecGetPkMsg *
+       sec_get_pk_msg__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data);
+void   sec_get_pk_msg__free_unpacked
+                     (SecGetPkMsg *message,
+                      ProtobufCAllocator *allocator);
 /* SecmSessionOpenMsg methods */
 void   secm_session_open_msg__init
                      (SecmSessionOpenMsg         *message);
@@ -918,6 +967,25 @@ SecmSessionCloseMsg *
                       const uint8_t       *data);
 void   secm_session_close_msg__free_unpacked
                      (SecmSessionCloseMsg *message,
+                      ProtobufCAllocator *allocator);
+/* SecmStatsMsg methods */
+void   secm_stats_msg__init
+                     (SecmStatsMsg         *message);
+size_t secm_stats_msg__get_packed_size
+                     (const SecmStatsMsg   *message);
+size_t secm_stats_msg__pack
+                     (const SecmStatsMsg   *message,
+                      uint8_t             *out);
+size_t secm_stats_msg__pack_to_buffer
+                     (const SecmStatsMsg   *message,
+                      ProtobufCBuffer     *buffer);
+SecmStatsMsg *
+       secm_stats_msg__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data);
+void   secm_stats_msg__free_unpacked
+                     (SecmStatsMsg *message,
                       ProtobufCAllocator *allocator);
 /* SecmSessionReplyMsg methods */
 void   secm_session_reply_msg__init
@@ -1029,11 +1097,17 @@ typedef void (*SecAuthReplyMsg_Closure)
 typedef void (*SecOpMsg_Closure)
                  (const SecOpMsg *message,
                   void *closure_data);
+typedef void (*SecGetPkMsg_Closure)
+                 (const SecGetPkMsg *message,
+                  void *closure_data);
 typedef void (*SecmSessionOpenMsg_Closure)
                  (const SecmSessionOpenMsg *message,
                   void *closure_data);
 typedef void (*SecmSessionCloseMsg_Closure)
                  (const SecmSessionCloseMsg *message,
+                  void *closure_data);
+typedef void (*SecmStatsMsg_Closure)
+                 (const SecmStatsMsg *message,
                   void *closure_data);
 typedef void (*SecmSessionReplyMsg_Closure)
                  (const SecmSessionReplyMsg *message,
@@ -1069,8 +1143,10 @@ extern const ProtobufCMessageDescriptor sec_auth_init_msg__descriptor;
 extern const ProtobufCMessageDescriptor sec_auth_cont_msg__descriptor;
 extern const ProtobufCMessageDescriptor sec_auth_reply_msg__descriptor;
 extern const ProtobufCMessageDescriptor sec_op_msg__descriptor;
+extern const ProtobufCMessageDescriptor sec_get_pk_msg__descriptor;
 extern const ProtobufCMessageDescriptor secm_session_open_msg__descriptor;
 extern const ProtobufCMessageDescriptor secm_session_close_msg__descriptor;
+extern const ProtobufCMessageDescriptor secm_stats_msg__descriptor;
 extern const ProtobufCMessageDescriptor secm_session_reply_msg__descriptor;
 extern const ProtobufCMessageDescriptor cookie_int_msg__descriptor;
 extern const ProtobufCMessageDescriptor secm_list_cookies_reply_msg__descriptor;

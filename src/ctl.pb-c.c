@@ -437,7 +437,7 @@ void   unban_req__free_unpacked
   assert(message->base.descriptor == &unban_req__descriptor);
   protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
 }
-static const ProtobufCFieldDescriptor status_rep__field_descriptors[8] =
+static const ProtobufCFieldDescriptor status_rep__field_descriptors[24] =
 {
   {
     "status",
@@ -535,22 +535,230 @@ static const ProtobufCFieldDescriptor status_rep__field_descriptors[8] =
     0,             /* flags */
     0,NULL,NULL    /* reserved1,reserved2, etc */
   },
+  {
+    "session_timeouts",
+    10,
+    PROTOBUF_C_LABEL_REQUIRED,
+    PROTOBUF_C_TYPE_UINT64,
+    0,   /* quantifier_offset */
+    offsetof(StatusRep, session_timeouts),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "session_idle_timeouts",
+    11,
+    PROTOBUF_C_LABEL_REQUIRED,
+    PROTOBUF_C_TYPE_UINT64,
+    0,   /* quantifier_offset */
+    offsetof(StatusRep, session_idle_timeouts),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "session_errors",
+    12,
+    PROTOBUF_C_LABEL_REQUIRED,
+    PROTOBUF_C_TYPE_UINT64,
+    0,   /* quantifier_offset */
+    offsetof(StatusRep, session_errors),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "sessions_closed",
+    13,
+    PROTOBUF_C_LABEL_REQUIRED,
+    PROTOBUF_C_TYPE_UINT64,
+    0,   /* quantifier_offset */
+    offsetof(StatusRep, sessions_closed),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "kbytes_in",
+    14,
+    PROTOBUF_C_LABEL_REQUIRED,
+    PROTOBUF_C_TYPE_UINT64,
+    0,   /* quantifier_offset */
+    offsetof(StatusRep, kbytes_in),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "kbytes_out",
+    15,
+    PROTOBUF_C_LABEL_REQUIRED,
+    PROTOBUF_C_TYPE_UINT64,
+    0,   /* quantifier_offset */
+    offsetof(StatusRep, kbytes_out),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "min_mtu",
+    16,
+    PROTOBUF_C_LABEL_REQUIRED,
+    PROTOBUF_C_TYPE_UINT32,
+    0,   /* quantifier_offset */
+    offsetof(StatusRep, min_mtu),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "max_mtu",
+    17,
+    PROTOBUF_C_LABEL_REQUIRED,
+    PROTOBUF_C_TYPE_UINT32,
+    0,   /* quantifier_offset */
+    offsetof(StatusRep, max_mtu),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "last_reset",
+    18,
+    PROTOBUF_C_LABEL_REQUIRED,
+    PROTOBUF_C_TYPE_UINT32,
+    0,   /* quantifier_offset */
+    offsetof(StatusRep, last_reset),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "avg_auth_time",
+    19,
+    PROTOBUF_C_LABEL_REQUIRED,
+    PROTOBUF_C_TYPE_UINT32,
+    0,   /* quantifier_offset */
+    offsetof(StatusRep, avg_auth_time),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "avg_session_mins",
+    20,
+    PROTOBUF_C_LABEL_REQUIRED,
+    PROTOBUF_C_TYPE_UINT32,
+    0,   /* quantifier_offset */
+    offsetof(StatusRep, avg_session_mins),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "max_auth_time",
+    21,
+    PROTOBUF_C_LABEL_REQUIRED,
+    PROTOBUF_C_TYPE_UINT32,
+    0,   /* quantifier_offset */
+    offsetof(StatusRep, max_auth_time),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "max_session_mins",
+    22,
+    PROTOBUF_C_LABEL_REQUIRED,
+    PROTOBUF_C_TYPE_UINT32,
+    0,   /* quantifier_offset */
+    offsetof(StatusRep, max_session_mins),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "auth_failures",
+    23,
+    PROTOBUF_C_LABEL_REQUIRED,
+    PROTOBUF_C_TYPE_UINT64,
+    0,   /* quantifier_offset */
+    offsetof(StatusRep, auth_failures),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "total_sessions_closed",
+    24,
+    PROTOBUF_C_LABEL_REQUIRED,
+    PROTOBUF_C_TYPE_UINT64,
+    0,   /* quantifier_offset */
+    offsetof(StatusRep, total_sessions_closed),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "total_auth_failures",
+    25,
+    PROTOBUF_C_LABEL_REQUIRED,
+    PROTOBUF_C_TYPE_UINT64,
+    0,   /* quantifier_offset */
+    offsetof(StatusRep, total_auth_failures),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
 };
 static const unsigned status_rep__field_indices_by_name[] = {
   3,   /* field[3] = active_clients */
+  21,   /* field[21] = auth_failures */
+  17,   /* field[17] = avg_auth_time */
+  18,   /* field[18] = avg_session_mins */
   6,   /* field[6] = banned_ips */
+  12,   /* field[12] = kbytes_in */
+  13,   /* field[13] = kbytes_out */
+  16,   /* field[16] = last_reset */
+  19,   /* field[19] = max_auth_time */
+  15,   /* field[15] = max_mtu */
+  20,   /* field[20] = max_session_mins */
+  14,   /* field[14] = min_mtu */
   1,   /* field[1] = pid */
   2,   /* field[2] = sec_mod_pid */
   7,   /* field[7] = secmod_client_entries */
+  10,   /* field[10] = session_errors */
+  9,   /* field[9] = session_idle_timeouts */
+  8,   /* field[8] = session_timeouts */
+  11,   /* field[11] = sessions_closed */
   4,   /* field[4] = start_time */
   0,   /* field[0] = status */
   5,   /* field[5] = stored_tls_sessions */
+  23,   /* field[23] = total_auth_failures */
+  22,   /* field[22] = total_sessions_closed */
 };
 static const ProtobufCIntRange status_rep__number_ranges[2 + 1] =
 {
   { 1, 0 },
   { 7, 5 },
-  { 0, 8 }
+  { 0, 24 }
 };
 const ProtobufCMessageDescriptor status_rep__descriptor =
 {
@@ -560,7 +768,7 @@ const ProtobufCMessageDescriptor status_rep__descriptor =
   "StatusRep",
   "",
   sizeof(StatusRep),
-  8,
+  24,
   status_rep__field_descriptors,
   status_rep__field_indices_by_name,
   2,  status_rep__number_ranges,
@@ -981,12 +1189,12 @@ static const ProtobufCFieldDescriptor user_info_rep__field_descriptors[32] =
     0,NULL,NULL    /* reserved1,reserved2, etc */
   },
   {
-    "sid",
+    "safe_id",
     32,
     PROTOBUF_C_LABEL_REQUIRED,
     PROTOBUF_C_TYPE_BYTES,
     0,   /* quantifier_offset */
-    offsetof(UserInfoRep, sid),
+    offsetof(UserInfoRep, safe_id),
     NULL,
     NULL,
     0,             /* flags */
@@ -1019,7 +1227,7 @@ static const unsigned user_info_rep__field_indices_by_name[] = {
   29,   /* field[29] = restrict_to_routes */
   19,   /* field[19] = routes */
   15,   /* field[15] = rx_per_sec */
-  31,   /* field[31] = sid */
+  31,   /* field[31] = safe_id */
   12,   /* field[12] = status */
   13,   /* field[13] = tls_ciphersuite */
   4,   /* field[4] = tun */
