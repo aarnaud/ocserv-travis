@@ -206,6 +206,7 @@ int process_worker_packet(void *pool, int cfd, pid_t pid, sec_mod_st * sec, cmd_
 	gnutls_datum_t data, out;
 	int ret;
 	SecOpMsg *op;
+	SecGetPkMsg *pkm;
 	PROTOBUF_ALLOCATOR(pa, pool);
 
 	seclog(sec, LOG_DEBUG, "cmd [size=%d] %s\n", (int)buffer_size,
@@ -214,6 +215,73 @@ int process_worker_packet(void *pool, int cfd, pid_t pid, sec_mod_st * sec, cmd_
 	data.size = buffer_size;
 
 	switch (cmd) {
+#if GNUTLS_VERSION_NUMBER >= 0x030600
+	case CMD_SEC_GET_PK:
+		pkm = sec_get_pk_msg__unpack(&pa, data.size, data.data);
+		if (pkm == NULL) {
+			seclog(sec, LOG_INFO, "error unpacking sec get pk\n");
+			return -1;
+		}
+
+		i = pkm->key_idx;
+		if (i >= sec->key_size) {
+			seclog(sec, LOG_INFO,
+			       "received out-of-bounds key index (%d)", i);
+			return -1;
+		}
+
+		pkm->pk = gnutls_privkey_get_pk_algorithm(sec->key[i], NULL);
+
+		ret = send_msg(pool, cfd, CMD_SEC_GET_PK, pkm,
+			       (pack_size_func) sec_get_pk_msg__get_packed_size,
+			       (pack_func) sec_get_pk_msg__pack);
+
+		sec_get_pk_msg__free_unpacked(pkm, &pa);
+
+		if (ret < 0) {
+			seclog(sec, LOG_INFO, "error sending reply: %s",
+			       gnutls_strerror(ret));
+			return -1;
+		}
+
+		return ret;
+
+	case CMD_SEC_SIGN_DATA:
+	case CMD_SEC_SIGN_HASH:
+		op = sec_op_msg__unpack(&pa, data.size, data.data);
+		if (op == NULL) {
+			seclog(sec, LOG_INFO, "error unpacking sec op\n");
+			return -1;
+		}
+
+		i = op->key_idx;
+		if (op->has_key_idx == 0 || i >= sec->key_size) {
+			seclog(sec, LOG_INFO,
+			       "received out-of-bounds key index (%d)", i);
+			return -1;
+		}
+
+		data.data = op->data.data;
+		data.size = op->data.len;
+
+		if (cmd == CMD_SEC_SIGN_DATA) {
+			ret = gnutls_privkey_sign_data2(sec->key[i], op->sig, 0, &data, &out);
+		} else {
+			ret = gnutls_privkey_sign_hash2(sec->key[i], op->sig, 0, &data, &out);
+		}
+		sec_op_msg__free_unpacked(op, &pa);
+
+		if (ret < 0) {
+			seclog(sec, LOG_INFO, "error in crypto operation: %s",
+			       gnutls_strerror(ret));
+			return -1;
+		}
+
+		ret = handle_op(pool, cfd, sec, cmd, out.data, out.size);
+		gnutls_free(out.data);
+
+		return ret;
+#endif
 	case CMD_SEC_SIGN:
 	case CMD_SEC_DECRYPT:
 		op = sec_op_msg__unpack(&pa, data.size, data.data);
@@ -499,6 +567,43 @@ static void handle_sigterm(int signo)
 	need_exit = 1;
 }
 
+static void send_stats_to_main(sec_mod_st *sec)
+{
+	int ret;
+	time_t now = time(0);
+	SecmStatsMsg msg = SECM_STATS_MSG__INIT;
+
+	if (sec->perm_config->stats_reset_time != 0 &&
+	    now - sec->last_stats_reset > sec->perm_config->stats_reset_time) {
+		sec->auth_failures = 0;
+		sec->avg_auth_time = 0;
+		sec->max_auth_time = 0;
+		sec->last_stats_reset = now;
+	}
+
+	msg.secmod_client_entries = sec_mod_client_db_elems(sec);
+	msg.secmod_tlsdb_entries = sec->tls_db.entries;
+	msg.secmod_auth_failures = sec->auth_failures;
+	msg.secmod_avg_auth_time = sec->avg_auth_time;
+	msg.secmod_max_auth_time = sec->max_auth_time;
+	/* we only report the number of failures since last call */
+	sec->auth_failures = 0;
+
+	/* the following two are not resettable */
+	msg.secmod_client_entries = sec_mod_client_db_elems(sec);
+	msg.secmod_tlsdb_entries = sec->tls_db.entries;
+
+	ret = send_msg(sec, sec->cmd_fd, CMD_SECM_STATS, &msg,
+			(pack_size_func) secm_stats_msg__get_packed_size,
+			(pack_func) secm_stats_msg__pack);
+	if (ret < 0) {
+		seclog(sec, LOG_ERR, "error in sending statistics to main");
+		return;
+	}
+
+	return;
+}
+
 static void check_other_work(sec_mod_st *sec)
 {
 	if (need_exit) {
@@ -526,6 +631,7 @@ static void check_other_work(sec_mod_st *sec)
 		seclog(sec, LOG_DEBUG, "performing maintenance");
 		cleanup_client_entries(sec);
 		expire_tls_sessions(sec);
+		send_stats_to_main(sec);
 		seclog(sec, LOG_DEBUG, "active sessions %d", 
 			sec_mod_client_db_elems(sec));
 		alarm(MAINTAINANCE_TIME);
@@ -618,7 +724,7 @@ int serve_request_worker(sec_mod_st *sec, int cfd, pid_t pid, uint8_t *buffer, u
 
 	ret = process_worker_packet(pool, cfd, pid, sec, cmd, buffer, ret);
 	if (ret < 0) {
-		seclog(sec, LOG_INFO, "error processing data for '%s' command (%d)", cmd_request_to_str(cmd), ret);
+		seclog(sec, LOG_DEBUG, "error processing '%s' command (%d)", cmd_request_to_str(cmd), ret);
 	}
 	
  leave:

@@ -90,33 +90,31 @@ host_triplet = @host@
 @LOCAL_TALLOC_TRUE@am__append_1 = -I$(top_srcdir)/src/ccan/talloc
 @LOCAL_HTTP_PARSER_TRUE@am__append_2 = -I$(top_srcdir)/src/http-parser/
 @LOCAL_PROTOBUF_C_TRUE@am__append_3 = -I$(top_builddir)/src/protobuf/
+@GNUTLS_WITH_NEW_CERTS_TRUE@am__append_4 = server-cert-ed25519 server-cert-rsa-pss
 
 #docker tests
+@ENABLE_DOCKER_TESTS_TRUE@@ENABLE_ROOT_TESTS_TRUE@am__append_5 = radius-test full-test unix-test kerberos-test radius-test-config \
+@ENABLE_DOCKER_TESTS_TRUE@@ENABLE_ROOT_TESTS_TRUE@	proxyproto-test proxyproto-v1-test proxyproto-unix-test otp-test  \
+@ENABLE_DOCKER_TESTS_TRUE@@ENABLE_ROOT_TESTS_TRUE@	reload-info-test radius-group-test
+
 
 #other root requiring tests
-@ENABLE_ROOT_TESTS_TRUE@am__append_4 = radius-test full-test unix-test \
-@ENABLE_ROOT_TESTS_TRUE@	kerberos-test radius-test-config \
-@ENABLE_ROOT_TESTS_TRUE@	proxyproto-test proxyproto-unix-test \
-@ENABLE_ROOT_TESTS_TRUE@	otp-test firewall-test \
-@ENABLE_ROOT_TESTS_TRUE@	firewall-neg-test reload-info-test \
-@ENABLE_ROOT_TESTS_TRUE@	radius-group-test test-iroute \
-@ENABLE_ROOT_TESTS_TRUE@	test-multi-cookie test-pass-script \
-@ENABLE_ROOT_TESTS_TRUE@	test-pass-opt-cert test-cookie-timeout \
-@ENABLE_ROOT_TESTS_TRUE@	test-cookie-timeout-2 test-explicit-ip \
-@ENABLE_ROOT_TESTS_TRUE@	test-gssapi test-cookie-invalidation \
-@ENABLE_ROOT_TESTS_TRUE@	test-user-config test-append-routes \
-@ENABLE_ROOT_TESTS_TRUE@	test-ban
-@HAVE_CWRAP_TRUE@am__append_5 = test-pass test-pass-cert test-cert test-group-pass \
-@HAVE_CWRAP_TRUE@	test-pass-group-cert test-pass-group-cert-no-pass test-sighup \
-@HAVE_CWRAP_TRUE@	test-enc-key test-sighup-key-change test-get-cert
+@ENABLE_ROOT_TESTS_TRUE@am__append_6 = test-iroute test-multi-cookie test-pass-script test-pass-opt-cert \
+@ENABLE_ROOT_TESTS_TRUE@	test-cookie-timeout test-cookie-timeout-2 test-explicit-ip \
+@ENABLE_ROOT_TESTS_TRUE@	test-cookie-invalidation test-user-config test-append-routes test-ban
 
-@HAVE_CWRAP_PAM_TRUE@@HAVE_CWRAP_TRUE@am__append_6 = test-pam test-pam-noauth
+@HAVE_CWRAP_TRUE@am__append_7 = test-pass test-pass-cert test-cert test-group-pass \
+@HAVE_CWRAP_TRUE@	test-pass-group-cert test-pass-group-cert-no-pass test-sighup \
+@HAVE_CWRAP_TRUE@	test-enc-key test-sighup-key-change test-get-cert test-san-cert \
+@HAVE_CWRAP_TRUE@	test-gssapi
+
+@HAVE_CWRAP_PAM_TRUE@@HAVE_CWRAP_TRUE@am__append_8 = test-pam test-pam-noauth
 check_PROGRAMS = str-test$(EXEEXT) str-test2$(EXEEXT) \
 	ipv4-prefix$(EXEEXT) ipv6-prefix$(EXEEXT) \
 	kkdcp-parsing$(EXEEXT) json-escape$(EXEEXT) ban-ips$(EXEEXT) \
 	port-parsing$(EXEEXT) human_addr$(EXEEXT) \
 	valid-hostname$(EXEEXT) url-escape$(EXEEXT) \
-	html-escape$(EXEEXT)
+	html-escape$(EXEEXT) cstp-recv$(EXEEXT) proxyproto-v1$(EXEEXT)
 subdir = tests
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/libopts/m4/libopts.m4 \
@@ -170,62 +168,64 @@ CONFIG_CLEAN_VPATH_FILES =
 am_ban_ips_OBJECTS = ban_ips-ban-ips.$(OBJEXT)
 ban_ips_OBJECTS = $(am_ban_ips_OBJECTS)
 am__DEPENDENCIES_1 =
-ban_ips_DEPENDENCIES = ../gl/libgnu.a $(am__DEPENDENCIES_1) \
-	../src/ccan/libccan.a
+am__DEPENDENCIES_2 = ../gl/libgnu.a $(am__DEPENDENCIES_1) \
+	../src/libccan.a $(am__DEPENDENCIES_1)
+ban_ips_DEPENDENCIES = $(am__DEPENDENCIES_2)
+am_cstp_recv_OBJECTS = cstp_recv-cstp-recv.$(OBJEXT)
+cstp_recv_OBJECTS = $(am_cstp_recv_OBJECTS)
+cstp_recv_DEPENDENCIES = $(am__DEPENDENCIES_2) $(am__DEPENDENCIES_1)
+cstp_recv_LINK = $(CCLD) $(cstp_recv_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
+	$(LDFLAGS) -o $@
 am_html_escape_OBJECTS = html-escape.$(OBJEXT)
 html_escape_OBJECTS = $(am_html_escape_OBJECTS)
-html_escape_DEPENDENCIES = ../gl/libgnu.a $(am__DEPENDENCIES_1) \
-	../src/ccan/libccan.a
+html_escape_DEPENDENCIES = $(am__DEPENDENCIES_2)
 am_human_addr_OBJECTS = human_addr-human_addr.$(OBJEXT)
 human_addr_OBJECTS = $(am_human_addr_OBJECTS)
-human_addr_DEPENDENCIES = ../gl/libgnu.a $(am__DEPENDENCIES_1) \
-	../src/ccan/libccan.a
+human_addr_DEPENDENCIES = $(am__DEPENDENCIES_2)
 am_ipv4_prefix_OBJECTS = ipv4-prefix.$(OBJEXT)
 ipv4_prefix_OBJECTS = $(am_ipv4_prefix_OBJECTS)
-ipv4_prefix_DEPENDENCIES = ../gl/libgnu.a $(am__DEPENDENCIES_1) \
-	../src/ccan/libccan.a
+ipv4_prefix_DEPENDENCIES = $(am__DEPENDENCIES_2)
 am_ipv6_prefix_OBJECTS = ipv6-prefix.$(OBJEXT)
 ipv6_prefix_OBJECTS = $(am_ipv6_prefix_OBJECTS)
-ipv6_prefix_DEPENDENCIES = ../gl/libgnu.a $(am__DEPENDENCIES_1) \
-	../src/ccan/libccan.a
+ipv6_prefix_DEPENDENCIES = $(am__DEPENDENCIES_2)
 am_json_escape_OBJECTS = json-escape.$(OBJEXT)
 json_escape_OBJECTS = $(am_json_escape_OBJECTS)
-json_escape_DEPENDENCIES = ../gl/libgnu.a $(am__DEPENDENCIES_1) \
-	../src/ccan/libccan.a
+json_escape_DEPENDENCIES = $(am__DEPENDENCIES_2)
 am_kkdcp_parsing_OBJECTS = kkdcp-parsing.$(OBJEXT)
 kkdcp_parsing_OBJECTS = $(am_kkdcp_parsing_OBJECTS)
-kkdcp_parsing_DEPENDENCIES = ../gl/libgnu.a $(am__DEPENDENCIES_1) \
-	../src/ccan/libccan.a
+kkdcp_parsing_DEPENDENCIES = $(am__DEPENDENCIES_2)
 port_parsing_SOURCES = port-parsing.c
 port_parsing_OBJECTS = port-parsing.$(OBJEXT)
-port_parsing_DEPENDENCIES = ../gl/libgnu.a $(am__DEPENDENCIES_1) \
-	../src/ccan/libccan.a
+port_parsing_DEPENDENCIES = $(am__DEPENDENCIES_2)
+proxyproto_v1_SOURCES = proxyproto-v1.c
+proxyproto_v1_OBJECTS = proxyproto-v1.$(OBJEXT)
+proxyproto_v1_LDADD = $(LDADD)
+proxyproto_v1_DEPENDENCIES = ../gl/libgnu.a $(am__DEPENDENCIES_1) \
+	../src/libccan.a $(am__DEPENDENCIES_1)
 am_str_test_OBJECTS = str-test.$(OBJEXT)
 str_test_OBJECTS = $(am_str_test_OBJECTS)
-str_test_DEPENDENCIES = ../gl/libgnu.a $(am__DEPENDENCIES_1) \
-	../src/ccan/libccan.a
+str_test_DEPENDENCIES = $(am__DEPENDENCIES_2)
 am_str_test2_OBJECTS = str-test2.$(OBJEXT)
 str_test2_OBJECTS = $(am_str_test2_OBJECTS)
-str_test2_DEPENDENCIES = ../gl/libgnu.a $(am__DEPENDENCIES_1) \
-	../src/ccan/libccan.a
+str_test2_DEPENDENCIES = $(am__DEPENDENCIES_2)
 am_url_escape_OBJECTS = url-escape.$(OBJEXT)
 url_escape_OBJECTS = $(am_url_escape_OBJECTS)
-url_escape_DEPENDENCIES = ../gl/libgnu.a $(am__DEPENDENCIES_1) \
-	../src/ccan/libccan.a
+url_escape_DEPENDENCIES = $(am__DEPENDENCIES_2)
 valid_hostname_SOURCES = valid-hostname.c
 valid_hostname_OBJECTS = valid-hostname.$(OBJEXT)
-valid_hostname_DEPENDENCIES = ../gl/libgnu.a
-am__dist_check_SCRIPTS_DIST = ocpasswd-test radius-test full-test \
-	unix-test kerberos-test radius-test-config proxyproto-test \
-	proxyproto-unix-test otp-test firewall-test firewall-neg-test \
+valid_hostname_DEPENDENCIES = $(am__DEPENDENCIES_2)
+am__dist_check_SCRIPTS_DIST = ocpasswd-test server-cert-ed25519 \
+	server-cert-rsa-pss radius-test full-test unix-test \
+	kerberos-test radius-test-config proxyproto-test \
+	proxyproto-v1-test proxyproto-unix-test otp-test \
 	reload-info-test radius-group-test test-iroute \
 	test-multi-cookie test-pass-script test-pass-opt-cert \
 	test-cookie-timeout test-cookie-timeout-2 test-explicit-ip \
-	test-gssapi test-cookie-invalidation test-user-config \
-	test-append-routes test-ban test-pass test-pass-cert test-cert \
-	test-group-pass test-pass-group-cert \
-	test-pass-group-cert-no-pass test-sighup test-enc-key \
-	test-sighup-key-change test-get-cert test-pam test-pam-noauth
+	test-cookie-invalidation test-user-config test-append-routes \
+	test-ban test-pass test-pass-cert test-cert test-group-pass \
+	test-pass-group-cert test-pass-group-cert-no-pass test-sighup \
+	test-enc-key test-sighup-key-change test-get-cert \
+	test-san-cert test-gssapi test-pam test-pam-noauth
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -258,16 +258,18 @@ AM_V_CCLD = $(am__v_CCLD_@AM_V@)
 am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
-SOURCES = $(ban_ips_SOURCES) $(html_escape_SOURCES) \
-	$(human_addr_SOURCES) $(ipv4_prefix_SOURCES) \
-	$(ipv6_prefix_SOURCES) $(json_escape_SOURCES) \
-	$(kkdcp_parsing_SOURCES) port-parsing.c $(str_test_SOURCES) \
-	$(str_test2_SOURCES) $(url_escape_SOURCES) valid-hostname.c
-DIST_SOURCES = $(ban_ips_SOURCES) $(html_escape_SOURCES) \
-	$(human_addr_SOURCES) $(ipv4_prefix_SOURCES) \
-	$(ipv6_prefix_SOURCES) $(json_escape_SOURCES) \
-	$(kkdcp_parsing_SOURCES) port-parsing.c $(str_test_SOURCES) \
-	$(str_test2_SOURCES) $(url_escape_SOURCES) valid-hostname.c
+SOURCES = $(ban_ips_SOURCES) $(cstp_recv_SOURCES) \
+	$(html_escape_SOURCES) $(human_addr_SOURCES) \
+	$(ipv4_prefix_SOURCES) $(ipv6_prefix_SOURCES) \
+	$(json_escape_SOURCES) $(kkdcp_parsing_SOURCES) port-parsing.c \
+	proxyproto-v1.c $(str_test_SOURCES) $(str_test2_SOURCES) \
+	$(url_escape_SOURCES) valid-hostname.c
+DIST_SOURCES = $(ban_ips_SOURCES) $(cstp_recv_SOURCES) \
+	$(html_escape_SOURCES) $(human_addr_SOURCES) \
+	$(ipv4_prefix_SOURCES) $(ipv6_prefix_SOURCES) \
+	$(json_escape_SOURCES) $(kkdcp_parsing_SOURCES) port-parsing.c \
+	proxyproto-v1.c $(str_test_SOURCES) $(str_test2_SOURCES) \
+	$(url_escape_SOURCES) valid-hostname.c
 RECURSIVE_TARGETS = all-recursive check-recursive cscopelist-recursive \
 	ctags-recursive dvi-recursive html-recursive info-recursive \
 	install-data-recursive install-dvi-recursive \
@@ -572,6 +574,7 @@ CWRAP_CFLAGS = @CWRAP_CFLAGS@
 CWRAP_LIBS = @CWRAP_LIBS@
 CWRAP_PAM_CFLAGS = @CWRAP_PAM_CFLAGS@
 CWRAP_PAM_LIBS = @CWRAP_PAM_LIBS@
+CWRAP_PAM_MODULES = @CWRAP_PAM_MODULES@
 CYGPATH_W = @CYGPATH_W@
 DEFS = @DEFS@
 DEPDIR = @DEPDIR@
@@ -589,6 +592,8 @@ ERRNO_H = @ERRNO_H@
 EXEEXT = @EXEEXT@
 GCOV = @GCOV@
 GENHTML = @GENHTML@
+GEOIP_CFLAGS = @GEOIP_CFLAGS@
+GEOIP_LIBS = @GEOIP_LIBS@
 GNULIB_ATOLL = @GNULIB_ATOLL@
 GNULIB_CALLOC_POSIX = @GNULIB_CALLOC_POSIX@
 GNULIB_CANONICALIZE_FILE_NAME = @GNULIB_CANONICALIZE_FILE_NAME@
@@ -1254,16 +1259,17 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AM_CPPFLAGS = $(am__append_1) $(am__append_2) $(am__append_3) \
-	$(LIBOPTS_CFLAGS) $(LIBTALLOC_CFLAGS) -I$(top_srcdir)/src/ \
-	-I$(top_builddir)/src/ -I$(top_srcdir)/src/common/ \
-	-I$(top_builddir)/src/common/ -I$(top_srcdir)/gl/ \
-	-I$(top_builddir)/gl/ -I$(top_srcdir)/ -I$(top_builddir)/
+	$(LIBOPTS_CFLAGS) $(LIBTALLOC_CFLAGS) $(CODE_COVERAGE_CFLAGS) \
+	-I$(top_srcdir)/src/ -I$(top_builddir)/src/ \
+	-I$(top_srcdir)/src/common/ -I$(top_builddir)/src/common/ \
+	-I$(top_srcdir)/gl/ -I$(top_builddir)/gl/ -I$(top_srcdir)/ \
+	-I$(top_builddir)/
 @NEED_LIBOPTS_FALSE@NEEDED_LIBOPTS = $(LIBOPTS_LDADD)
 @NEED_LIBOPTS_TRUE@NEEDED_LIBOPTS = $(top_builddir)/libopts/libopts.a
 @LOCAL_HTTP_PARSER_FALSE@NEEDED_HTTP_PARSER_LIBS = $(HTTP_PARSER_LIBS)
 @LOCAL_HTTP_PARSER_TRUE@NEEDED_HTTP_PARSER_LIBS = 
 @LOCAL_PROTOBUF_C_FALSE@NEEDED_LIBPROTOBUF_LIBS = $(LIBPROTOBUF_C_LIBS)
-@LOCAL_PROTOBUF_C_TRUE@NEEDED_LIBPROTOBUF_LIBS = $(top_builddir)/src/protobuf/libprotobuf.a
+@LOCAL_PROTOBUF_C_TRUE@NEEDED_LIBPROTOBUF_LIBS = libprotobuf.a
 EXTRA_DIST = certs/ca-key.pem certs/ca.pem common.sh certs/server-cert.pem \
 	certs/server-key.pem data/test1.config data/pam/nss-group.in data/pam/nss-passwd.in \
 	data/pam/users.oath.templ data/test-pam-noauth.config data/test-pam.passwd \
@@ -1282,35 +1288,42 @@ EXTRA_DIST = certs/ca-key.pem certs/ca.pem common.sh certs/server-cert.pem \
 	certs/server-key-ossl.pem certs/server-key-p8.pem proxyproto-unix-test certs/user-cn.pem \
 	certs/user-cert-testuser.pem test-stress data/test-user-config.config user-config/testuser \
 	data/test-sighup-key-change.config data/test-sighup-key-change.config user-config/testipnet \
-	certs/user-cert-testipnet.pem certs/user-cert-invalid.pem certs/server-cert-ca.pem
+	certs/user-cert-testipnet.pem certs/user-cert-invalid.pem certs/server-cert-ca.pem \
+	data/test-san-cert.config certs/user-san-cert.pem \
+	certs/server-cert-ed25519.pem certs/server-key-ed25519.pem data/test-ed25519.config \
+	certs/server-cert-rsa-pss.pem certs/server-key-rsa-pss.pem data/test-rsa-pss.config
 
 SUBDIRS = docker-ocserv docker-kerberos
 dist_check_SCRIPTS = ocpasswd-test $(am__append_4) $(am__append_5) \
-	$(am__append_6)
+	$(am__append_6) $(am__append_7) $(am__append_8)
+LDADD = ../gl/libgnu.a $(LIBTALLOC_LIBS) ../src/libccan.a $(CODE_COVERAGE_LDFLAGS)
 kkdcp_parsing_SOURCES = kkdcp-parsing.c
-kkdcp_parsing_LDADD = ../gl/libgnu.a $(LIBTALLOC_LIBS) ../src/ccan/libccan.a
+kkdcp_parsing_LDADD = $(LDADD)
+cstp_recv_SOURCES = cstp-recv.c
+cstp_recv_CFLAGS = $(CFLAGS) $(LIBGNUTLS_CFLAGS) $(LIBTALLOC_CFLAGS)
+cstp_recv_LDADD = $(LDADD) $(LIBGNUTLS_LIBS)
 json_escape_SOURCES = json-escape.c
-json_escape_LDADD = ../gl/libgnu.a $(LIBTALLOC_LIBS) ../src/ccan/libccan.a
+json_escape_LDADD = $(LDADD)
 url_escape_SOURCES = url-escape.c
-url_escape_LDADD = ../gl/libgnu.a $(LIBTALLOC_LIBS) ../src/ccan/libccan.a
+url_escape_LDADD = $(LDADD)
 html_escape_SOURCES = html-escape.c
-html_escape_LDADD = ../gl/libgnu.a $(LIBTALLOC_LIBS) ../src/ccan/libccan.a
+html_escape_LDADD = $(LDADD)
 ipv4_prefix_SOURCES = ipv4-prefix.c
-ipv4_prefix_LDADD = ../gl/libgnu.a $(LIBTALLOC_LIBS) ../src/ccan/libccan.a
-ban_ips_CPPFLAGS = $(AM_CPPFLAGS) -DDISABLE_LOGS
+ipv4_prefix_LDADD = $(LDADD)
+ban_ips_CPPFLAGS = $(AM_CPPFLAGS) -DUNDER_TEST
 ban_ips_SOURCES = ban-ips.c
-ban_ips_LDADD = ../gl/libgnu.a $(LIBTALLOC_LIBS) ../src/ccan/libccan.a
+ban_ips_LDADD = $(LDADD)
 str_test_SOURCES = str-test.c
-str_test_LDADD = ../gl/libgnu.a $(LIBTALLOC_LIBS) ../src/ccan/libccan.a
+str_test_LDADD = $(LDADD)
 str_test2_SOURCES = str-test2.c
-str_test2_LDADD = ../gl/libgnu.a $(LIBTALLOC_LIBS) ../src/ccan/libccan.a
+str_test2_LDADD = $(LDADD)
 ipv6_prefix_SOURCES = ipv6-prefix.c
-ipv6_prefix_LDADD = ../gl/libgnu.a $(LIBTALLOC_LIBS) ../src/ccan/libccan.a
+ipv6_prefix_LDADD = $(LDADD)
 human_addr_CPPFLAGS = $(AM_CPPFLAGS) 
 human_addr_SOURCES = human_addr.c
-human_addr_LDADD = ../gl/libgnu.a $(LIBTALLOC_LIBS) ../src/ccan/libccan.a
-valid_hostname_LDADD = ../gl/libgnu.a
-port_parsing_LDADD = ../gl/libgnu.a $(LIBTALLOC_LIBS) ../src/ccan/libccan.a
+human_addr_LDADD = $(LDADD)
+valid_hostname_LDADD = $(LDADD)
+port_parsing_LDADD = $(LDADD)
 TESTS = $(dist_check_SCRIPTS) $(check_PROGRAMS)
 TESTS_ENVIRONMENT = srcdir="$(srcdir)" \
 	top_builddir="$(top_builddir)"
@@ -1357,6 +1370,10 @@ ban-ips$(EXEEXT): $(ban_ips_OBJECTS) $(ban_ips_DEPENDENCIES) $(EXTRA_ban_ips_DEP
 	@rm -f ban-ips$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(ban_ips_OBJECTS) $(ban_ips_LDADD) $(LIBS)
 
+cstp-recv$(EXEEXT): $(cstp_recv_OBJECTS) $(cstp_recv_DEPENDENCIES) $(EXTRA_cstp_recv_DEPENDENCIES) 
+	@rm -f cstp-recv$(EXEEXT)
+	$(AM_V_CCLD)$(cstp_recv_LINK) $(cstp_recv_OBJECTS) $(cstp_recv_LDADD) $(LIBS)
+
 html-escape$(EXEEXT): $(html_escape_OBJECTS) $(html_escape_DEPENDENCIES) $(EXTRA_html_escape_DEPENDENCIES) 
 	@rm -f html-escape$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(html_escape_OBJECTS) $(html_escape_LDADD) $(LIBS)
@@ -1385,6 +1402,10 @@ port-parsing$(EXEEXT): $(port_parsing_OBJECTS) $(port_parsing_DEPENDENCIES) $(EX
 	@rm -f port-parsing$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(port_parsing_OBJECTS) $(port_parsing_LDADD) $(LIBS)
 
+proxyproto-v1$(EXEEXT): $(proxyproto_v1_OBJECTS) $(proxyproto_v1_DEPENDENCIES) $(EXTRA_proxyproto_v1_DEPENDENCIES) 
+	@rm -f proxyproto-v1$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(proxyproto_v1_OBJECTS) $(proxyproto_v1_LDADD) $(LIBS)
+
 str-test$(EXEEXT): $(str_test_OBJECTS) $(str_test_DEPENDENCIES) $(EXTRA_str_test_DEPENDENCIES) 
 	@rm -f str-test$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(str_test_OBJECTS) $(str_test_LDADD) $(LIBS)
@@ -1408,6 +1429,7 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ban_ips-ban-ips.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cstp_recv-cstp-recv.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/html-escape.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/human_addr-human_addr.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ipv4-prefix.Po@am__quote@
@@ -1415,6 +1437,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/json-escape.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/kkdcp-parsing.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/port-parsing.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/proxyproto-v1.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/str-test.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/str-test2.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/url-escape.Po@am__quote@
@@ -1449,6 +1472,20 @@ ban_ips-ban-ips.obj: ban-ips.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='ban-ips.c' object='ban_ips-ban-ips.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ban_ips_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ban_ips-ban-ips.obj `if test -f 'ban-ips.c'; then $(CYGPATH_W) 'ban-ips.c'; else $(CYGPATH_W) '$(srcdir)/ban-ips.c'; fi`
+
+cstp_recv-cstp-recv.o: cstp-recv.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(cstp_recv_CFLAGS) $(CFLAGS) -MT cstp_recv-cstp-recv.o -MD -MP -MF $(DEPDIR)/cstp_recv-cstp-recv.Tpo -c -o cstp_recv-cstp-recv.o `test -f 'cstp-recv.c' || echo '$(srcdir)/'`cstp-recv.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/cstp_recv-cstp-recv.Tpo $(DEPDIR)/cstp_recv-cstp-recv.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='cstp-recv.c' object='cstp_recv-cstp-recv.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(cstp_recv_CFLAGS) $(CFLAGS) -c -o cstp_recv-cstp-recv.o `test -f 'cstp-recv.c' || echo '$(srcdir)/'`cstp-recv.c
+
+cstp_recv-cstp-recv.obj: cstp-recv.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(cstp_recv_CFLAGS) $(CFLAGS) -MT cstp_recv-cstp-recv.obj -MD -MP -MF $(DEPDIR)/cstp_recv-cstp-recv.Tpo -c -o cstp_recv-cstp-recv.obj `if test -f 'cstp-recv.c'; then $(CYGPATH_W) 'cstp-recv.c'; else $(CYGPATH_W) '$(srcdir)/cstp-recv.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/cstp_recv-cstp-recv.Tpo $(DEPDIR)/cstp_recv-cstp-recv.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='cstp-recv.c' object='cstp_recv-cstp-recv.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(cstp_recv_CFLAGS) $(CFLAGS) -c -o cstp_recv-cstp-recv.obj `if test -f 'cstp-recv.c'; then $(CYGPATH_W) 'cstp-recv.c'; else $(CYGPATH_W) '$(srcdir)/cstp-recv.c'; fi`
 
 human_addr-human_addr.o: human_addr.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(human_addr_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT human_addr-human_addr.o -MD -MP -MF $(DEPDIR)/human_addr-human_addr.Tpo -c -o human_addr-human_addr.o `test -f 'human_addr.c' || echo '$(srcdir)/'`human_addr.c
@@ -1711,6 +1748,20 @@ ocpasswd-test.log: ocpasswd-test
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
+server-cert-ed25519.log: server-cert-ed25519
+	@p='server-cert-ed25519'; \
+	b='server-cert-ed25519'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+server-cert-rsa-pss.log: server-cert-rsa-pss
+	@p='server-cert-rsa-pss'; \
+	b='server-cert-rsa-pss'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
 radius-test.log: radius-test
 	@p='radius-test'; \
 	b='radius-test'; \
@@ -1753,6 +1804,13 @@ proxyproto-test.log: proxyproto-test
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
+proxyproto-v1-test.log: proxyproto-v1-test
+	@p='proxyproto-v1-test'; \
+	b='proxyproto-v1-test'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
 proxyproto-unix-test.log: proxyproto-unix-test
 	@p='proxyproto-unix-test'; \
 	b='proxyproto-unix-test'; \
@@ -1763,20 +1821,6 @@ proxyproto-unix-test.log: proxyproto-unix-test
 otp-test.log: otp-test
 	@p='otp-test'; \
 	b='otp-test'; \
-	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
-	--log-file $$b.log --trs-file $$b.trs \
-	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
-	"$$tst" $(AM_TESTS_FD_REDIRECT)
-firewall-test.log: firewall-test
-	@p='firewall-test'; \
-	b='firewall-test'; \
-	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
-	--log-file $$b.log --trs-file $$b.trs \
-	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
-	"$$tst" $(AM_TESTS_FD_REDIRECT)
-firewall-neg-test.log: firewall-neg-test
-	@p='firewall-neg-test'; \
-	b='firewall-neg-test'; \
 	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
@@ -1840,13 +1884,6 @@ test-cookie-timeout-2.log: test-cookie-timeout-2
 test-explicit-ip.log: test-explicit-ip
 	@p='test-explicit-ip'; \
 	b='test-explicit-ip'; \
-	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
-	--log-file $$b.log --trs-file $$b.trs \
-	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
-	"$$tst" $(AM_TESTS_FD_REDIRECT)
-test-gssapi.log: test-gssapi
-	@p='test-gssapi'; \
-	b='test-gssapi'; \
 	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
@@ -1949,6 +1986,20 @@ test-get-cert.log: test-get-cert
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
+test-san-cert.log: test-san-cert
+	@p='test-san-cert'; \
+	b='test-san-cert'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+test-gssapi.log: test-gssapi
+	@p='test-gssapi'; \
+	b='test-gssapi'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
 test-pam.log: test-pam
 	@p='test-pam'; \
 	b='test-pam'; \
@@ -2043,6 +2094,20 @@ url-escape.log: url-escape$(EXEEXT)
 html-escape.log: html-escape$(EXEEXT)
 	@p='html-escape$(EXEEXT)'; \
 	b='html-escape'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+cstp-recv.log: cstp-recv$(EXEEXT)
+	@p='cstp-recv$(EXEEXT)'; \
+	b='cstp-recv'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+proxyproto-v1.log: proxyproto-v1$(EXEEXT)
+	@p='proxyproto-v1$(EXEEXT)'; \
+	b='proxyproto-v1'; \
 	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \

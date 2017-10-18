@@ -204,12 +204,13 @@ for i in $OCSERV_DNS6;do
 	allow_dns6 $i
 done
 
+# create the chain
+FORWARD_CHAIN="${SEC_FORWARD_CHAIN}"
+iptables -N "${FORWARD_CHAIN}"
+ip6tables -N "${FORWARD_CHAIN}"
+
 # block ports - if needed
 if test -n "${OCSERV_DENY_PORTS}";then
-	FORWARD_CHAIN="${SEC_FORWARD_CHAIN}"
-	iptables -N "${FORWARD_CHAIN}"
-	ip6tables -N "${FORWARD_CHAIN}"
-
 	set ${OCSERV_DENY_PORTS}
 	while test $# -gt 1; do
 		proto=$1
@@ -224,10 +225,6 @@ if test -n "${OCSERV_DENY_PORTS}";then
 	done
 else
 	if test -n "${OCSERV_ALLOW_PORTS}";then
-		FORWARD_CHAIN="${SEC_FORWARD_CHAIN}"
-		iptables -N "${FORWARD_CHAIN}"
-		ip6tables -N "${FORWARD_CHAIN}"
-
 		set ${OCSERV_ALLOW_PORTS}
 		while test $# -gt 1; do
 			proto=$1
@@ -272,6 +269,10 @@ else
 	# we still need to allow traffic through if OCSERV_RESTRICT_TO_ROUTES is not true
 	iptables -A ${SEC_FORWARD_CHAIN} -i ${DEVICE} -j ACCEPT -m comment --comment "${COMMENT}"
 fi
+
+# send traffic to the route chain
+iptables  -A FORWARD -i ${DEVICE} -j ${SEC_FORWARD_CHAIN} --match comment --comment "${COMMENT}"
+ip6tables -A FORWARD -i ${DEVICE} -j ${SEC_FORWARD_CHAIN} --match comment --comment "${COMMENT}"
 
 execute_next_script
 

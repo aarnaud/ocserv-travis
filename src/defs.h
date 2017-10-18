@@ -53,7 +53,7 @@
 /* Authentication states */
 enum {
 	PS_AUTH_INACTIVE, /* no comm with worker */
-	PS_AUTH_FAILED, /* no tried authenticated but failed */
+	PS_AUTH_FAILED, /* tried authentication but failed */
 	PS_AUTH_INIT, /* worker has sent an auth init msg */
 	PS_AUTH_CONT, /* worker has sent an auth cont msg */
 	PS_AUTH_COMPLETED /* successful authentication */
@@ -80,6 +80,9 @@ typedef enum {
 	CMD_SEC_AUTH_REPLY,
 	CMD_SEC_DECRYPT,
 	CMD_SEC_SIGN,
+	CMD_SEC_SIGN_DATA,
+	CMD_SEC_SIGN_HASH,
+	CMD_SEC_GET_PK,
 	CMD_SEC_CLI_STATS,
 
 	/* from main to sec-mod and vice versa */
@@ -92,6 +95,7 @@ typedef enum {
 	CMD_SECM_CLI_STATS,
 	CMD_SECM_LIST_COOKIES,
 	CMD_SECM_LIST_COOKIES_REPLY,
+	CMD_SECM_STATS, /* sent periodically */
 
 	MAX_SECM_CMD,
 } cmd_request_t;

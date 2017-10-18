@@ -1,5 +1,5 @@
 AC_PREREQ(2.61)
-AC_INIT([ocserv], [0.11.6], [nmav@gnutls.org])
+AC_INIT([ocserv], [0.11.9], [nmav@gnutls.org])
 PKG_PROG_PKG_CONFIG
 AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_MACRO_DIR([m4])
@@ -57,6 +57,8 @@ if ! $PKG_CONFIG --atleast-version=3.0 nettle; then
 		  [nettle uses the pre-3.x base64 API])
 fi
 
+AM_CONDITIONAL(GNUTLS_WITH_NEW_CERTS, $PKG_CONFIG --atleast-version=3.6.0 gnutls)
+
 AC_ARG_WITH(protobuf,
   AS_HELP_STRING([--without-protobuf], [use the included protobuf library]),
   test_for_protobuf=$withval,
@@ -98,6 +100,13 @@ AC_ARG_WITH(root-tests,
 
 AM_CONDITIONAL(ENABLE_ROOT_TESTS, test "x$root_tests" = xyes)
 
+AC_ARG_WITH(docker-tests,
+  AS_HELP_STRING([--without-docker-tests], [disable any tests requiring docker]),
+  docker_tests=$withval,
+  docker_tests=yes)
+
+AM_CONDITIONAL(ENABLE_DOCKER_TESTS, test "x$docker_tests" = xyes)
+
 AC_ARG_WITH(local-talloc,
   AS_HELP_STRING([--with-local-talloc], [use the included talloc library]),
   no_test_for_talloc=$withval,
@@ -136,6 +145,19 @@ if test "$test_for_libnl" = yes;then
   PKG_CHECK_MODULES(LIBNL3, libnl-route-3.0 >= 3.1, [have_libnl3=yes], [have_libnl3=no])
   if test "${have_libnl3}" = "yes"; then
     AC_DEFINE(HAVE_LIBNL, 1, [have libnl])
+  fi
+fi
+
+AC_ARG_WITH(geoip,
+  AS_HELP_STRING([--without-geoip], [do not try to use the geoip library]),
+  test_for_geoip=$withval,
+  test_for_geoip=yes)
+
+have_geoip=no
+if test "$test_for_geoip" = yes;then
+  PKG_CHECK_MODULES(GEOIP, geoip >= 1.6.0, [have_geoip=yes], [have_geoip=no])
+  if test "$have_geoip" = yes;then
+    AC_DEFINE(HAVE_GEOIP, 1, [have libgeoip])
   fi
 fi
 
@@ -191,6 +213,7 @@ AC_ARG_WITH(pam,
 pam_enabled=no
 
 if test "$test_for_pam" = yes;then
+oldlibs=$LIBS
 LIBS="$oldlibs -lpam"
 AC_MSG_CHECKING([for pam library])
 AC_LINK_IFELSE([AC_LANG_PROGRAM([
@@ -229,6 +252,7 @@ if test "$test_for_radius" = yes;then
 	PKG_CHECK_MODULES([RADCLI], [radcli >= 1.2.5], radius_enabled=radcli, radius_enabled=no)
 
 	if test "$radius_enabled" = no;then
+		oldlibs=$LIBS
 		LIBS="$oldlibs -lfreeradius-client"
 		AC_MSG_CHECKING([for freeradius client library])
 		AC_LINK_IFELSE([AC_LANG_PROGRAM([
@@ -360,6 +384,7 @@ dnl Test for http_parser library
 with_local_http_parser=yes
 
 if test "$test_for_http_parser" = yes;then
+oldlibs=$LIBS
 LIBS="$oldlibs -lhttp_parser"
 AC_MSG_CHECKING([for http_parser library])
 AC_LINK_IFELSE([AC_LANG_PROGRAM([
@@ -454,6 +479,7 @@ dnl Test for PCL library
 with_local_pcl=yes
 
 if test "$test_for_pcl_lib" = yes;then
+oldlibs=$LIBS
 LIBS="$oldlibs -lpcl"
 AC_MSG_CHECKING([for pcl library])
 AC_LINK_IFELSE([AC_LANG_PROGRAM([
@@ -473,20 +499,28 @@ LIBS="$oldlibs"
 fi
 AM_CONDITIONAL(PCL, test "$with_local_pcl" = no)
 
-if test -f /usr/lib64/pam_wrapper/pam_matrix.so;then
-	AC_SUBST([PAMWRAPDIR], [/usr/lib64/pam_wrapper])
-elif test -f /usr/lib/pam_wrapper/pam_matrix.so;then
-	AC_SUBST([PAMWRAPDIR], [/usr/lib/pam_wrapper])
-else
-	AC_SUBST([PAMWRAPDIR], [/usr/lib/pam_wrapper])
-fi
+if test "$have_cwrap_pam" = yes; then
+	m4_ifdef([PKG_CHECK_VAR], [PKG_CHECK_VAR([CWRAP_PAM_MODULES], [pam_wrapper], [modules])])
 
-if test -f /usr/lib64/security/pam_oath.so;then
-	AC_SUBST([PAMDIR], [/usr/lib64/security])
-elif test -f /usr/lib/security/pam_oath.so;then
-	AC_SUBST([PAMDIR], [/usr/lib/security])
-else
-	AC_SUBST([PAMDIR], [/usr/lib/security])
+	if test -f $CWRAP_PAM_MODULES/pam_matrix.so;then
+		AC_SUBST([PAMWRAPDIR], [$CWRAP_PAM_MODULES])
+	elif test -f /usr/lib64/pam_wrapper/pam_matrix.so;then
+		AC_SUBST([PAMWRAPDIR], [/usr/lib64/pam_wrapper])
+	elif test -f /usr/lib/pam_wrapper/pam_matrix.so;then
+		AC_SUBST([PAMWRAPDIR], [/usr/lib/pam_wrapper])
+	else
+		AC_SUBST([PAMWRAPDIR], [/usr/lib/pam_wrapper])
+	fi
+
+	if test -f /usr/lib64/security/pam_oath.so;then
+		AC_SUBST([PAMDIR], [/usr/lib64/security])
+	elif test -f /usr/lib/security/pam_oath.so;then
+		AC_SUBST([PAMDIR], [/usr/lib/security])
+	elif test -f /lib/security/pam_oath.so;then
+		AC_SUBST([PAMDIR], [/lib/security])
+	else
+		AC_SUBST([PAMDIR], [/usr/lib/security])
+	fi
 fi
 
 uid=$(id -u)
@@ -497,12 +531,10 @@ AC_SUBST([ROOTGID], [$gid])
 LIBOPTS_CHECK([libopts])
 if test "$NEED_LIBOPTS_DIR" = "true";then
 	dnl create libopts-generated files
-	for i in ${srcdir}/src/*args.c.bak ${srcdir}/src/*args.h.bak ${srcdir}/src/occtl/*args.c.bak ${srcdir}/src/occtl/*args.h.bak; do
-		nam=`echo $i|sed 's/.bak//g'`
-		if test -f "$i";then
-			cp -f $i $nam
-		fi
-	done
+        AC_CONFIG_LINKS([src/ocpasswd-args.c:src/ocpasswd/ocpasswd-args.c.in
+			 src/ocpasswd-args.h:src/ocpasswd/ocpasswd-args.h.in
+			 src/ocserv-args.c:src/ocserv-args.c.in
+			 src/ocserv-args.h:src/ocserv-args.h.in])
 	AC_SUBST([AUTOGEN], [:])
 	enable_local_libopts=yes
 else
@@ -514,12 +546,6 @@ AC_CONFIG_FILES([
 	Makefile
 	src/version.inc
 	src/Makefile
-	src/occtl/Makefile
-	src/ocpasswd/Makefile
-	src/ccan/Makefile
-	src/common/Makefile
-	src/pcl/Makefile
-	src/protobuf/Makefile
 	doc/Makefile
 	gl/Makefile
 	tests/docker-ocserv/Makefile
@@ -555,6 +581,7 @@ Summary of build options:
   readline:             ${have_readline}
   libnl3:               ${have_libnl3}
   liboath:              ${have_liboath}
+  libgeoip:             ${have_geoip}
   glibc (sha2crypt):    ${have_glibc}
   local talloc:         ${with_local_talloc}
   local protobuf-c:     ${with_local_protobuf_c}

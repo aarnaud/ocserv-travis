@@ -155,6 +155,7 @@ static struct cfg_options available_options[] = {
 	{ .name = "cookie-rekey-time", .type = OPTION_NUMERIC, .mandatory = 0 },
 	{ .name = "session-timeout", .type = OPTION_NUMERIC, .mandatory = 0 },
 	{ .name = "stats-report-time", .type = OPTION_NUMERIC, .mandatory = 0 },
+	{ .name = "server-stats-reset-time", .type = OPTION_NUMERIC, .mandatory = 0 },
 	{ .name = "rekey-time", .type = OPTION_NUMERIC, .mandatory = 0 },
 	{ .name = "rekey-method", .type = OPTION_STRING, .mandatory = 0 },
 	{ .name = "auth-timeout", .type = OPTION_NUMERIC, .mandatory = 0 },
@@ -447,7 +448,7 @@ static void figure_auth_funcs(struct perm_cfg_st *config, char **auth, unsigned 
 				if (c_strncasecmp(auth[j], avail_auth_types[i].name, avail_auth_types[i].name_size) == 0) {
 					if (avail_auth_types[i].get_brackets_string)
 						config->auth[x].additional = avail_auth_types[i].get_brackets_string(config, auth[j]+avail_auth_types[i].name_size);
-				
+
 					config->auth[x].name = talloc_strdup(config, avail_auth_types[i].name);
 					fprintf(stderr, NOTESTR"enabling '%s' as authentication method\n", avail_auth_types[i].name);
 
@@ -754,7 +755,15 @@ size_t urlfw_size = 0;
 
 		PREAD_STRING(perm_config, "chroot-dir", perm_config->chroot_dir);
 
+		/* cannot be modified as it would require sec-mod to
+		 * re-read configuration too */
+		READ_NUMERIC("server-stats-reset-time", perm_config->stats_reset_time);
+		if (perm_config->stats_reset_time <= 0) {
+			perm_config->stats_reset_time = 24*60*60*7; /* weekly */
+		}
+
 		list_head_init(&perm_config->attic);
+
 	}
 
 	perm_config->config = talloc_zero(perm_config, struct cfg_st);
@@ -801,9 +810,7 @@ size_t urlfw_size = 0;
 
 	READ_STRING("ocsp-response", config->ocsp_response);
 
-#ifdef ANYCONNECT_CLIENT_COMPAT
 	READ_STRING("user-profile", config->xml_config_file);
-#endif
 
 	READ_STRING("default-domain", config->default_domain);
 	READ_STRING("crl", config->crl);
@@ -841,6 +848,13 @@ size_t urlfw_size = 0;
 	}
 
 	READ_TF("dtls-psk", config->dtls_psk, 1);
+	if (perm_config->unix_conn_file) {
+		if (config->dtls_psk) {
+			fprintf(stderr, NOTESTR"'dtls-psk' cannot be combined with unix socket file\n");
+		}
+		config->dtls_psk = 0;
+	}
+
 	READ_TF("match-tls-dtls-ciphers", config->match_dtls_and_tls, 0);
 	if (config->match_dtls_and_tls) {
 		if (config->dtls_legacy) {
@@ -1155,6 +1169,13 @@ static void check_cfg(struct perm_cfg_st *perm_config)
 		exit(1);
 	}
 
+	if (perm_config->config->cert_req != 0 && perm_config->config->cert_user_oid != NULL) {
+		if (!c_isdigit(perm_config->config->cert_user_oid[0]) && strcmp(perm_config->config->cert_user_oid, "SAN(rfc822name)") != 0) {
+			fprintf(stderr, ERRSTR"the option 'cert-user-oid' has a unsupported value\n");
+			exit(1);
+		}
+	}
+
 	if (perm_config->unix_conn_file != NULL && (perm_config->config->cert_req != 0)) {
 		if (perm_config->config->listen_proxy_proto == 0) {
 			fprintf(stderr, ERRSTR"the option 'listen-clear-file' cannot be combined with 'auth=certificate'\n");
@@ -1162,7 +1183,6 @@ static void check_cfg(struct perm_cfg_st *perm_config)
 		}
 	}
 
-#ifdef ANYCONNECT_CLIENT_COMPAT
 	if (perm_config->cert && perm_config->cert_hash == NULL) {
 		perm_config->cert_hash = calc_sha1_hash(perm_config, perm_config->cert[0], 1);
 	}
@@ -1185,7 +1205,6 @@ static void check_cfg(struct perm_cfg_st *perm_config)
 			exit(1);
 		}
 	}
-#endif
 
 	if (perm_config->config->keepalive == 0)
 		perm_config->config->keepalive = 3600;
@@ -1271,35 +1290,47 @@ void clear_cfg(struct perm_cfg_st* perm_config)
 	return;
 }
 
+static void append(const char *option)
+{
+	static int have_previous_val = 0;
+
+	if (have_previous_val == 0) {
+		have_previous_val = 1;
+	} else {
+		fprintf(stderr, ", ");
+	}
+	fprintf(stderr, "%s", option);
+}
+
 void print_version(tOptions *opts, tOptDesc *desc)
 {
 	const char *p;
 
 	fputs(OCSERV_FULL_VERSION, stderr);
-	fprintf(stderr, "\n\nCompiled with ");
+	fprintf(stderr, "\n\nCompiled with: ");
 #ifdef HAVE_LIBSECCOMP
-	fprintf(stderr, "seccomp, ");
+	append("seccomp");
 #endif
 #ifdef HAVE_LIBWRAP
-	fprintf(stderr, "tcp-wrappers, ");
+	append("tcp-wrappers");
 #endif
 #ifdef HAVE_LIBOATH
-	fprintf(stderr, "oath, ");
+	append("oath");
 #endif
 #ifdef HAVE_RADIUS
-	fprintf(stderr, "radius, ");
+	append("radius");
 #endif
 #ifdef HAVE_GSSAPI
-	fprintf(stderr, "gssapi, ");
+	append("gssapi");
 #endif
 #ifdef HAVE_PAM
-	fprintf(stderr, "PAM, ");
+	append("PAM");
 #endif
 #ifdef HAVE_PKCS11
-	fprintf(stderr, "PKCS#11, ");
+	append("PKCS#11");
 #endif
 #ifdef ANYCONNECT_CLIENT_COMPAT
-	fprintf(stderr, "AnyConnect, ");
+	append("AnyConnect");
 #endif
 	fprintf(stderr, "\n");
 
@@ -1388,7 +1419,7 @@ int add_multi_line_val(void *pool, const char *name, char ***s_name, size_t *num
 
 void clear_old_configs(struct perm_cfg_st* config)
 {
-	attic_entry_st *e, *pos;
+	attic_entry_st *e = NULL, *pos;
 
 	/* go through the attic and clear old configurations if unused */
 	list_for_each_safe(&config->attic, e, pos, list) {

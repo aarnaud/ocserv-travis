@@ -202,6 +202,9 @@
 /* Define to 1 if you have the `funlockfile' function. */
 #undef HAVE_FUNLOCKFILE
 
+/* have libgeoip */
+#undef HAVE_GEOIP
+
 /* Define to 1 if you have the `getcontext' function. */
 #undef HAVE_GETCONTEXT
 

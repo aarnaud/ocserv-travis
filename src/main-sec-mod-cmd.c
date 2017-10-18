@@ -1,5 +1,6 @@
 /*
- * Copyright (C) 2015 Red Hat, Inc.
+ * Copyright (C) 2015-2017 Red Hat, Inc.
+ * Copyright (C) 2015-2017 Nikos Mavrogiannopoulos
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -53,6 +54,17 @@
 #ifdef HAVE_MALLOC_TRIM
 # include <malloc.h>
 #endif
+
+static void update_auth_failures(main_server_st * s, uint64_t auth_failures)
+{
+	if (s->stats.auth_failures + auth_failures < s->stats.auth_failures) {
+		mslog(s, NULL, LOG_INFO, "overflow on updating authentication failures; resetting");
+		s->stats.auth_failures = 0;
+		return;
+	}
+	s->stats.auth_failures += auth_failures;
+	s->stats.total_auth_failures += auth_failures;
+}
 
 int handle_sec_mod_commands(main_server_st * s)
 {
@@ -162,6 +174,25 @@ int handle_sec_mod_commands(main_server_st * s)
 		}
 
 		break;
+	case CMD_SECM_STATS:{
+			SecmStatsMsg *smsg = NULL;
+
+			smsg = secm_stats_msg__unpack(&pa, raw_len, raw);
+			if (smsg == NULL) {
+				mslog(s, NULL, LOG_ERR, "error unpacking sec-mod data");
+				ret = ERR_BAD_COMMAND;
+				goto cleanup;
+			}
+
+			s->stats.secmod_client_entries = smsg->secmod_client_entries;
+			s->stats.tlsdb_entries = smsg->secmod_tlsdb_entries;
+			s->stats.max_auth_time = smsg->secmod_max_auth_time;
+			s->stats.avg_auth_time = smsg->secmod_avg_auth_time;
+			update_auth_failures(s, smsg->secmod_auth_failures);
+
+		}
+
+		break;
 	default:
 		mslog(s, NULL, LOG_ERR, "unknown CMD from sec-mod 0x%x.", (unsigned)cmd);
 		ret = ERR_BAD_COMMAND;
@@ -223,11 +254,13 @@ static void append_routes(main_server_st *s, proc_st *proc, GroupCfgSt *gc)
 
 		if (s->config->append_routes) {
 			/* Append all global routes */
-			for (i=0;i<s->config->network.routes_size;i++) {
-				gc->routes[gc->n_routes] = talloc_strdup(proc, s->config->network.routes[i]);
-				if (gc->routes[gc->n_routes] == NULL)
-					break;
-				gc->n_routes++;
+			if (gc->routes) {
+				for (i=0;i<s->config->network.routes_size;i++) {
+					gc->routes[gc->n_routes] = talloc_strdup(proc, s->config->network.routes[i]);
+					if (gc->routes[gc->n_routes] == NULL)
+						break;
+					gc->n_routes++;
+				}
 			}
 
 			/* Append no-routes */
@@ -449,7 +482,8 @@ int session_open(main_server_st * s, struct proc_st *proc, const uint8_t *cookie
 	}
 
 	if (msg->reply != AUTH__REP__OK) {
-		mslog(s, proc, LOG_DEBUG, "could not initiate session");
+		mslog(s, proc, LOG_DEBUG, "session initiation was rejected");
+		update_auth_failures(s, 1);
 		return -1;
 	}
 
@@ -495,6 +529,91 @@ int session_open(main_server_st * s, struct proc_st *proc, const uint8_t *cookie
 	return 0;
 }
 
+static void reset_stats(main_server_st *s, time_t now)
+{
+	mslog(s, NULL, LOG_INFO, "Start statistics block");
+	mslog(s, NULL, LOG_INFO, "Total sessions handled: %lu", (unsigned long)s->stats.total_sessions_closed);
+	mslog(s, NULL, LOG_INFO, "Sessions handled: %lu", (unsigned long)s->stats.sessions_closed);
+	mslog(s, NULL, LOG_INFO, "Maximum session time: %lu min", (unsigned long)s->stats.max_session_mins);
+	mslog(s, NULL, LOG_INFO, "Average session time: %lu min", (unsigned long)s->stats.avg_session_mins);
+	mslog(s, NULL, LOG_INFO, "Closed due to timeout sessions: %lu", (unsigned long)s->stats.session_timeouts);
+	mslog(s, NULL, LOG_INFO, "Closed due to timeout (idle) sessions: %lu", (unsigned long)s->stats.session_idle_timeouts);
+	mslog(s, NULL, LOG_INFO, "Closed due to error sessions: %lu", (unsigned long)s->stats.session_errors);
+
+	mslog(s, NULL, LOG_INFO, "Total authentication failures: %lu", (unsigned long)s->stats.total_auth_failures);
+	mslog(s, NULL, LOG_INFO, "Authentication failures: %lu", (unsigned long)s->stats.auth_failures);
+	mslog(s, NULL, LOG_INFO, "Maximum authentication time: %lu sec", (unsigned long)s->stats.max_auth_time);
+	mslog(s, NULL, LOG_INFO, "Average authentication time: %lu sec", (unsigned long)s->stats.avg_auth_time);
+	mslog(s, NULL, LOG_INFO, "Data in: %lu, out: %lu kbytes", (unsigned long)s->stats.kbytes_in, (unsigned long)s->stats.kbytes_out);
+	mslog(s, NULL, LOG_INFO, "End of statistics block; resetting non-total stats");
+
+	s->stats.session_idle_timeouts = 0;
+	s->stats.session_timeouts = 0;
+	s->stats.session_errors = 0;
+	s->stats.sessions_closed = 0;
+	s->stats.auth_failures = 0;
+	s->stats.last_reset = now;
+	s->stats.kbytes_in = 0;
+	s->stats.kbytes_out = 0;
+	s->stats.max_session_mins = 0;
+	s->stats.max_auth_time = 0;
+}
+
+static void update_main_stats(main_server_st * s, struct proc_st *proc)
+{
+	uint64_t kb_in, kb_out;
+	time_t now = time(0), stime;
+
+	if (s->perm_config->stats_reset_time != 0 &&
+	    now - s->stats.last_reset > s->perm_config->stats_reset_time) {
+		mslog(s, NULL, LOG_INFO, "resetting stats counters");
+		reset_stats(s, now);
+	}
+
+	if (proc->discon_reason == REASON_IDLE_TIMEOUT)
+		s->stats.session_idle_timeouts++;
+	else if (proc->discon_reason == REASON_SESSION_TIMEOUT)
+		s->stats.session_timeouts++;
+	else if (proc->discon_reason == REASON_ERROR)
+		s->stats.session_errors++;
+
+	s->stats.sessions_closed++;
+	s->stats.total_sessions_closed++;
+	if (s->stats.sessions_closed == 0) { /* overflow */
+		goto reset;
+	}
+
+	kb_in = proc->bytes_in/1000;
+	kb_out = proc->bytes_out/1000;
+
+	if (s->stats.kbytes_in + kb_in <  s->stats.kbytes_in)
+		goto reset;
+
+	if (s->stats.kbytes_out + kb_out <  s->stats.kbytes_out)
+		goto reset;
+
+	s->stats.kbytes_in += kb_in;
+	s->stats.kbytes_out += kb_out;
+
+	if (s->stats.min_mtu == 0 || proc->mtu < s->stats.min_mtu)
+		s->stats.min_mtu = proc->mtu;
+	if (s->stats.max_mtu == 0 || proc->mtu > s->stats.min_mtu)
+		s->stats.max_mtu = proc->mtu;
+
+	/* connection time in minutes */
+	stime = (now - proc->conn_time)/60;
+	if (stime > 0) {
+		s->stats.avg_session_mins = ((s->stats.sessions_closed-1) * s->stats.avg_session_mins + stime) / s->stats.sessions_closed;
+		if (stime > s->stats.max_session_mins)
+			s->stats.max_session_mins = stime;
+	}
+
+	return;
+ reset:
+	mslog(s, NULL, LOG_INFO, "overflow on updating server statistics, resetting stats");
+	reset_stats(s, now);
+}
+
 int session_close(main_server_st * s, struct proc_st *proc)
 {
 	int ret, e;
@@ -532,12 +651,11 @@ int session_close(main_server_st * s, struct proc_st *proc)
 
 	proc->bytes_in = msg->bytes_in;
 	proc->bytes_out = msg->bytes_out;
-	if (msg->has_secmod_client_entries)
-		s->secmod_client_entries = msg->secmod_client_entries;
-	if (msg->has_secmod_tlsdb_entries)
-		s->tlsdb_entries = msg->secmod_tlsdb_entries;
-	if (msg->has_discon_reason)
+	if (msg->has_discon_reason) {
 		proc->discon_reason = msg->discon_reason;
+	}
+
+	update_main_stats(s, proc);
 
 	cli_stats_msg__free_unpacked(msg, &pa);
 

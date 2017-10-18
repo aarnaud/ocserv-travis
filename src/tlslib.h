@@ -65,6 +65,10 @@ size_t tls_get_overhead(gnutls_protocol_t, gnutls_cipher_algorithm_t, gnutls_mac
 
 #define GNUTLS_FATAL_ERR DTLS_FATAL_ERR
 
+#ifdef UNDER_TEST
+# define syslog_open 0
+#endif
+
 #define DTLS_FATAL_ERR_CMD(x, CMD) \
         if (x < 0 && gnutls_error_is_fatal (x) != 0) { \
                 if (syslog_open) \
@@ -126,7 +130,6 @@ void cstp_close(struct worker_st *ws);
 void cstp_fatal_close(struct worker_st *ws,
 			    gnutls_alert_description_t a);
 ssize_t cstp_recv(struct worker_st *ws, void *data, size_t data_size);
-ssize_t cstp_recv_nb(struct worker_st *ws, void *data, size_t data_size);
 ssize_t cstp_send_file(struct worker_st *ws, const char *file);
 ssize_t cstp_send(struct worker_st *ws, const void *data,
 			size_t data_size);
@@ -154,5 +157,6 @@ ssize_t dtls_recv_packet(struct worker_st *ws, gnutls_datum_t *data, void **p);
 
 /* Helper functions */
 unsigned need_file_reload(const char *file, time_t last_access);
+void safe_hash(const uint8_t *data, unsigned data_size, uint8_t output[20]);
 
 #endif

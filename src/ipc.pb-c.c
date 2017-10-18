@@ -738,6 +738,49 @@ void   sec_op_msg__free_unpacked
   assert(message->base.descriptor == &sec_op_msg__descriptor);
   protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
 }
+void   sec_get_pk_msg__init
+                     (SecGetPkMsg         *message)
+{
+  static SecGetPkMsg init_value = SEC_GET_PK_MSG__INIT;
+  *message = init_value;
+}
+size_t sec_get_pk_msg__get_packed_size
+                     (const SecGetPkMsg *message)
+{
+  assert(message->base.descriptor == &sec_get_pk_msg__descriptor);
+  return protobuf_c_message_get_packed_size ((const ProtobufCMessage*)(message));
+}
+size_t sec_get_pk_msg__pack
+                     (const SecGetPkMsg *message,
+                      uint8_t       *out)
+{
+  assert(message->base.descriptor == &sec_get_pk_msg__descriptor);
+  return protobuf_c_message_pack ((const ProtobufCMessage*)message, out);
+}
+size_t sec_get_pk_msg__pack_to_buffer
+                     (const SecGetPkMsg *message,
+                      ProtobufCBuffer *buffer)
+{
+  assert(message->base.descriptor == &sec_get_pk_msg__descriptor);
+  return protobuf_c_message_pack_to_buffer ((const ProtobufCMessage*)message, buffer);
+}
+SecGetPkMsg *
+       sec_get_pk_msg__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data)
+{
+  return (SecGetPkMsg *)
+     protobuf_c_message_unpack (&sec_get_pk_msg__descriptor,
+                                allocator, len, data);
+}
+void   sec_get_pk_msg__free_unpacked
+                     (SecGetPkMsg *message,
+                      ProtobufCAllocator *allocator)
+{
+  assert(message->base.descriptor == &sec_get_pk_msg__descriptor);
+  protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
+}
 void   secm_session_open_msg__init
                      (SecmSessionOpenMsg         *message)
 {
@@ -822,6 +865,49 @@ void   secm_session_close_msg__free_unpacked
                       ProtobufCAllocator *allocator)
 {
   assert(message->base.descriptor == &secm_session_close_msg__descriptor);
+  protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
+}
+void   secm_stats_msg__init
+                     (SecmStatsMsg         *message)
+{
+  static SecmStatsMsg init_value = SECM_STATS_MSG__INIT;
+  *message = init_value;
+}
+size_t secm_stats_msg__get_packed_size
+                     (const SecmStatsMsg *message)
+{
+  assert(message->base.descriptor == &secm_stats_msg__descriptor);
+  return protobuf_c_message_get_packed_size ((const ProtobufCMessage*)(message));
+}
+size_t secm_stats_msg__pack
+                     (const SecmStatsMsg *message,
+                      uint8_t       *out)
+{
+  assert(message->base.descriptor == &secm_stats_msg__descriptor);
+  return protobuf_c_message_pack ((const ProtobufCMessage*)message, out);
+}
+size_t secm_stats_msg__pack_to_buffer
+                     (const SecmStatsMsg *message,
+                      ProtobufCBuffer *buffer)
+{
+  assert(message->base.descriptor == &secm_stats_msg__descriptor);
+  return protobuf_c_message_pack_to_buffer ((const ProtobufCMessage*)message, buffer);
+}
+SecmStatsMsg *
+       secm_stats_msg__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data)
+{
+  return (SecmStatsMsg *)
+     protobuf_c_message_unpack (&secm_stats_msg__descriptor,
+                                allocator, len, data);
+}
+void   secm_stats_msg__free_unpacked
+                     (SecmStatsMsg *message,
+                      ProtobufCAllocator *allocator)
+{
+  assert(message->base.descriptor == &secm_stats_msg__descriptor);
   protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
 }
 void   secm_session_reply_msg__init
@@ -1900,7 +1986,7 @@ const ProtobufCMessageDescriptor tun_mtu_msg__descriptor =
   (ProtobufCMessageInit) tun_mtu_msg__init,
   NULL,NULL,NULL    /* reserved[123] */
 };
-static const ProtobufCFieldDescriptor cli_stats_msg__field_descriptors[10] =
+static const ProtobufCFieldDescriptor cli_stats_msg__field_descriptors[8] =
 {
   {
     "bytes_in",
@@ -1998,30 +2084,6 @@ static const ProtobufCFieldDescriptor cli_stats_msg__field_descriptors[10] =
     0,             /* flags */
     0,NULL,NULL    /* reserved1,reserved2, etc */
   },
-  {
-    "secmod_client_entries",
-    9,
-    PROTOBUF_C_LABEL_OPTIONAL,
-    PROTOBUF_C_TYPE_UINT32,
-    offsetof(CliStatsMsg, has_secmod_client_entries),
-    offsetof(CliStatsMsg, secmod_client_entries),
-    NULL,
-    NULL,
-    0,             /* flags */
-    0,NULL,NULL    /* reserved1,reserved2, etc */
-  },
-  {
-    "secmod_tlsdb_entries",
-    10,
-    PROTOBUF_C_LABEL_OPTIONAL,
-    PROTOBUF_C_TYPE_UINT32,
-    offsetof(CliStatsMsg, has_secmod_tlsdb_entries),
-    offsetof(CliStatsMsg, secmod_tlsdb_entries),
-    NULL,
-    NULL,
-    0,             /* flags */
-    0,NULL,NULL    /* reserved1,reserved2, etc */
-  },
 };
 static const unsigned cli_stats_msg__field_indices_by_name[] = {
   0,   /* field[0] = bytes_in */
@@ -2030,15 +2092,13 @@ static const unsigned cli_stats_msg__field_indices_by_name[] = {
   5,   /* field[5] = ipv4 */
   6,   /* field[6] = ipv6 */
   4,   /* field[4] = remote_ip */
-  8,   /* field[8] = secmod_client_entries */
-  9,   /* field[9] = secmod_tlsdb_entries */
   2,   /* field[2] = sid */
   3,   /* field[3] = uptime */
 };
 static const ProtobufCIntRange cli_stats_msg__number_ranges[1 + 1] =
 {
   { 1, 0 },
-  { 0, 10 }
+  { 0, 8 }
 };
 const ProtobufCMessageDescriptor cli_stats_msg__descriptor =
 {
@@ -2048,7 +2108,7 @@ const ProtobufCMessageDescriptor cli_stats_msg__descriptor =
   "CliStatsMsg",
   "",
   sizeof(CliStatsMsg),
-  10,
+  8,
   cli_stats_msg__field_descriptors,
   cli_stats_msg__field_indices_by_name,
   1,  cli_stats_msg__number_ranges,
@@ -2678,7 +2738,7 @@ const ProtobufCMessageDescriptor sec_auth_reply_msg__descriptor =
   (ProtobufCMessageInit) sec_auth_reply_msg__init,
   NULL,NULL,NULL    /* reserved[123] */
 };
-static const ProtobufCFieldDescriptor sec_op_msg__field_descriptors[2] =
+static const ProtobufCFieldDescriptor sec_op_msg__field_descriptors[3] =
 {
   {
     "key_idx",
@@ -2704,15 +2764,28 @@ static const ProtobufCFieldDescriptor sec_op_msg__field_descriptors[2] =
     0,             /* flags */
     0,NULL,NULL    /* reserved1,reserved2, etc */
   },
+  {
+    "sig",
+    3,
+    PROTOBUF_C_LABEL_REQUIRED,
+    PROTOBUF_C_TYPE_UINT32,
+    0,   /* quantifier_offset */
+    offsetof(SecOpMsg, sig),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
 };
 static const unsigned sec_op_msg__field_indices_by_name[] = {
   1,   /* field[1] = data */
   0,   /* field[0] = key_idx */
+  2,   /* field[2] = sig */
 };
 static const ProtobufCIntRange sec_op_msg__number_ranges[1 + 1] =
 {
   { 1, 0 },
-  { 0, 2 }
+  { 0, 3 }
 };
 const ProtobufCMessageDescriptor sec_op_msg__descriptor =
 {
@@ -2722,11 +2795,62 @@ const ProtobufCMessageDescriptor sec_op_msg__descriptor =
   "SecOpMsg",
   "",
   sizeof(SecOpMsg),
-  2,
+  3,
   sec_op_msg__field_descriptors,
   sec_op_msg__field_indices_by_name,
   1,  sec_op_msg__number_ranges,
   (ProtobufCMessageInit) sec_op_msg__init,
+  NULL,NULL,NULL    /* reserved[123] */
+};
+static const ProtobufCFieldDescriptor sec_get_pk_msg__field_descriptors[2] =
+{
+  {
+    "key_idx",
+    1,
+    PROTOBUF_C_LABEL_REQUIRED,
+    PROTOBUF_C_TYPE_UINT32,
+    0,   /* quantifier_offset */
+    offsetof(SecGetPkMsg, key_idx),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "pk",
+    2,
+    PROTOBUF_C_LABEL_REQUIRED,
+    PROTOBUF_C_TYPE_UINT32,
+    0,   /* quantifier_offset */
+    offsetof(SecGetPkMsg, pk),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+};
+static const unsigned sec_get_pk_msg__field_indices_by_name[] = {
+  0,   /* field[0] = key_idx */
+  1,   /* field[1] = pk */
+};
+static const ProtobufCIntRange sec_get_pk_msg__number_ranges[1 + 1] =
+{
+  { 1, 0 },
+  { 0, 2 }
+};
+const ProtobufCMessageDescriptor sec_get_pk_msg__descriptor =
+{
+  PROTOBUF_C__MESSAGE_DESCRIPTOR_MAGIC,
+  "sec_get_pk_msg",
+  "SecGetPkMsg",
+  "SecGetPkMsg",
+  "",
+  sizeof(SecGetPkMsg),
+  2,
+  sec_get_pk_msg__field_descriptors,
+  sec_get_pk_msg__field_indices_by_name,
+  1,  sec_get_pk_msg__number_ranges,
+  (ProtobufCMessageInit) sec_get_pk_msg__init,
   NULL,NULL,NULL    /* reserved[123] */
 };
 static const ProtobufCFieldDescriptor secm_session_open_msg__field_descriptors[3] =
@@ -2898,6 +3022,96 @@ const ProtobufCMessageDescriptor secm_session_close_msg__descriptor =
   (ProtobufCMessageInit) secm_session_close_msg__init,
   NULL,NULL,NULL    /* reserved[123] */
 };
+static const ProtobufCFieldDescriptor secm_stats_msg__field_descriptors[5] =
+{
+  {
+    "secmod_client_entries",
+    1,
+    PROTOBUF_C_LABEL_REQUIRED,
+    PROTOBUF_C_TYPE_UINT32,
+    0,   /* quantifier_offset */
+    offsetof(SecmStatsMsg, secmod_client_entries),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "secmod_tlsdb_entries",
+    2,
+    PROTOBUF_C_LABEL_REQUIRED,
+    PROTOBUF_C_TYPE_UINT32,
+    0,   /* quantifier_offset */
+    offsetof(SecmStatsMsg, secmod_tlsdb_entries),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "secmod_auth_failures",
+    3,
+    PROTOBUF_C_LABEL_REQUIRED,
+    PROTOBUF_C_TYPE_UINT64,
+    0,   /* quantifier_offset */
+    offsetof(SecmStatsMsg, secmod_auth_failures),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "secmod_avg_auth_time",
+    4,
+    PROTOBUF_C_LABEL_REQUIRED,
+    PROTOBUF_C_TYPE_UINT32,
+    0,   /* quantifier_offset */
+    offsetof(SecmStatsMsg, secmod_avg_auth_time),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "secmod_max_auth_time",
+    5,
+    PROTOBUF_C_LABEL_REQUIRED,
+    PROTOBUF_C_TYPE_UINT32,
+    0,   /* quantifier_offset */
+    offsetof(SecmStatsMsg, secmod_max_auth_time),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+};
+static const unsigned secm_stats_msg__field_indices_by_name[] = {
+  2,   /* field[2] = secmod_auth_failures */
+  3,   /* field[3] = secmod_avg_auth_time */
+  0,   /* field[0] = secmod_client_entries */
+  4,   /* field[4] = secmod_max_auth_time */
+  1,   /* field[1] = secmod_tlsdb_entries */
+};
+static const ProtobufCIntRange secm_stats_msg__number_ranges[1 + 1] =
+{
+  { 1, 0 },
+  { 0, 5 }
+};
+const ProtobufCMessageDescriptor secm_stats_msg__descriptor =
+{
+  PROTOBUF_C__MESSAGE_DESCRIPTOR_MAGIC,
+  "secm_stats_msg",
+  "SecmStatsMsg",
+  "SecmStatsMsg",
+  "",
+  sizeof(SecmStatsMsg),
+  5,
+  secm_stats_msg__field_descriptors,
+  secm_stats_msg__field_indices_by_name,
+  1,  secm_stats_msg__number_ranges,
+  (ProtobufCMessageInit) secm_stats_msg__init,
+  NULL,NULL,NULL    /* reserved[123] */
+};
 static const ProtobufCFieldDescriptor secm_session_reply_msg__field_descriptors[8] =
 {
   {
@@ -3032,12 +3246,12 @@ const ProtobufCMessageDescriptor secm_session_reply_msg__descriptor =
 static const ProtobufCFieldDescriptor cookie_int_msg__field_descriptors[9] =
 {
   {
-    "sid",
+    "safe_id",
     1,
     PROTOBUF_C_LABEL_REQUIRED,
     PROTOBUF_C_TYPE_BYTES,
     0,   /* quantifier_offset */
-    offsetof(CookieIntMsg, sid),
+    offsetof(CookieIntMsg, safe_id),
     NULL,
     NULL,
     0,             /* flags */
@@ -3144,8 +3358,8 @@ static const unsigned cookie_int_msg__field_indices_by_name[] = {
   5,   /* field[5] = groupname */
   3,   /* field[3] = last_modified */
   7,   /* field[7] = remote_ip */
+  0,   /* field[0] = safe_id */
   1,   /* field[1] = session_is_open */
-  0,   /* field[0] = sid */
   8,   /* field[8] = status */
   2,   /* field[2] = tls_auth_ok */
   6,   /* field[6] = user_agent */

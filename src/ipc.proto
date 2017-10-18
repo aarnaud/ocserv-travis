@@ -1,3 +1,5 @@
+syntax = "proto2";
+
 /* See doc/design.md for the IPC communication sequences.
  */
 
@@ -133,8 +135,6 @@ message cli_stats_msg
 	optional string ipv4 = 6;
 	optional string ipv6 = 7;
 	optional uint32 discon_reason = 8;
-	optional uint32 secmod_client_entries = 9; /* from sec-mod to main only */
-	optional uint32 secmod_tlsdb_entries = 10; /* from sec-mod to main only */
 }
 
 /* UDP_FD */
@@ -237,7 +237,15 @@ message sec_op_msg
 {
 	optional uint32 key_idx = 1;
 	required bytes data = 2;
+	required uint32 sig = 3;
 }
+
+message sec_get_pk_msg
+{
+	required uint32 key_idx = 1;
+	required uint32 pk = 2;
+}
+
 
 /*
  * == Session Termination ==
@@ -266,6 +274,16 @@ message secm_session_close_msg
 	optional string ipv6 = 7;
 }
 
+/* SECM_STATS */
+message secm_stats_msg
+{
+	required uint32 secmod_client_entries = 1;
+	required uint32 secmod_tlsdb_entries = 2;
+	required uint64 secmod_auth_failures = 3; /* failures since last update */
+	required uint32 secmod_avg_auth_time = 4; /* average auth time in seconds */
+	required uint32 secmod_max_auth_time = 5; /* max auth time in seconds */
+}
+
 /* SECM_SESSION_REPLY */
 message secm_session_reply_msg
 {
@@ -284,7 +302,7 @@ message secm_session_reply_msg
 /* internal struct */
 message cookie_int_msg
 {
-	required bytes sid = 1;
+	required bytes safe_id = 1;
 	required bool session_is_open = 2;
 	required bool tls_auth_ok = 3;
 	required uint32 last_modified = 4;

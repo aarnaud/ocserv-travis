@@ -21,6 +21,7 @@
 typedef struct cmd_params_st {
 	unsigned json;
 	unsigned no_pager;
+	unsigned debug;
 } cmd_params_st;
 
 FILE* pager_start(cmd_params_st *params);

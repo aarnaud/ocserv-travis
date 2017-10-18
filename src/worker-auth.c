@@ -52,7 +52,20 @@ static const char oc_success_msg_head[] = "<?xml version=\"1.0\" encoding=\"UTF-
                         "<auth id=\"success\">\n"
                         "<title>SSL VPN Service</title>";
 
-static const char oc_success_msg_foot[] = "</auth></config-auth>\n";
+#define OC_SUCCESS_MSG_FOOT "</auth></config-auth>\n"
+#define OC_SUCCESS_MSG_FOOT_PROFILE \
+			"</auth>\n" \
+			"<config client=\"vpn\" type=\"private\">" \
+				"<vpn-profile-manifest>" \
+				"<vpn rev=\"1.0\">" \
+				"<file type=\"profile\" service-type=\"user\">" \
+				"<uri>/profiles/%s</uri>" \
+				"<hash type=\"sha1\">%s</hash>" \
+				"</file>" \
+				"</vpn>" \
+				"</vpn-profile-manifest>\n" \
+			"</config>" \
+			"</config-auth>"
 
 static const char ocv3_success_msg_head[] = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
                         "<auth id=\"success\">\n"
@@ -207,6 +220,8 @@ int get_auth_handler2(worker_st * ws, unsigned http_ver, const char *pmsg, unsig
 
 
 	if (ws->sid_set != 0) {
+		char safe_id[SAFE_ID_SIZE];
+
 		oc_base64_encode((char *)ws->sid, sizeof(ws->sid), (char *)context,
 			      sizeof(context));
 
@@ -217,7 +232,7 @@ int get_auth_handler2(worker_st * ws, unsigned http_ver, const char *pmsg, unsig
 		if (ret < 0)
 			return -1;
 
-		oclog(ws, LOG_SENSITIVE, "sent sid: %s", context);
+		oclog(ws, LOG_SENSITIVE, "sent session id: %s", calc_safe_id(ws->sid, sizeof(ws->sid), safe_id, sizeof(safe_id)));
 	} else {
 		ret =
 		    cstp_puts(ws,
@@ -437,8 +452,28 @@ int get_cert_names(worker_st * ws, const gnutls_datum_t * raw)
 		goto fail;
 	}
 
-	size = sizeof(ws->cert_username);
-	if (ws->config->cert_user_oid) {	/* otherwise certificate username is ignored */
+	if (strcmp(ws->config->cert_user_oid, "SAN(rfc822name)") == 0) {	/* check for RFC822Name */
+		for (i = 0;; i++) {
+			size = sizeof(ws->cert_username);
+			ret =
+			    gnutls_x509_crt_get_subject_alt_name(crt, i,
+								 ws->
+								 cert_username,
+								 &size, NULL);
+			if (ret < 0)
+				break;
+			if (ret == GNUTLS_SAN_RFC822NAME) {
+				oclog(ws, LOG_INFO,
+				      "RFC822NAME (%s) retrieved",
+				      ws->cert_username);
+				break;
+			}
+		}
+		if (ret != 0) {
+			ret = 1;
+		}
+	} else if (ws->config->cert_user_oid) {	/* otherwise certificate username is ignored */
+		size = sizeof(ws->cert_username);
 		ret =
 		    gnutls_x509_crt_get_dn_by_oid(crt,
 					  ws->config->cert_user_oid, 0,
@@ -446,6 +481,7 @@ int get_cert_names(worker_st * ws, const gnutls_datum_t * raw)
 	} else {
 		ret = gnutls_x509_crt_get_dn(crt, ws->cert_username, &size);
 	}
+
 	if (ret < 0) {
 		if (ret == GNUTLS_E_SHORT_MEMORY_BUFFER)
 			oclog(ws, LOG_ERR, "certificate's username exceed the maximum buffer size (%u)",
@@ -543,7 +579,7 @@ static int recv_cookie_auth_reply(worker_st * ws)
 	ret = recv_socket_msg(ws, ws->cmd_fd, AUTH_COOKIE_REP, &socketfd,
 			      (void *)&msg,
 			      (unpack_func) auth_cookie_reply_msg__unpack,
-			      DEFAULT_SOCKET_TIMEOUT);
+			      ws->config->auth_timeout);
 	if (ret < 0) {
 		oclog(ws, LOG_ERR, "error receiving auth reply message");
 		return ret;
@@ -826,9 +862,7 @@ void cookie_authenticate_or_exit(worker_st *ws)
 		oclog(ws, LOG_WARNING, "failed cookie authentication attempt");
 		if (ret == ERR_AUTH_FAIL) {
 			cstp_puts(ws,
-				 "HTTP/1.1 401 Unauthorized\r\n\r\n");
-			cstp_puts(ws,
-				 "X-Reason: Cookie is not acceptable\r\n\r\n");
+				 "HTTP/1.1 401 Cookie is not acceptable\r\n\r\n");
 		} else {
 			cstp_puts(ws,
 				 "HTTP/1.1 503 Service Unavailable\r\n\r\n");
@@ -892,20 +926,29 @@ int post_common_handler(worker_st * ws, unsigned http_ver, const char *imsg)
 	size_t str_cookie_size = sizeof(str_cookie);
 	char msg[MAX_BANNER_SIZE + 32];
 	const char *success_msg_head;
-	const char *success_msg_foot;
+	char *success_msg_foot;
 	unsigned success_msg_head_size;
 	unsigned success_msg_foot_size;
 
 	if (ws->req.user_agent_type == AGENT_OPENCONNECT_V3) {
 		success_msg_head = ocv3_success_msg_head;
-		success_msg_foot = ocv3_success_msg_foot;
+		success_msg_foot = talloc_strdup(ws, ocv3_success_msg_foot);
 		success_msg_head_size = sizeof(ocv3_success_msg_head)-1;
-		success_msg_foot_size = sizeof(ocv3_success_msg_foot)-1;
+		success_msg_foot_size = strlen(success_msg_foot);
 	} else {
 		success_msg_head = oc_success_msg_head;
-		success_msg_foot = oc_success_msg_foot;
+		if (ws->config->xml_config_file) {
+			success_msg_foot = talloc_asprintf(ws, OC_SUCCESS_MSG_FOOT_PROFILE,
+				ws->config->xml_config_file, ws->config->xml_config_hash);
+		} else {
+			success_msg_foot = talloc_strdup(ws, OC_SUCCESS_MSG_FOOT);
+		}
+
+		if (success_msg_foot == NULL)
+			return -1;
+
 		success_msg_head_size = sizeof(oc_success_msg_head)-1;
-		success_msg_foot_size = sizeof(oc_success_msg_foot)-1;
+		success_msg_foot_size = strlen(success_msg_foot);
 	}
 
 	oc_base64_encode((char *)ws->cookie, sizeof(ws->cookie),
@@ -917,28 +960,28 @@ int post_common_handler(worker_st * ws, unsigned http_ver, const char *imsg)
 	cstp_cork(ws);
 	ret = cstp_printf(ws, "HTTP/1.%u 200 OK\r\n", http_ver);
 	if (ret < 0)
-		return -1;
+		goto fail;
 
 	ret = cstp_puts(ws, "Connection: Keep-Alive\r\n");
 	if (ret < 0)
-		return -1;
+		goto fail;
 
 	if (ws->selected_auth->type & AUTH_TYPE_GSSAPI && imsg != NULL && imsg[0] != 0) {
 		ret = cstp_printf(ws, "WWW-Authenticate: Negotiate %s\r\n", imsg);
 		if (ret < 0)
-			return -1;
+			goto fail;
 	}
 
 	ret = cstp_puts(ws, "Content-Type: text/xml\r\n");
 	if (ret < 0)
-		return -1;
+		goto fail;
 
 	if (ws->config->banner) {
 		size =
 		    snprintf(msg, sizeof(msg), "<banner>%s</banner>",
 			     ws->config->banner);
 		if (size <= 0)
-			return -1;
+			goto fail;
 		/* snprintf() returns not a very useful value, so we need to recalculate */
 		size = strlen(msg);
 	} else {
@@ -950,14 +993,15 @@ int post_common_handler(worker_st * ws, unsigned http_ver, const char *imsg)
 
 	ret = cstp_printf(ws, "Content-Length: %u\r\n", (unsigned)size);
 	if (ret < 0)
-		return -1;
+		goto fail;
 
 	ret = cstp_puts(ws, "X-Transcend-Version: 1\r\n");
 	if (ret < 0)
-		return -1;
+		goto fail;
 
 	if (ws->sid_set != 0) {
 		char context[BASE64_ENCODE_RAW_LENGTH(SID_SIZE) + 1];
+		char safe_id[SAFE_ID_SIZE];
 
 		oc_base64_encode((char *)ws->sid, sizeof(ws->sid), (char *)context,
 			         sizeof(context));
@@ -967,9 +1011,9 @@ int post_common_handler(worker_st * ws, unsigned http_ver, const char *imsg)
 			       "Set-Cookie: webvpncontext=%s; Secure\r\n",
 			       context);
 		if (ret < 0)
-			return -1;
+			goto fail;
 
-		oclog(ws, LOG_SENSITIVE, "sent sid: %s", context);
+		oclog(ws, LOG_SENSITIVE, "sent session id: %s", calc_safe_id(ws->sid, sizeof(ws->sid), safe_id, sizeof(safe_id)));
 	}
 
 	ret =
@@ -977,14 +1021,13 @@ int post_common_handler(worker_st * ws, unsigned http_ver, const char *imsg)
 		       "Set-Cookie: webvpn=%s; Secure\r\n",
 		       str_cookie);
 	if (ret < 0)
-		return -1;
+		goto fail;
 
-#ifdef ANYCONNECT_CLIENT_COMPAT
 	ret =
 	    cstp_puts(ws,
 		     "Set-Cookie: webvpnc=; expires=Thu, 01 Jan 1970 22:00:00 GMT; path=/; Secure\r\n");
 	if (ret < 0)
-		return -1;
+		goto fail;
 
 	if (ws->config->xml_config_file) {
 		ret =
@@ -1001,20 +1044,23 @@ int post_common_handler(worker_st * ws, unsigned http_ver, const char *imsg)
 	}
 
 	if (ret < 0)
-		return -1;
-#endif
+		goto fail;
 
 	ret =
 	    cstp_printf(ws,
 		       "\r\n%s%s%s", success_msg_head, msg, success_msg_foot);
 	if (ret < 0)
-		return -1;
+		goto fail;
 
 	ret = cstp_uncork(ws);
 	if (ret < 0)
-		return -1;
+		goto fail;
 
 	return 0;
+
+ fail:
+	talloc_free(success_msg_foot);
+	return -1;
 }
 
 /* Returns the contents of the password field in a newly allocated
@@ -1141,7 +1187,7 @@ int parse_reply(worker_st * ws, char *body, unsigned body_length,
 		xml = 1;
 		if (xml_field) {
 			field = xml_field;
-			field_size = xml_field_size;
+			/*field_size = xml_field_size;*/
 		}
 
 		snprintf(temp1, sizeof(temp1), "<%s>", field);
@@ -1549,7 +1595,7 @@ int post_auth_handler(worker_st * ws, unsigned http_ver)
 		close(sd);
 	oclog(ws, LOG_HTTP_DEBUG, "HTTP sending: 401 Unauthorized");
 	cstp_printf(ws,
-		   "HTTP/1.%d 401 Unauthorized\r\nContent-Length: 0\r\nX-Reason: %s\r\n\r\n",
+		   "HTTP/1.%d 401 %s\r\nContent-Length: 0\r\n\r\n",
 		   http_ver, reason);
 	cstp_fatal_close(ws, GNUTLS_A_ACCESS_DENIED);
 	talloc_free(msg);

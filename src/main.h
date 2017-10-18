@@ -171,6 +171,35 @@ struct proc_hash_db_st {
 	unsigned total;
 };
 
+struct main_stats_st {
+	uint64_t session_timeouts; /* sessions with timeout */
+	uint64_t session_idle_timeouts; /* sessions with idle timeout */
+	uint64_t session_errors; /* sessions closed with error */
+	uint64_t sessions_closed; /* sessions closed since last reset */
+	uint64_t kbytes_in;
+	uint64_t kbytes_out;
+	unsigned min_mtu;
+	unsigned max_mtu;
+
+	unsigned active_clients;
+	/* updated on the cli_stats_msg from sec-mod. 
+	 * Holds the number of entries in secmod list of users */
+	unsigned secmod_client_entries;
+	unsigned tlsdb_entries;
+	time_t start_time;
+	time_t last_reset;
+
+	uint32_t avg_auth_time; /* in seconds */
+	uint32_t max_auth_time; /* in seconds */
+	uint32_t avg_session_mins; /* in minutes */
+	uint32_t max_session_mins;
+	uint64_t auth_failures; /* authentication failures */
+
+	/* These are counted since start time */
+	uint64_t total_auth_failures; /* authentication failures since start_time */
+	uint64_t total_sessions_closed; /* sessions closed since start_time */
+};
+
 typedef struct main_server_st {
 	struct cfg_st *config; /* pointer inside perm_config */
 	struct perm_cfg_st *perm_config;
@@ -193,13 +222,8 @@ typedef struct main_server_st {
 
 	struct sockaddr_un secmod_addr;
 	unsigned secmod_addr_len;
-	
-	unsigned active_clients;
-	/* updated on the cli_stats_msg from sec-mod. 
-	 * Holds the number of entries in secmod list of users */
-	unsigned secmod_client_entries;
-	unsigned tlsdb_entries;
-	time_t start_time;
+
+	struct main_stats_st stats;
 
 	void * auth_extra;
 
@@ -231,7 +255,7 @@ int send_udp_fd(main_server_st* s, struct proc_st * proc, int fd);
 int session_open(main_server_st * s, struct proc_st *proc, const uint8_t *cookie, unsigned cookie_size);
 int session_close(main_server_st * s, struct proc_st *proc);
 
-#ifdef DISABLE_LOGS
+#ifdef UNDER_TEST
 /* for testing */
 # define mslog(...)
 

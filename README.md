@@ -2,6 +2,7 @@ Gitlab CI [![Build status](https://gitlab.com/ocserv/ocserv/badges/master/build.
  Travis [![Build Status](https://travis-ci.org/openconnect/ocserv.svg?branch=master)](https://travis-ci.org/openconnect/ocserv)
 
 [![coverage report](https://gitlab.com/ocserv/ocserv/badges/master/coverage.svg)](https://gitlab.com/ocserv/ocserv/commits/master)
+(coverage report doesn't include tests that run under docker)
 
 # About
 
@@ -12,7 +13,7 @@ and is believed to be compatible with CISCO's AnyConnect SSL VPN.
 
 The program consists of:
  1. ocserv, the main server application
- 2. occtl, the server's control tool. A tool which allows to query the
+ 2. occtl, the server's control tool. A tool which allows one to query the
    server for information.
  3. ocpasswd, a tool to administer simple password files.
 
@@ -53,12 +54,12 @@ gperf              / gperf
 liblockfile-bin    / lockfile-progs
 nuttcp             / nuttcp
 lcov               / lcov
-                   / uid_wrapper
-                   / pam_wrapper
-                   / nss_wrapper
-                   / socket_wrapper
-                   / gssntlmssp
-pam-oath           / pam_oath
+libuid-wrapper     / uid_wrapper
+libpam-wrapper     / pam_wrapper
+libnss-wrapper     / nss_wrapper
+libsocket-wrapper  / socket_wrapper
+gss-ntlmssp        / gssntlmssp
+libpam-oath        / pam_oath
 ```
 
 See [README-radius](doc/README-radius.md) for more information on Radius
