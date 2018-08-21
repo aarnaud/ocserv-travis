@@ -1,4 +1,5 @@
 /*
+ * Copyright (C) 2015-2018 Nikos Mavrogiannopoulos
  * Copyright (C) 2015 Red Hat
  *
  * This file is part of ocserv.
@@ -51,7 +52,7 @@ struct known_urls_st {
 
 #define LL(x,y,z) {x, sizeof(x)-1, 0, y, z}
 #define LL_DIR(x,y,z) {x, sizeof(x)-1, 1, y, z}
-const static struct known_urls_st known_urls[] = {
+static const struct known_urls_st known_urls[] = {
 	LL("/", get_auth_handler, post_auth_handler),
 	LL("/auth", get_auth_handler, post_auth_handler),
 	LL("/VPN", get_auth_handler, post_auth_handler),
@@ -137,7 +138,7 @@ int lz4_compress(void *dst, int dstlen, const void *src, int srclen)
 {
 	/* we intentionally restrict output to srclen so that
 	 * compression fails early for packets that expand. */
-	return LZ4_compress_limitedOutput(src, dst, srclen, srclen);
+	return LZ4_compress_default(src, dst, srclen, srclen);
 }
 #endif
 
@@ -162,6 +163,47 @@ struct compression_method_st comp_methods[] = {
 };
 #endif
 
+unsigned switch_comp_priority(void *pool, const char *modstring)
+{
+	unsigned i, ret;
+	char *token, *str;
+	const char *algo = NULL;
+	long priority = -1;
+
+	str = talloc_strdup(pool, modstring);
+	if (!str)
+		return 0;
+
+	token = str;
+	token = strtok(token, ":");
+
+	algo = token;
+
+	token = strtok(NULL, ":");
+	if (token)
+		priority = strtol(token, NULL, 10);
+
+	if (algo == NULL || priority <= 0) {
+		ret = 0;
+		goto finish;
+	}
+	for (i = 0;
+	     i < sizeof(comp_methods) / sizeof(comp_methods[0]);
+	     i++) {
+		if (c_strcasecmp(algo, comp_methods[i].name) == 0) {
+			comp_methods[i].server_prio = priority;
+			ret = 1;
+			goto finish;
+		}
+	}
+
+	ret = 0;
+
+ finish:
+	talloc_free(str);
+	return ret;
+}
+
 static
 void header_value_check(struct worker_st *ws, struct http_req_st *req)
 {
@@ -173,13 +215,13 @@ void header_value_check(struct worker_st *ws, struct http_req_st *req)
 	const dtls_ciphersuite_st *cand = NULL;
 	const compression_method_st *comp_cand = NULL;
 	const compression_method_st **selected_comp;
-	gnutls_cipher_algorithm_t want_cipher;
-	gnutls_mac_algorithm_t want_mac;
+	int want_cipher;
+	int want_mac;
 
 	if (req->value.length <= 0)
 		return;
 
-	if (ws->perm_config->debug < DEBUG_SENSITIVE &&
+	if (WSPCONFIG(ws)->debug < DEBUG_SENSITIVE &&
 		((req->header.length == 6 && strncasecmp((char*)req->header.data, "Cookie", 6) == 0) ||
 		(req->header.length == 20 && strncasecmp((char*)req->header.data, "X-DTLS-Master-Secret", 20) == 0)))
 		oclog(ws, LOG_HTTP_DEBUG, "HTTP processing: %.*s: (censored)", (int)req->header.length,
@@ -199,7 +241,7 @@ void header_value_check(struct worker_st *ws, struct http_req_st *req)
 
 	switch (req->next_header) {
 	case HEADER_MASTER_SECRET:
-		if (req->use_psk || !ws->config->dtls_legacy) /* ignored */
+		if (req->use_psk || !WSCONFIG(ws)->dtls_legacy) /* ignored */
 			break;
 
 		if (value_length < TLS_MASTER_SIZE * 2) {
@@ -254,8 +296,12 @@ void header_value_check(struct worker_st *ws, struct http_req_st *req)
 		}
 		break;
 	case HEADER_SUPPORT_SPNEGO:
-		ws_switch_auth_to(ws, AUTH_TYPE_GSSAPI);
-		req->spnego_set = 1;
+		/* Switch to GSSAPI if the client supports it, but only
+		 * if we haven't already authenticated with a certificate */
+		if (!((ws->selected_auth->type & AUTH_TYPE_CERTIFICATE) && ws->cert_auth_ok != 0)) {
+			ws_switch_auth_to(ws, AUTH_TYPE_GSSAPI);
+			req->spnego_set = 1;
+		}
 		break;
 	case HEADER_AUTHORIZATION:
 		if (req->authorization != NULL)
@@ -282,6 +328,8 @@ void header_value_check(struct worker_st *ws, struct http_req_st *req)
 				req->user_agent_type = AGENT_OPENCONNECT_V3;
 			else
 				req->user_agent_type = AGENT_OPENCONNECT;
+		} else if (strncasecmp(req->user_agent, "OpenConnect VPN Agent", 21) == 0) {
+			req->user_agent_type = AGENT_OPENCONNECT;
 		}
 		break;
 
@@ -292,7 +340,7 @@ void header_value_check(struct worker_st *ws, struct http_req_st *req)
 		p = strstr(str, DTLS_PROTO_INDICATOR);
 		if (p != NULL && (p[sizeof(DTLS_PROTO_INDICATOR)-1] == 0 || p[sizeof(DTLS_PROTO_INDICATOR)-1] == ':')) {
 			/* OpenConnect DTLS setup was detected. */
-			if (ws->config->dtls_psk) {
+			if (WSCONFIG(ws)->dtls_psk) {
 				req->use_psk = 1;
 				req->master_secret_set = 1; /* we don't need it */
 				break;
@@ -342,7 +390,7 @@ void header_value_check(struct worker_st *ws, struct http_req_st *req)
 #ifdef ENABLE_COMPRESSION
 	case HEADER_DTLS_ENCODING:
 	case HEADER_CSTP_ENCODING:
-	        if (ws->config->enable_compression == 0)
+	        if (WSCONFIG(ws)->enable_compression == 0)
 	        	break;
 
 		if (req->next_header == HEADER_DTLS_ENCODING)
@@ -498,8 +546,8 @@ url_handler_fn http_post_url_handler(struct worker_st *ws, const char *url)
 		p++;
 	} while (p->url != NULL);
 
-	for (i=0;i<ws->config->kkdcp_size;i++) {
-		if (ws->config->kkdcp[i].url && strcmp(ws->config->kkdcp[i].url, url) == 0)
+	for (i=0;i<WSCONFIG(ws)->kkdcp_size;i++) {
+		if (WSCONFIG(ws)->kkdcp[i].url && strcmp(WSCONFIG(ws)->kkdcp[i].url, url) == 0)
 			return post_kkdcp_handler;
 	}
 
@@ -586,11 +634,11 @@ int http_header_complete_cb(http_parser * parser)
 	/* handle header value */
 	header_value_check(ws, req);
 
-	if (ws->selected_auth->type & AUTH_TYPE_GSSAPI && ws->auth_state == S_AUTH_INACTIVE &&
+	if ((ws->selected_auth->type & AUTH_TYPE_GSSAPI) && ws->auth_state == S_AUTH_INACTIVE &&
 	    req->spnego_set == 0) {
 		/* client retried getting the form without the SPNEGO header, probably
 		 * wants a fallback authentication method */
-		if (ws_switch_auth_to(ws, AUTH_TYPE_USERNAME_PASS) == 0)
+		if (ws_switch_auth_to_next(ws) == 0)
 			oclog(ws, LOG_INFO, "no fallback from gssapi authentication");
 	}
 
