@@ -1,10 +1,16 @@
+ocserv (0.11.9-2) UNRELEASED; urgency=medium
+
+  * d/changelog: Remove trailing whitespaces
+
+ -- Ondřej Nový <onovy@debian.org>  Mon, 01 Oct 2018 09:40:36 +0200
+
 ocserv (0.11.9-1) unstable; urgency=medium
 
   * New upstream version 0.11.9
-  * d/control: 
+  * d/control:
     - Bump Standards-Version to 4.1.1, no changes needed
     - Enable geoip option
-    - Remove Build-Depends on dh-systemd 
+    - Remove Build-Depends on dh-systemd
   * d/copyright: Refresh for new upstream version
   * d/patches: Remove following patches, applied upstream:
     - allow-parallel-build-of-autogen-files.patch
