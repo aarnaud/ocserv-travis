@@ -1,6 +1,8 @@
 #!/usr/bin/make -f
-export DEB_BUILD_MAINT_OPTIONS = hardening=+all
 
+include /usr/share/dpkg/architecture.mk
+
+export DEB_BUILD_MAINT_OPTIONS = hardening=+all
 # Used by autogen to substitute the source package date into man pages
 export MAN_PAGE_DATE = $(shell date -u -d "@$(SOURCE_DATE_EPOCH)" +%Y-%m-%d)
 
@@ -9,7 +11,6 @@ AUTORECONF_SOURCES = aclocal.m4 configure
 BUILT_SOURCES = doc/occtl.8 doc/ocpasswd.8 doc/ocserv.8 \
 		src/ipc.pb-c.c src/ipc.pb-c.h src/version.inc
 
-DEB_BUILD_ARCH_OS = $(dpkg-architecture -qDEB_BUILD_ARCH_OS)
 #ifeq ($(DEB_BUILD_ARCH_OS),linux)
 	OTHER_CONF_OPTS = --enable-systemd --enable-linux-namespaces
 #endif
