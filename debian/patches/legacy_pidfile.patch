@@ -1,0 +1,13 @@
+Index: ocserv-0.12.1/doc/systemd/socket-activated/ocserv.service
+===================================================================
+--- ocserv-0.12.1.orig/doc/systemd/socket-activated/ocserv.service
++++ ocserv-0.12.1/doc/systemd/socket-activated/ocserv.service
+@@ -6,7 +6,7 @@ Requires=ocserv.socket
+ 
+ [Service]
+ PrivateTmp=true
+-PIDFile=/var/run/ocserv.pid
++PIDFile=/run/ocserv.pid
+ ExecStart=/usr/sbin/ocserv --foreground --pid-file /var/run/ocserv.pid --config /etc/ocserv/ocserv.conf
+ ExecReload=/bin/kill -HUP $MAINPID
+ 
