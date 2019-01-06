@@ -1,3 +1,13 @@
+ocserv (0.12.1-2) unstable; urgency=medium
+
+  * Replace /var/run with /run
+  * Increase default max-clients: 16->128
+  * Saner defaults for private IP address blocks
+  * Require seccomp on linux-any
+  * Promote gnutils-bin from Suggests to Recommends
+
+ -- Aron Xu <aron@debian.org>  Sun, 06 Jan 2019 15:08:25 +0800
+
 ocserv (0.12.1-1) unstable; urgency=medium
 
   [ Ondřej Nový ]
