@@ -35,8 +35,8 @@ VCS-Git: https://salsa.debian.org/debian/ocserv.git
 Package: ocserv
 Architecture: any
 Depends: dbus, lsb-base, ssl-cert, ${misc:Depends}, ${shlibs:Depends}
-Recommends: ca-certificates
-Suggests: gnutls-bin
+Recommends: ca-certificates,
+            gnutls-bin,
 Description: OpenConnect VPN server compatible with Cisco AnyConnect VPN
  OpenConnect server (ocserv) is an SSL VPN server. Its purpose is to be a
  secure, small, fast and configurable VPN server. It implements the OpenConnect
