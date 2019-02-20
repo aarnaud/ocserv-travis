@@ -274,7 +274,7 @@ static int setup_dtls_psk_keys(gnutls_session_t session, struct worker_st *ws)
 	return 0;
 }
 
-static int setup_dtls0_9_keys(gnutls_session_t session, struct worker_st *ws)
+static int setup_legacy_dtls_keys(gnutls_session_t session, struct worker_st *ws)
 {
 	int ret;
 	gnutls_datum_t master =
@@ -351,8 +351,8 @@ static int setup_dtls_connection(struct worker_st *ws)
 			oclog(ws, LOG_INFO, "CISCO client compatibility (dtls-legacy) is disabled; will not setup a DTLS session");
 			goto fail;
 		}
-		oclog(ws, LOG_INFO, "setting up DTLS-0.9 connection");
-		ret = setup_dtls0_9_keys(session, ws);
+		oclog(ws, LOG_INFO, "setting up legacy DTLS (resumption) connection");
+		ret = setup_legacy_dtls_keys(session, ws);
 	}
 
 	if (ret < 0) {
@@ -1243,7 +1243,7 @@ int periodic_check(worker_st * ws, struct timespec *tnow, unsigned dpd)
 		}
 	}
 	if (dpd > 0 && now - ws->last_msg_tcp > DPD_TRIES * dpd) {
-		oclog(ws, LOG_ERR,
+		oclog(ws, LOG_DEBUG,
 		      "have not received TCP DPD for long (%d secs)",
 		      (int)(now - ws->last_msg_tcp));
 		ws->buffer[0] = 'S';
@@ -1260,7 +1260,7 @@ int periodic_check(worker_st * ws, struct timespec *tnow, unsigned dpd)
 
 		if (now - ws->last_msg_tcp > DPD_MAX_TRIES * dpd) {
 			oclog(ws, LOG_ERR,
-			      "have not received TCP DPD for very long; tearing down connection");
+			      "connection timeout (DPD); tearing down connection");
 			exit_worker_reason(ws, REASON_DPD_TIMEOUT);
 		}
 	}
@@ -1443,6 +1443,12 @@ static int tls_mainloop(struct worker_st *ws, struct timespec *tnow)
 	void *packet = NULL;
 
 	ret = cstp_recv_packet(ws, &data, &packet);
+	if (ret == GNUTLS_E_PREMATURE_TERMINATION) {
+		oclog(ws, LOG_DEBUG, "client disconnected prematurely");
+		ret = -1;
+		goto cleanup;
+	}
+
 	CSTP_FATAL_ERR_CMD(ws, ret, exit_worker_reason(ws, REASON_ERROR));
 
 	if (ret == 0) {		/* disconnect */
@@ -1963,8 +1969,13 @@ static int connect_handler(worker_st * ws)
 	/* While anyconnect clients can handle the assignment
 	 * of an IPv6 address, they cannot handle routes or DNS
 	 * in IPv6. So we disable IPv6 after an IP is assigned. */
-	if (ws->full_ipv6 == 0 || req->user_agent_type != AGENT_OPENCONNECT)
+	if (ws->full_ipv6 == 0) {
 		req->no_ipv6 = 1;
+		oclog(ws, LOG_INFO, "IPv6 routes/DNS disabled because IPv6 support was not requested.");
+	} else if (req->user_agent_type != AGENT_OPENCONNECT) {
+		req->no_ipv6 = 1;
+		oclog(ws, LOG_INFO, "IPv6 routes/DNS disabled because the agent is not openconnect.");
+	}
 
 	for (i = 0; i < ws->user_config->n_dns; i++) {
 		if (strchr(ws->user_config->dns[i], ':') != 0)
@@ -2197,8 +2208,9 @@ static int connect_handler(worker_st * ws)
 			oclog(ws, LOG_INFO, "DTLS ciphersuite: %s",
 			      ws->req.selected_ciphersuite->oc_name);
 			ret =
-			    cstp_printf(ws, "X-DTLS-CipherSuite: %s\r\n",
-				       ws->req.selected_ciphersuite->oc_name);
+			    cstp_printf(ws, "X-DTLS%s-CipherSuite: %s\r\n",
+				        (ws->req.selected_ciphersuite->dtls12_mode!=0)?"12":"",
+				        ws->req.selected_ciphersuite->oc_name);
 			SEND_ERR(ret);
 
 			/* only send the X-DTLS-MTU in the legacy protocol, as there

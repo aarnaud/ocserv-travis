@@ -1,3 +1,165 @@
+2019-01-10  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* NEWS: corrected typo Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2019-01-10  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* NEWS: released 0.12.2 Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2019-01-10  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/Makefile.am: Makefile: allow out-of-tree builds with bundled
+	protobuf Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2019-01-10  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* : commit a67c45099ff9de96f5eed418477806d1189d27ee Author: Nikos
+	Mavrogiannopoulos <nmav@gnutls.org> Date:   Thu Jan 10 19:30:36 2019
+	+0100
+
+2019-01-10  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/worker-http.c: worker-http: use the same workaround string for
+	all ciphersuites Resolves #193 Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2019-01-10  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* : commit 232de85d171a411ceee680f40966c3a076978401 Author: Nikos
+	Mavrogiannopoulos <nmav@gnutls.org> Date:   Wed Jan 9 19:03:04 2019
+	+0100
+
+2019-01-07  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/worker-vpn.c: setup_dtls0_9_keys: renamed and updated log
+	messages for clarity Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2019-01-07  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/worker-http.c, src/worker.h: worker-http: dropped txt_version All the versions checked were prior to the minimum gnutls version we
+	require.  Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2019-01-06  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/http-heads.gperf, src/worker-http.c, src/worker-vpn.c,
+	src/worker.h: worker-http: added support for anyconnect DTLS1.2
+	ciphersuites This adds support for DTLS1.2 ciphersuite header as sent by
+	anyconnect clients.  Resolves #188 Resolves #193 Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2019-01-06  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* README.md: README.md: updated instructions on debian Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2019-01-06  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* .gitlab-ci.yml: .gitlab-ci.yml: skip Centos6 tests that fail Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2019-01-06  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/config.c: cfg_ini_handler: notify static analyzers that
+	defvhost is always non-null Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2019-01-06  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* tests/Makefile.am: tests: moved server-cert-rsa-pss to
+	dist_check_scripts The gnutls included in distributions is expected to work well with
+	RSA-PSS.  Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-11-19  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* : commit 34b39d213cb48f6d4688ac71712f5e676a976b84 Author:
+	pumpkin031 <www.carrotsoft@gmail.com> Date:   Sun Nov 18 12:54:18
+	2018 +0900
+
+2018-11-18  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* : commit d4a4e780fcd9f95fc1044453b7039f950fba93f2 Author: Nikos
+	Mavrogiannopoulos <nmav@gnutls.org> Date:   Sun Nov 4 11:38:49 2018
+	+0100
+
+2018-11-04  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/sec-mod-auth.c: sec-mod: log sucessful authentication Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-11-04  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* tests/Makefile.am, tests/common.sh,
+	tests/data/config-per-group.config, tests/data/group-config/tost,
+	tests/test-config-per-group: tests: added functionality test for
+	config-per-group Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-11-04  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* : commit 39c6d578b54fd1b46f2f9515b9d0a9e16481b14c Author: Nikos
+	Mavrogiannopoulos <nmav@gnutls.org> Date:   Sat Sep 22 21:35:55 2018
+	+0200
+
+2018-09-22  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* tests/test-pam, tests/test-pam-noauth, tests/test-pass: tests:
+	added check with empty password Relates #171 Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-07-21  Timo Förster <tfoerster@webfoersterei.de>
+
+	* doc/sample.config: Change documentation url for UsersFile. Fixes
+	#163 Signed-off-by: Timo FÃ¶rster <tfoerster@webfoersterei.de>
+
+2018-07-23  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* .gitlab-ci.yml: .gitlab-ci.yml: disabled asan job as it conflicts
+	with cwrap tools in F28 Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-07-20  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* : commit 4f79db43b67eda84ebd6d535dbe0bbde94734f1e Author: Nikos
+	Mavrogiannopoulos <nmav@gnutls.org> Date:   Fri Jul 20 22:15:42 2018
+	+0200
+
+2018-07-20  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* tests/Makefile.am, tests/aes128-cipher, tests/aes128-gcm-cipher,
+	tests/aes256-cipher, tests/aes256-gcm-cipher,
+	tests/cipher-common.sh: tests: added unit tests for AES-128-GCM and
+	AES-256-GCM Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-07-19  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* NEWS, configure.ac, src/worker-http.c, tests/Makefile.am,
+	tests/aes128-cipher, tests/aes256-cipher,
+	tests/data/test-ciphers.config, tests/ns.sh: Added support for
+	AES-256-CBC This enables support for AES-256 for anyconnect clients which do not
+	support AES-GCM. Also prioritized the 256-bit ciphers higher than
+	the 128-bit ones.  Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-06-26  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* .gitlab-ci.yml: .gitlab-ci.yml: updated for new debian build name Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-06-26  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* .gitlab-ci.yml: .gitlab-ci.yml: updated for new project Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-06-26  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* doc/ocserv.8.md: ocserv.8: link to openconnect(8) Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-06-19  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* src/worker-vpn.c: worker-vpn: more reasonable messages for timeout
+	and disconnections Signed-off-by: Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+2018-05-27  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/auth/radius.c: radius: be more verbose with groups found Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-05-13  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* doc/README-radius.md: README-radius.md: mention groupconfig=true
+	relevance for Class attribute [ci skip] Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-05-12  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* NEWS: NEWS: updated for release Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
 2018-05-12  Nikos Mavrogiannopoulos <nmav@gnutls.org>
 
 	* tests/Makefile.am: added missing file Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
