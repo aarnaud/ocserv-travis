@@ -7,7 +7,7 @@ export DEB_BUILD_MAINT_OPTIONS = hardening=+all
 export MAN_PAGE_DATE = $(shell date -u -d "@$(SOURCE_DATE_EPOCH)" +%Y-%m-%d)
 
 #ifeq ($(DEB_BUILD_ARCH_OS),linux)
-	OTHER_CONF_OPTS = --enable-systemd --enable-linux-namespaces
+	OTHER_CONF_OPTS = --enable-systemd
 #endif
 
 %:
@@ -15,7 +15,7 @@ export MAN_PAGE_DATE = $(shell date -u -d "@$(SOURCE_DATE_EPOCH)" +%Y-%m-%d)
 
 override_dh_auto_configure:
 	dh_auto_configure -- --disable-rpath --disable-silent-rules \
-	    --without-dbus $(OTHER_CONF_OPTS)
+	    $(OTHER_CONF_OPTS)
 
 override_dh_auto_clean:
 	dh_auto_clean
