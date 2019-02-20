@@ -1,3 +1,12 @@
+ocserv (0.12.2-1) unstable; urgency=medium
+
+  * New upstream version 0.12.2
+  * Update default configuration to have better compatibility
+  * Enable compression in default configuration
+  * Use standalone version systemd service
+
+ -- Aron Xu <aron@debian.org>  Thu, 21 Feb 2019 03:38:52 +0800
+
 ocserv (0.12.1-2) unstable; urgency=medium
 
   * Replace /var/run with /run
