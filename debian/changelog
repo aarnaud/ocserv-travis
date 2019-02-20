@@ -1,3 +1,11 @@
+ocserv (0.12.2-2) unstable; urgency=medium
+
+  * d/patches: upstream patch for AC-DTLS12 and stability with
+    DTLS ciphersuite
+  * d/rules: remove deprecated configure options
+
+ -- Aron Xu <aron@debian.org>  Thu, 21 Feb 2019 04:09:36 +0800
+
 ocserv (0.12.2-1) unstable; urgency=medium
 
   * New upstream version 0.12.2
