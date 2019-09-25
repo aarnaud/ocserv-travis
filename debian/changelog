@@ -1,3 +1,10 @@
+ocserv (0.12.2-3) unstable; urgency=medium
+
+  * d/patches: fix ocserv-worker segfault
+    - 0003-Fix-the-bug-of-ocserv-worker-segfault-at-0-ip-b76d67.patch
+
+ -- Aron Xu <aron@debian.org>  Sat, 13 Apr 2019 15:00:59 +0800
+
 ocserv (0.12.2-2) unstable; urgency=medium
 
   * d/patches: upstream patch for AC-DTLS12 and stability with
