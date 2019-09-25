@@ -1,3 +1,20 @@
+* Version 0.12.4 (released 2019-07-03)
+- Added support for radius access-challenge (multifactor) authentication.
+- Fixed race condition when connect-script and disconnect-script are
+  set, which could potentially cause a crash (#208).
+- Perform quicker cleanup of sessions which their user explicitly
+  disconnected (#210).
+
+
+* Version 0.12.3 (released 2019-03-12)
+- Fixed crash when no DTLS ciphersuite is negotiated.
+- Fixed crash happening arbitrarily depending on handled string
+  sizes (#197).
+- Fixed compatibility issue with GnuTLS 3.3.x (#201).
+- occtl: print the TLS session information, even if the DTLS channel
+  is not established.
+
+
 * Version 0.12.2 (released 2019-01-10)
 - Added support for AES256-SHA legacy cipher. This allows the anyconnect
   clients to use AES256.
