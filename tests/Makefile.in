@@ -93,22 +93,23 @@ host_triplet = @host@
 @GNUTLS_WITH_NEW_CERTS_TRUE@am__append_4 = server-cert-ed25519 server-cert-rsa-pss
 
 #docker tests
-@ENABLE_DOCKER_TESTS_TRUE@@ENABLE_ROOT_TESTS_TRUE@am__append_5 = radius-test unix-test kerberos-test radius-test-config \
+@ENABLE_DOCKER_TESTS_TRUE@@ENABLE_ROOT_TESTS_TRUE@am__append_5 = unix-test kerberos-test \
 @ENABLE_DOCKER_TESTS_TRUE@@ENABLE_ROOT_TESTS_TRUE@	proxyproto-test proxyproto-v1-test proxyproto-unix-test \
-@ENABLE_DOCKER_TESTS_TRUE@@ENABLE_ROOT_TESTS_TRUE@	reload-info-test radius-group-test
+@ENABLE_DOCKER_TESTS_TRUE@@ENABLE_ROOT_TESTS_TRUE@	reload-info-test
 
 
 #other root requiring tests
 @ENABLE_ROOT_TESTS_TRUE@am__append_6 = test-iroute test-multi-cookie test-pass-script \
 @ENABLE_ROOT_TESTS_TRUE@	test-cookie-timeout test-cookie-timeout-2 test-explicit-ip \
 @ENABLE_ROOT_TESTS_TRUE@	test-cookie-invalidation test-user-config test-append-routes test-ban \
-@ENABLE_ROOT_TESTS_TRUE@	multiple-routes haproxy-connect
+@ENABLE_ROOT_TESTS_TRUE@	multiple-routes haproxy-connect radius-group radius-otp
 
 
 #other tests requiring nuttcp for traffic
 @ENABLE_NUTTCP_TESTS_TRUE@@ENABLE_ROOT_TESTS_TRUE@am__append_7 = traffic lz4-compression lzs-compression \
-@ENABLE_NUTTCP_TESTS_TRUE@@ENABLE_ROOT_TESTS_TRUE@	aes256-cipher aes128-cipher aes256-gcm-cipher aes128-gcm-cipher \
-@ENABLE_NUTTCP_TESTS_TRUE@@ENABLE_ROOT_TESTS_TRUE@	test-config-per-group
+@ENABLE_NUTTCP_TESTS_TRUE@@ENABLE_ROOT_TESTS_TRUE@	aes256-cipher aes128-cipher oc-aes256-gcm-cipher oc-aes128-gcm-cipher \
+@ENABLE_NUTTCP_TESTS_TRUE@@ENABLE_ROOT_TESTS_TRUE@	test-config-per-group ac-aes128-gcm-cipher ac-aes256-gcm-cipher \
+@ENABLE_NUTTCP_TESTS_TRUE@@ENABLE_ROOT_TESTS_TRUE@	no-dtls-cipher radius radius-config
 
 @HAVE_CWRAP_ALL_TRUE@@HAVE_CWRAP_TRUE@am__append_8 = test-vhost
 @HAVE_CWRAP_TRUE@am__append_9 = test-pass test-pass-cert test-cert test-group-pass \
@@ -225,22 +226,23 @@ valid_hostname_SOURCES = valid-hostname.c
 valid_hostname_OBJECTS = valid-hostname.$(OBJEXT)
 valid_hostname_DEPENDENCIES = $(am__DEPENDENCIES_2)
 am__dist_check_SCRIPTS_DIST = ocpasswd-test server-cert-ed25519 \
-	server-cert-rsa-pss radius-test unix-test kerberos-test \
-	radius-test-config proxyproto-test proxyproto-v1-test \
-	proxyproto-unix-test reload-info-test radius-group-test \
+	server-cert-rsa-pss unix-test kerberos-test proxyproto-test \
+	proxyproto-v1-test proxyproto-unix-test reload-info-test \
 	test-iroute test-multi-cookie test-pass-script \
 	test-cookie-timeout test-cookie-timeout-2 test-explicit-ip \
 	test-cookie-invalidation test-user-config test-append-routes \
-	test-ban multiple-routes haproxy-connect traffic \
-	lz4-compression lzs-compression aes256-cipher aes128-cipher \
-	aes256-gcm-cipher aes128-gcm-cipher test-config-per-group \
-	test-vhost test-pass test-pass-cert test-cert test-group-pass \
-	test-pass-group-cert test-pass-group-cert-no-pass test-sighup \
-	test-enc-key test-sighup-key-change test-get-cert \
-	test-san-cert test-gssapi test-pass-opt-cert \
-	test-cert-opt-pass test-gssapi-opt-pass test-gssapi-opt-cert \
-	haproxy-auth test-maintenance test-pam test-pam-noauth \
-	test-otp-cert test-otp
+	test-ban multiple-routes haproxy-connect radius-group \
+	radius-otp traffic lz4-compression lzs-compression \
+	aes256-cipher aes128-cipher oc-aes256-gcm-cipher \
+	oc-aes128-gcm-cipher test-config-per-group \
+	ac-aes128-gcm-cipher ac-aes256-gcm-cipher no-dtls-cipher \
+	radius radius-config test-vhost test-pass test-pass-cert \
+	test-cert test-group-pass test-pass-group-cert \
+	test-pass-group-cert-no-pass test-sighup test-enc-key \
+	test-sighup-key-change test-get-cert test-san-cert test-gssapi \
+	test-pass-opt-cert test-cert-opt-pass test-gssapi-opt-pass \
+	test-gssapi-opt-cert haproxy-auth test-maintenance test-pam \
+	test-pam-noauth test-otp-cert test-otp
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -1321,7 +1323,11 @@ EXTRA_DIST = certs/ca-key.pem certs/ca.pem ns.sh common.sh certs/server-cert.pem
 	data/haproxy-connect.cfg data/test-haproxy-connect.config scripts/vpnc-script \
 	data/test-traffic.config data/test-compression-lzs.config data/test-compression-lz4.config \
 	certs/crl.pem server-cert-rsa-pss data/test-gssapi-opt-cert.config data/test-ciphers.config \
-	cipher-common.sh data/config-per-group.config data/group-config/tost
+	cipher-common.sh data/config-per-group.config data/group-config/tost \
+	data/raddb/access_reject data/raddb/accounting_response data/raddb/access_challenge data/raddb/acct_users \
+	data/raddb/clients.conf data/raddb/radiusd.conf data/raddb/users \
+	data/radiusclient/dictionary data/radiusclient/radiusclient.conf \
+	data/radiusclient/servers data/radius.config data/radius-group.config data/radius-otp.config
 
 SUBDIRS = docker-ocserv docker-kerberos
 xfail_scripts = 
@@ -1799,13 +1805,6 @@ server-cert-rsa-pss.log: server-cert-rsa-pss
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
-radius-test.log: radius-test
-	@p='radius-test'; \
-	b='radius-test'; \
-	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
-	--log-file $$b.log --trs-file $$b.trs \
-	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
-	"$$tst" $(AM_TESTS_FD_REDIRECT)
 unix-test.log: unix-test
 	@p='unix-test'; \
 	b='unix-test'; \
@@ -1816,13 +1815,6 @@ unix-test.log: unix-test
 kerberos-test.log: kerberos-test
 	@p='kerberos-test'; \
 	b='kerberos-test'; \
-	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
-	--log-file $$b.log --trs-file $$b.trs \
-	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
-	"$$tst" $(AM_TESTS_FD_REDIRECT)
-radius-test-config.log: radius-test-config
-	@p='radius-test-config'; \
-	b='radius-test-config'; \
 	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
@@ -1851,13 +1843,6 @@ proxyproto-unix-test.log: proxyproto-unix-test
 reload-info-test.log: reload-info-test
 	@p='reload-info-test'; \
 	b='reload-info-test'; \
-	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
-	--log-file $$b.log --trs-file $$b.trs \
-	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
-	"$$tst" $(AM_TESTS_FD_REDIRECT)
-radius-group-test.log: radius-group-test
-	@p='radius-group-test'; \
-	b='radius-group-test'; \
 	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
@@ -1946,6 +1931,20 @@ haproxy-connect.log: haproxy-connect
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
+radius-group.log: radius-group
+	@p='radius-group'; \
+	b='radius-group'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+radius-otp.log: radius-otp
+	@p='radius-otp'; \
+	b='radius-otp'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
 traffic.log: traffic
 	@p='traffic'; \
 	b='traffic'; \
@@ -1981,16 +1980,16 @@ aes128-cipher.log: aes128-cipher
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
-aes256-gcm-cipher.log: aes256-gcm-cipher
-	@p='aes256-gcm-cipher'; \
-	b='aes256-gcm-cipher'; \
+oc-aes256-gcm-cipher.log: oc-aes256-gcm-cipher
+	@p='oc-aes256-gcm-cipher'; \
+	b='oc-aes256-gcm-cipher'; \
 	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
-aes128-gcm-cipher.log: aes128-gcm-cipher
-	@p='aes128-gcm-cipher'; \
-	b='aes128-gcm-cipher'; \
+oc-aes128-gcm-cipher.log: oc-aes128-gcm-cipher
+	@p='oc-aes128-gcm-cipher'; \
+	b='oc-aes128-gcm-cipher'; \
 	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
@@ -1998,6 +1997,41 @@ aes128-gcm-cipher.log: aes128-gcm-cipher
 test-config-per-group.log: test-config-per-group
 	@p='test-config-per-group'; \
 	b='test-config-per-group'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+ac-aes128-gcm-cipher.log: ac-aes128-gcm-cipher
+	@p='ac-aes128-gcm-cipher'; \
+	b='ac-aes128-gcm-cipher'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+ac-aes256-gcm-cipher.log: ac-aes256-gcm-cipher
+	@p='ac-aes256-gcm-cipher'; \
+	b='ac-aes256-gcm-cipher'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+no-dtls-cipher.log: no-dtls-cipher
+	@p='no-dtls-cipher'; \
+	b='no-dtls-cipher'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+radius.log: radius
+	@p='radius'; \
+	b='radius'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+radius-config.log: radius-config
+	@p='radius-config'; \
+	b='radius-config'; \
 	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
