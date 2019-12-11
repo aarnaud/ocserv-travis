@@ -2,6 +2,7 @@ ocserv (0.12.2-4) unstable; urgency=medium
 
   * New upstream version 0.12.5
   * Remove d/patches/000*, applied upstream
+  * d/control, add dpends on libmaxminddb-dev
 
  -- Liang Guo <guoliang@debian.org>  Wed, 11 Dec 2019 17:33:08 +0800
 
