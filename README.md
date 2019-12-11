@@ -57,6 +57,7 @@ haproxy            / haproxy
 iputils-ping       / iputils
 freeradius	   / freeradius
 gawk		   / gawk
+yajl-tools	   / yajl
 ```
 
 See [README-radius](doc/README-radius.md) for more information on Radius
@@ -80,7 +81,7 @@ Note that the code coverage reported does not currently include tests which
 are run within docker.
 
 In addition to the prerequisites listed above, building from git requires
-the following packages: autoconf, automake, git2cl, and xz.
+the following packages: autoconf, automake, and xz.
 
 To build from the git repository use:
 ```

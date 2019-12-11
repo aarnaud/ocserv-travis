@@ -1,3 +1,13 @@
+* Version 0.12.5 (released 2019-10-16)
+- Fixed issue with FreeBSD tun devices closing (#213).
+- Added configuration option udp-listen-host. This option supports different
+  listen addresses for tcp and udp such as haproxy for tcp, but support dtls
+  at the same time.
+- occtl: fixed json output of show status command. Introduced tests
+  for checking its json output using yajl (#220).
+- occtl: use maxminddb when available.
+
+
 * Version 0.12.4 (released 2019-07-03)
 - Added support for radius access-challenge (multifactor) authentication.
 - Fixed race condition when connect-script and disconnect-script are

@@ -102,7 +102,7 @@ host_triplet = @host@
 @ENABLE_ROOT_TESTS_TRUE@am__append_6 = test-iroute test-multi-cookie test-pass-script \
 @ENABLE_ROOT_TESTS_TRUE@	test-cookie-timeout test-cookie-timeout-2 test-explicit-ip \
 @ENABLE_ROOT_TESTS_TRUE@	test-cookie-invalidation test-user-config test-append-routes test-ban \
-@ENABLE_ROOT_TESTS_TRUE@	multiple-routes haproxy-connect radius-group radius-otp
+@ENABLE_ROOT_TESTS_TRUE@	multiple-routes haproxy-connect radius-group radius-otp json test-udp-listen-host
 
 
 #other tests requiring nuttcp for traffic
@@ -232,17 +232,18 @@ am__dist_check_SCRIPTS_DIST = ocpasswd-test server-cert-ed25519 \
 	test-cookie-timeout test-cookie-timeout-2 test-explicit-ip \
 	test-cookie-invalidation test-user-config test-append-routes \
 	test-ban multiple-routes haproxy-connect radius-group \
-	radius-otp traffic lz4-compression lzs-compression \
-	aes256-cipher aes128-cipher oc-aes256-gcm-cipher \
-	oc-aes128-gcm-cipher test-config-per-group \
-	ac-aes128-gcm-cipher ac-aes256-gcm-cipher no-dtls-cipher \
-	radius radius-config test-vhost test-pass test-pass-cert \
-	test-cert test-group-pass test-pass-group-cert \
-	test-pass-group-cert-no-pass test-sighup test-enc-key \
-	test-sighup-key-change test-get-cert test-san-cert test-gssapi \
-	test-pass-opt-cert test-cert-opt-pass test-gssapi-opt-pass \
-	test-gssapi-opt-cert haproxy-auth test-maintenance test-pam \
-	test-pam-noauth test-otp-cert test-otp
+	radius-otp json test-udp-listen-host traffic lz4-compression \
+	lzs-compression aes256-cipher aes128-cipher \
+	oc-aes256-gcm-cipher oc-aes128-gcm-cipher \
+	test-config-per-group ac-aes128-gcm-cipher \
+	ac-aes256-gcm-cipher no-dtls-cipher radius radius-config \
+	test-vhost test-pass test-pass-cert test-cert test-group-pass \
+	test-pass-group-cert test-pass-group-cert-no-pass test-sighup \
+	test-enc-key test-sighup-key-change test-get-cert \
+	test-san-cert test-gssapi test-pass-opt-cert \
+	test-cert-opt-pass test-gssapi-opt-pass test-gssapi-opt-cert \
+	haproxy-auth test-maintenance test-pam test-pam-noauth \
+	test-otp-cert test-otp
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -1042,6 +1043,8 @@ LTLIBUTIL = @LTLIBUTIL@
 LTLIBWRAP = @LTLIBWRAP@
 MAINT = @MAINT@
 MAKEINFO = @MAKEINFO@
+MAXMIND_CFLAGS = @MAXMIND_CFLAGS@
+MAXMIND_LIBS = @MAXMIND_LIBS@
 MKDIR_P = @MKDIR_P@
 NEXT_AS_FIRST_DIRECTIVE_ERRNO_H = @NEXT_AS_FIRST_DIRECTIVE_ERRNO_H@
 NEXT_AS_FIRST_DIRECTIVE_STDDEF_H = @NEXT_AS_FIRST_DIRECTIVE_STDDEF_H@
@@ -1275,7 +1278,6 @@ pdfdir = @pdfdir@
 prefix = @prefix@
 program_transform_name = @program_transform_name@
 psdir = @psdir@
-runstatedir = @runstatedir@
 sbindir = @sbindir@
 sharedstatedir = @sharedstatedir@
 srcdir = @srcdir@
@@ -1327,7 +1329,8 @@ EXTRA_DIST = certs/ca-key.pem certs/ca.pem ns.sh common.sh certs/server-cert.pem
 	data/raddb/access_reject data/raddb/accounting_response data/raddb/access_challenge data/raddb/acct_users \
 	data/raddb/clients.conf data/raddb/radiusd.conf data/raddb/users \
 	data/radiusclient/dictionary data/radiusclient/radiusclient.conf \
-	data/radiusclient/servers data/radius.config data/radius-group.config data/radius-otp.config
+	data/radiusclient/servers data/radius.config data/radius-group.config data/radius-otp.config \
+	data/test-udp-listen-host.config
 
 SUBDIRS = docker-ocserv docker-kerberos
 xfail_scripts = 
@@ -1941,6 +1944,20 @@ radius-group.log: radius-group
 radius-otp.log: radius-otp
 	@p='radius-otp'; \
 	b='radius-otp'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+json.log: json
+	@p='json'; \
+	b='json'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+test-udp-listen-host.log: test-udp-listen-host
+	@p='test-udp-listen-host'; \
+	b='test-udp-listen-host'; \
 	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \

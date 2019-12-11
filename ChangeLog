@@ -1,3 +1,143 @@
+commit 962de41fba3104a724167973ac423b05d3b9c773
+Author: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+Date:   Wed Oct 16 21:30:42 2019 +0200
+
+    released 0.12.5
+    
+    Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+commit caf8ed2d4840871d4e09f25e1de0f8484e925a2d
+Merge: 6c2c0936 960032e0
+Author: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+Date:   Wed Oct 16 19:32:02 2019 +0000
+
+    Merge branch 'tmp-maxmind' into 'master'
+    
+    occtl: use maxminddb when available
+    
+    See merge request openconnect/ocserv!115
+
+commit 960032e065e20789669bf6c79599a2b74b837a73
+Author: Nikos Mavrogiannopoulos <nmav@redhat.com>
+Date:   Mon Oct 14 14:54:40 2019 +0200
+
+    occtl: use maxminddb when available
+    
+    Signed-off-by: Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+commit 6c2c09362eaa993854381ea417dcdff3814be071
+Author: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+Date:   Mon Oct 14 20:22:51 2019 +0200
+
+    README.md: removed references to git2cl [ci skip]
+    
+    Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+commit b9ff297c7d8210ff96d049f72cb6a1aa4bd8d81b
+Author: Nikos Mavrogiannopoulos <nmav@redhat.com>
+Date:   Thu Oct 3 09:20:32 2019 +0200
+
+    NEWS: updated
+    
+    Signed-off-by: Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+commit e4621ebcdeac2b04a554a92a86e0e8db42a5bcc8
+Merge: 994dfa09 aa07f183
+Author: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+Date:   Thu Oct 3 07:19:12 2019 +0000
+
+    Merge branch 'FreeBSD-tun' into 'master'
+    
+    FreeBSD tun(4)
+    
+    See merge request openconnect/ocserv!114
+
+commit aa07f183f2037673a25c6ba3e91c4f056e67d5da
+Author: Trond Endrestøl <trond.endrestol@ximalas.info>
+Date:   Wed Oct 2 14:00:26 2019 +0000
+
+    FreeBSD tun(4)
+    
+    FreeBSD has a mechanism by which a tunnel has a single controlling process,
+    and only that one process may close the tunnel.
+    
+    Kyle Evans of the FreeBSD Project authored these changes.
+    
+    See issue 213.
+    
+    Signed-off-by: Trond Endrestøl <trond.endrestol@ximalas.info>
+
+commit 994dfa09818622709b80465cf90fc43f2b8f898e
+Merge: c6b24c18 17ed4748
+Author: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+Date:   Mon Sep 30 06:08:33 2019 +0000
+
+    Merge branch 'udp-listen-host' into 'master'
+    
+    Add `udp-listen-host` option for DTLS
+    
+    See merge request openconnect/ocserv!107
+
+commit 17ed47488d4bb6d6bd333b1041e32bcddedb05f2
+Author: Lele Long <schemacs@gmail.com>
+Date:   Fri Sep 6 18:50:23 2019 +0800
+
+    Add `udp-listen-host` option for DTLS
+    
+    This option supports different listen addresses for tcp and
+    udp such as haproxy for tcp, but support dtls at the same time (haproxy
+    does not support UDP at the moment)
+
+commit c6b24c1898e7ff08e05956214f2d602e8c003b30
+Author: Nikos Mavrogiannopoulos <nmav@redhat.com>
+Date:   Thu Sep 26 18:04:26 2019 +0200
+
+    http-parser: updated to latest version
+    
+    Signed-off-by: Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+commit 708147d60a0c4e763e3d3f4851a643fe1d9d9234
+Author: Nikos Mavrogiannopoulos <nmav@redhat.com>
+Date:   Thu Sep 26 18:12:26 2019 +0200
+
+    ocserv: addressed gcc9 warnings
+    
+    Signed-off-by: Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+commit 16569dd05c2673492affc8632575a7bb22103be9
+Merge: e2b12460 92b5db7b
+Author: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+Date:   Wed Sep 25 19:18:35 2019 +0000
+
+    Merge branch 'tmp-fix-json' into 'master'
+    
+    occtl: fix json in show status
+    
+    Closes #220
+    
+    See merge request openconnect/ocserv!108
+
+commit 92b5db7b26df4a6780ac77bbb442a7f7f5953838
+Author: Nikos Mavrogiannopoulos <nmav@redhat.com>
+Date:   Wed Sep 25 19:58:29 2019 +0200
+
+    occtl: fix json in show status
+    
+    This removes a trailing comma from the end of the listing, and
+    adds a missing one.
+    
+    Resolves: #220
+    
+    Signed-off-by: Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+commit e2b124600379500e01349dcdef1635da1b9276ce
+Author: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+Date:   Sun Jul 14 20:49:17 2019 +0200
+
+    design.md: updated URI [ci skip]
+    
+    Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
 commit e892ba4faa590610371ef9e248960e6146258b4c
 Author: Nikos Mavrogiannopoulos <nmav@gnutls.org>
 Date:   Wed Jul 3 21:15:50 2019 +0200
