@@ -1,4 +1,1 @@
 legacy_pidfile.patch
-0001-worker-allow-negotiating-AC-DTLS12-with-openconnect.patch
-0002-worker-added-safety-check-for-selected-DTLS-ciphersu.patch
-0003-Fix-the-bug-of-ocserv-worker-segfault-at-0-ip-b76d67.patch
