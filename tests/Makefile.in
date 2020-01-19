@@ -93,7 +93,7 @@ host_triplet = @host@
 @GNUTLS_WITH_NEW_CERTS_TRUE@am__append_4 = server-cert-ed25519 server-cert-rsa-pss
 
 #docker tests
-@ENABLE_DOCKER_TESTS_TRUE@@ENABLE_ROOT_TESTS_TRUE@am__append_5 = unix-test kerberos-test \
+@ENABLE_DOCKER_TESTS_TRUE@@ENABLE_ROOT_TESTS_TRUE@am__append_5 = unix-test \
 @ENABLE_DOCKER_TESTS_TRUE@@ENABLE_ROOT_TESTS_TRUE@	proxyproto-test proxyproto-v1-test proxyproto-unix-test \
 @ENABLE_DOCKER_TESTS_TRUE@@ENABLE_ROOT_TESTS_TRUE@	reload-info-test
 
@@ -102,7 +102,8 @@ host_triplet = @host@
 @ENABLE_ROOT_TESTS_TRUE@am__append_6 = test-iroute test-multi-cookie test-pass-script \
 @ENABLE_ROOT_TESTS_TRUE@	test-cookie-timeout test-cookie-timeout-2 test-explicit-ip \
 @ENABLE_ROOT_TESTS_TRUE@	test-cookie-invalidation test-user-config test-append-routes test-ban \
-@ENABLE_ROOT_TESTS_TRUE@	multiple-routes haproxy-connect radius-group radius-otp json test-udp-listen-host
+@ENABLE_ROOT_TESTS_TRUE@	multiple-routes haproxy-connect radius-group radius-otp json test-udp-listen-host \
+@ENABLE_ROOT_TESTS_TRUE@	test-max-same-1
 
 
 #other tests requiring nuttcp for traffic
@@ -119,7 +120,8 @@ host_triplet = @host@
 @HAVE_CWRAP_TRUE@	test-gssapi-opt-cert haproxy-auth test-maintenance
 
 @HAVE_CWRAP_PAM_TRUE@@HAVE_CWRAP_TRUE@am__append_10 = test-pam test-pam-noauth
-@HAVE_CWRAP_TRUE@@HAVE_LIBOATH_TRUE@am__append_11 = test-otp-cert test-otp
+@ENABLE_KERBEROS_TESTS_TRUE@@HAVE_CWRAP_PAM_TRUE@@HAVE_CWRAP_TRUE@am__append_11 = kerberos
+@HAVE_CWRAP_TRUE@@HAVE_LIBOATH_TRUE@am__append_12 = test-otp-cert test-otp
 check_PROGRAMS = str-test$(EXEEXT) str-test2$(EXEEXT) \
 	ipv4-prefix$(EXEEXT) ipv6-prefix$(EXEEXT) \
 	kkdcp-parsing$(EXEEXT) json-escape$(EXEEXT) ban-ips$(EXEEXT) \
@@ -226,14 +228,14 @@ valid_hostname_SOURCES = valid-hostname.c
 valid_hostname_OBJECTS = valid-hostname.$(OBJEXT)
 valid_hostname_DEPENDENCIES = $(am__DEPENDENCIES_2)
 am__dist_check_SCRIPTS_DIST = ocpasswd-test server-cert-ed25519 \
-	server-cert-rsa-pss unix-test kerberos-test proxyproto-test \
+	server-cert-rsa-pss unix-test proxyproto-test \
 	proxyproto-v1-test proxyproto-unix-test reload-info-test \
 	test-iroute test-multi-cookie test-pass-script \
 	test-cookie-timeout test-cookie-timeout-2 test-explicit-ip \
 	test-cookie-invalidation test-user-config test-append-routes \
 	test-ban multiple-routes haproxy-connect radius-group \
-	radius-otp json test-udp-listen-host traffic lz4-compression \
-	lzs-compression aes256-cipher aes128-cipher \
+	radius-otp json test-udp-listen-host test-max-same-1 traffic \
+	lz4-compression lzs-compression aes256-cipher aes128-cipher \
 	oc-aes256-gcm-cipher oc-aes128-gcm-cipher \
 	test-config-per-group ac-aes128-gcm-cipher \
 	ac-aes256-gcm-cipher no-dtls-cipher radius radius-config \
@@ -243,7 +245,7 @@ am__dist_check_SCRIPTS_DIST = ocpasswd-test server-cert-ed25519 \
 	test-san-cert test-gssapi test-pass-opt-cert \
 	test-cert-opt-pass test-gssapi-opt-pass test-gssapi-opt-cert \
 	haproxy-auth test-maintenance test-pam test-pam-noauth \
-	test-otp-cert test-otp
+	kerberos test-otp-cert test-otp
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -1330,13 +1332,15 @@ EXTRA_DIST = certs/ca-key.pem certs/ca.pem ns.sh common.sh certs/server-cert.pem
 	data/raddb/clients.conf data/raddb/radiusd.conf data/raddb/users \
 	data/radiusclient/dictionary data/radiusclient/radiusclient.conf \
 	data/radiusclient/servers data/radius.config data/radius-group.config data/radius-otp.config \
-	data/test-udp-listen-host.config
+	data/test-udp-listen-host.config data/pam-kerberos/passdb.templ \
+	data/test-max-same-1.config
 
-SUBDIRS = docker-ocserv docker-kerberos
+SUBDIRS = docker-ocserv
 xfail_scripts = 
 dist_check_SCRIPTS = ocpasswd-test $(am__append_4) $(am__append_5) \
 	$(am__append_6) $(am__append_7) $(am__append_8) \
-	$(am__append_9) $(am__append_10) $(am__append_11)
+	$(am__append_9) $(am__append_10) $(am__append_11) \
+	$(am__append_12)
 LDADD = ../gl/libgnu.a $(LIBTALLOC_LIBS) ../src/libccan.a $(CODE_COVERAGE_LDFLAGS)
 kkdcp_parsing_SOURCES = kkdcp-parsing.c
 kkdcp_parsing_LDADD = $(LDADD)
@@ -1381,9 +1385,9 @@ $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am $(srcdir)/..
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --gnu tests/Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign tests/Makefile'; \
 	$(am__cd) $(top_srcdir) && \
-	  $(AUTOMAKE) --gnu tests/Makefile
+	  $(AUTOMAKE) --foreign tests/Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \
 	  *config.status*) \
@@ -1815,13 +1819,6 @@ unix-test.log: unix-test
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
-kerberos-test.log: kerberos-test
-	@p='kerberos-test'; \
-	b='kerberos-test'; \
-	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
-	--log-file $$b.log --trs-file $$b.trs \
-	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
-	"$$tst" $(AM_TESTS_FD_REDIRECT)
 proxyproto-test.log: proxyproto-test
 	@p='proxyproto-test'; \
 	b='proxyproto-test'; \
@@ -1958,6 +1955,13 @@ json.log: json
 test-udp-listen-host.log: test-udp-listen-host
 	@p='test-udp-listen-host'; \
 	b='test-udp-listen-host'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+test-max-same-1.log: test-max-same-1
+	@p='test-max-same-1'; \
+	b='test-max-same-1'; \
 	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
@@ -2196,6 +2200,13 @@ test-pam.log: test-pam
 test-pam-noauth.log: test-pam-noauth
 	@p='test-pam-noauth'; \
 	b='test-pam-noauth'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+kerberos.log: kerberos
+	@p='kerberos'; \
+	b='kerberos'; \
 	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \

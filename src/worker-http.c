@@ -377,6 +377,24 @@ void header_value_check(struct worker_st *ws, struct http_req_st *req)
 				req->user_agent_type = AGENT_OPENCONNECT;
 		} else if (strncasecmp(req->user_agent, "OpenConnect VPN Agent", 21) == 0) {
 			req->user_agent_type = AGENT_OPENCONNECT;
+		} else if (strncasecmp(req->user_agent, "Cisco AnyConnect", 16) == 0) {
+			req->user_agent_type = AGENT_ANYCONNECT;
+		} else if (strncasecmp(req->user_agent, "AnyConnect", 10) == 0) {
+			req->user_agent_type = AGENT_ANYCONNECT;
+		}
+
+		switch (req->user_agent_type) {
+			case AGENT_OPENCONNECT_V3:
+				oclog(ws, LOG_DEBUG, "Detected OpenConnect v3 or older");
+				break;
+			case AGENT_OPENCONNECT:
+				oclog(ws, LOG_DEBUG, "Detected OpenConnect v4 or newer");
+				break;
+			case AGENT_ANYCONNECT:
+				oclog(ws, LOG_DEBUG, "Detected Cisco AnyConnect");
+				break;
+			default:
+				oclog(ws, LOG_DEBUG, "Unknown client");
 		}
 		break;
 
@@ -444,7 +462,7 @@ void header_value_check(struct worker_st *ws, struct http_req_st *req)
 		 * anyconnect's openssl fail: https://gitlab.com/gnutls/gnutls/merge_requests/868
 		 */
 #ifdef gnutls_check_version_numeric
-		if (req->user_agent_type != AGENT_OPENCONNECT &&
+		if (req->user_agent_type == AGENT_ANYCONNECT &&
 		    (!gnutls_check_version_numeric(3,6,6) &&
 		    (!gnutls_check_version_numeric(3,3,0) || gnutls_check_version_numeric(3,6,0)))) {
 			break;

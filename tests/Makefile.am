@@ -34,9 +34,10 @@ EXTRA_DIST = certs/ca-key.pem certs/ca.pem ns.sh common.sh certs/server-cert.pem
 	data/raddb/clients.conf data/raddb/radiusd.conf data/raddb/users \
 	data/radiusclient/dictionary data/radiusclient/radiusclient.conf \
 	data/radiusclient/servers data/radius.config data/radius-group.config data/radius-otp.config \
-	data/test-udp-listen-host.config
+	data/test-udp-listen-host.config data/pam-kerberos/passdb.templ \
+	data/test-max-same-1.config
 
-SUBDIRS = docker-ocserv docker-kerberos
+SUBDIRS = docker-ocserv
 
 xfail_scripts =
 dist_check_SCRIPTS =  ocpasswd-test
@@ -49,7 +50,7 @@ endif
 if ENABLE_ROOT_TESTS
 if ENABLE_DOCKER_TESTS
 #docker tests
-dist_check_SCRIPTS += unix-test kerberos-test \
+dist_check_SCRIPTS += unix-test \
 	proxyproto-test proxyproto-v1-test proxyproto-unix-test \
 	reload-info-test
 endif
@@ -58,7 +59,8 @@ endif
 dist_check_SCRIPTS += test-iroute test-multi-cookie test-pass-script \
 	test-cookie-timeout test-cookie-timeout-2 test-explicit-ip \
 	test-cookie-invalidation test-user-config test-append-routes test-ban \
-	multiple-routes haproxy-connect radius-group radius-otp json test-udp-listen-host
+	multiple-routes haproxy-connect radius-group radius-otp json test-udp-listen-host \
+	test-max-same-1
 
 #other tests requiring nuttcp for traffic
 if ENABLE_NUTTCP_TESTS
@@ -84,6 +86,10 @@ dist_check_SCRIPTS += test-pass test-pass-cert test-cert test-group-pass \
 
 if HAVE_CWRAP_PAM
 dist_check_SCRIPTS += test-pam test-pam-noauth
+
+if ENABLE_KERBEROS_TESTS
+dist_check_SCRIPTS += kerberos
+endif
 endif
 
 if HAVE_LIBOATH
