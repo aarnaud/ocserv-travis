@@ -1189,7 +1189,7 @@ const ProtobufCMessageDescriptor fw_port_st__descriptor =
   (ProtobufCMessageInit) fw_port_st__init,
   NULL,NULL,NULL    /* reserved[123] */
 };
-static const ProtobufCFieldDescriptor group_cfg_st__field_descriptors[32] =
+static const ProtobufCFieldDescriptor group_cfg_st__field_descriptors[33] =
 {
   {
     "interim_update_secs",
@@ -1575,6 +1575,18 @@ static const ProtobufCFieldDescriptor group_cfg_st__field_descriptors[32] =
     0,             /* flags */
     0,NULL,NULL    /* reserved1,reserved2, etc */
   },
+  {
+    "split_dns",
+    41,
+    PROTOBUF_C_LABEL_REPEATED,
+    PROTOBUF_C_TYPE_STRING,
+    offsetof(GroupCfgSt, n_split_dns),
+    offsetof(GroupCfgSt, split_dns),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
 };
 static const unsigned group_cfg_st__field_indices_by_name[] = {
   12,   /* field[12] = cgroup */
@@ -1606,6 +1618,7 @@ static const unsigned group_cfg_st__field_indices_by_name[] = {
   4,   /* field[4] = routes */
   14,   /* field[14] = rx_per_sec */
   1,   /* field[1] = session_timeout_secs */
+  32,   /* field[32] = split_dns */
   25,   /* field[25] = tunnel_all_dns */
   15,   /* field[15] = tx_per_sec */
   13,   /* field[13] = xml_config_file */
@@ -1615,7 +1628,7 @@ static const ProtobufCIntRange group_cfg_st__number_ranges[3 + 1] =
   { 2, 0 },
   { 10, 2 },
   { 13, 4 },
-  { 0, 32 }
+  { 0, 33 }
 };
 const ProtobufCMessageDescriptor group_cfg_st__descriptor =
 {
@@ -1625,7 +1638,7 @@ const ProtobufCMessageDescriptor group_cfg_st__descriptor =
   "GroupCfgSt",
   "",
   sizeof(GroupCfgSt),
-  32,
+  33,
   group_cfg_st__field_descriptors,
   group_cfg_st__field_indices_by_name,
   3,  group_cfg_st__number_ranges,

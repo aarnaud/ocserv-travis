@@ -1,5 +1,5 @@
 AC_PREREQ(2.61)
-AC_INIT([ocserv], [0.12.5], [openconnect-devel@lists.infradead.org])
+AC_INIT([ocserv], [0.12.6], [openconnect-devel@lists.infradead.org])
 PKG_PROG_PKG_CONFIG
 AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_MACRO_DIR([m4])
@@ -115,6 +115,13 @@ AC_ARG_WITH(docker-tests,
   docker_tests=yes)
 
 AM_CONDITIONAL(ENABLE_DOCKER_TESTS, test "x$docker_tests" = xyes)
+
+AC_ARG_WITH(kerberos-tests,
+  AS_HELP_STRING([--with-kerberos-tests], [enable any tests requiring kerberos setup]),
+  kerberos_tests=$withval,
+  kerberos_tests=no)
+
+AM_CONDITIONAL(ENABLE_KERBEROS_TESTS, test "x$kerberos_tests" = xyes)
 
 AC_ARG_WITH(nuttcp-tests,
   AS_HELP_STRING([--without-nuttcp-tests], [disable any tests requiring nuttcp]),
@@ -582,9 +589,7 @@ AC_CONFIG_FILES([
 	doc/Makefile
 	gl/Makefile
 	tests/docker-ocserv/Makefile
-	tests/docker-kerberos/Makefile
 	tests/data/pam/ocserv
-	tests/data/pam-single/ocserv
 	tests/data/pam/nss-passwd
 	tests/data/pam/nss-group
 	tests/Makefile
