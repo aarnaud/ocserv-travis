@@ -1,3 +1,12 @@
+ocserv (0.12.6-1) unstable; urgency=medium
+
+  * New upstream version 0.12.6
+  * Remove patch merged upstream
+  * Sync content of ocserv.conf with upstream sample.config
+  * Update some default values in ocserv.conf
+
+ -- Aron Xu <aron@debian.org>  Sun, 19 Jan 2020 08:52:52 +0000
+
 ocserv (0.12.5-1) unstable; urgency=medium
 
   * New upstream version 0.12.5
