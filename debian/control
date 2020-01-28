@@ -26,6 +26,7 @@ Build-Depends: autogen (>= 5.18.6),
                nettle-dev,
                pkg-config,
                protobuf-c-compiler,
+               ronn,
 	       libgeoip-dev,
 	       libmaxminddb-dev,
 Standards-Version: 4.2.1
