@@ -1,0 +1,56 @@
+dist: 
+  - focal
+language: cpp
+addons:
+  apt:
+    update: true
+    packages:
+    - autogen
+    - dh-make
+    - fakeroot
+    - libev-dev
+    - libgeoip-dev
+    - libgnutls28-dev
+    - libhttp-parser-dev
+    - libkrb5-dev
+    - liblz4-dev
+    - libmaxminddb-dev
+    - libnl-route-3-dev
+    - liboath-dev
+    - liboauth-dev
+    - libopts25-dev
+    - libpam0g-dev
+    - libpcl1-dev
+    - libprotobuf-c-dev
+    - libradcli-dev
+    - libseccomp-dev
+    - libsocket-wrapper
+    - libsystemd-dev
+    - libtalloc-dev
+    - libwrap0-dev
+    - libuid-wrapper
+    - nettle-dev
+    - openconnect
+    - protobuf-c-compiler
+    - ronn
+
+script:
+  - export TRAVIS_TAG=`git describe --tags --abbrev=0`
+  - dpkg-buildpackage -rfakeroot -b -uc
+
+after_success: |
+  for deb in `ls ../*.deb`;
+  do 
+    sha256sum ${deb} > ${deb}.sha256sum;
+  done
+
+deploy:
+  provider: releases
+  api_key:
+    secure: xgdQTIKA2Z0LAeASvAkK8Eda+ZYbcOCRFVoN2SSQGg8jxs9rtUUok321YvHi9nB68FkaniVKv6/c/ylS/Q+FhuF3oVtudQUIZc/H22tHHzO8dEwD3PKhdxqZ/eBuig5jSAJnGmSreJ9MpQS47yE6oAelTS4MBljLHM3MeyXKdmAl2OKylUXIQ1BkN8f9KioHqcKd6Wh8jf52Z7vItwaJTmq9pAnIbGsG5e4TKnLyIePy8xg3Cm5Rjut9VwaZ3X9N7u+fahuLrGEunyf954HcU3WrOpt0hEqWCmbwsFfKiGhtwlKOFv4HehuLuP2FHhWlIO3TUzem53SojaTTDbeY1HbPQ2u9FzNuf7G04mrZcRoKRpVliqG6pfUSvMLdtxt3WQCGOV++Z8xFs/je/752QfZhXMb0Jip7z4w+XAJ78/6SCJv3rB6EblyXpaAhH7fdurtzskXM809bts7pQDgTZotpNFYyRZGgRCVUC68WFnQTtvzxBEUoRJvwLWuYNk+kBRrL406rp/ju/KB3PAf85+PUK6ebFWm2Co/dojq4OGo8jeXsUKlxm4Bpmj3Y6f2Sf00Mz5yJqvazS6yqVXxb02SYIql9eLlfuScXN7Kh98nmgi9/t2q5ubkzbyL+isz8XfOJiM41Hur2RaIUwfHUqIgoP+tdM8OXRo+xnGllGiM=
+  file_glob: true
+  file:
+    - ../ocserv_*.deb
+    - ../ocserv_*.sha256sum
+  skip_cleanup: true
+  overwrite: true

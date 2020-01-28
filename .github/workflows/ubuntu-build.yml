@@ -1,0 +1,62 @@
+name: Build Ubuntu Package
+on:
+  push:
+    branches:
+      - master
+    tags:
+      - debian/*
+  release:
+    types:
+      - created
+jobs:
+  Ubuntu-20-04-Package:
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Install build packages
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            autogen \
+            dh-make \
+            fakeroot \
+            libev-dev \
+            libgeoip-dev \
+            libgnutls28-dev \
+            libhttp-parser-dev \
+            libkrb5-dev \
+            liblz4-dev \
+            libmaxminddb-dev \
+            libnl-route-3-dev \
+            liboath-dev \
+            liboauth-dev \
+            libopts25-dev \
+            libpam0g-dev \
+            libpcl1-dev \
+            libprotobuf-c-dev \
+            libradcli-dev \
+            libseccomp-dev \
+            libsocket-wrapper \
+            libsystemd-dev \
+            libtalloc-dev \
+            libwrap0-dev \
+            libuid-wrapper \
+            nettle-dev \
+            openconnect \
+            protobuf-c-compiler \
+            ronn
+      - name: Build debian packages
+        run: |
+          dpkg-buildpackage -rfakeroot -b -uc
+          for deb in `ls ../*.deb`;
+          do 
+            sha256sum ${deb} > ${deb}.sha256sum;
+          done
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: |
+            ../ocserv_*.deb
+            ../ocserv_*.sha256sum
