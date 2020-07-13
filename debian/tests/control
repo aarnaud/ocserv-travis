@@ -1,0 +1,3 @@
+Tests: upstream
+Depends: @builddeps@, openconnect
+Restrictions: needs-root
