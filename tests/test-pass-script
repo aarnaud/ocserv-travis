@@ -1,6 +1,6 @@
-#!/bin/sh
+#!/bin/bash
 #
-# Copyright (C) 2013-2016 Nikos Mavrogiannopoulos
+# Copyright (C) 2013-2020 Nikos Mavrogiannopoulos
 #
 # This file is part of ocserv.
 #
@@ -22,24 +22,49 @@ SERV="${SERV:-../src/ocserv}"
 srcdir=${srcdir:-.}
 builddir=${builddir:-.}
 PORT=4448
+OPIDFILE=pass-script.$$.tmp
+OPIDFILE2=pass-script2.$$.tmp
+PARAMSFILE=pass-script.params.$$.tmp
 
 . `dirname $0`/common.sh
+
+echo "Testing connect and disconnect script behavior"
+
+rm -f ${OPIDFILE}
+rm -f ${OPIDFILE2}
+
+function finish {
+  echo " * Cleaning up..."
+  rm -f ${builddir}/connect.ok
+  rm -f ${builddir}/disconnect.ok
+  rm -f ${builddir}/host-update.ok
+  test -n "${PID}" && kill ${PID} >/dev/null 2>&1
+  test -f ${OPIDFILE} && kill $(cat ${OPIDFILE}) >/dev/null 2>&1
+  rm -f ${OPIDFILE}
+  rm -f ${OPIDFILE2}
+  rm -f ${TMPFILE}
+  rm -f ${PARAMSFILE}
+  test -n "${PID}" && kill ${PID}
+}
+trap finish EXIT
 
 rm -f ${builddir}/connect.ok
 rm -f ${builddir}/disconnect.ok
 
-$OPENCONNECT --help|grep local-hostname
+OPENCONNECT="$OPENCONNECT --os=android"
+
+$OPENCONNECT --help|grep local-hostname >/dev/null
 if test $? != 0;then
 	echo "Openconnect doesn't support --local-hostname"
 	exit 77
 fi
 
-echo "Testing local backend with username-password... "
+echo " * Testing local backend with username-password... "
 
 launch_server -d 1 -f -c "${srcdir}/data/test-pass-script.config" & PID=$!
 wait_server $PID
 
-echo "Connecting to obtain cookie with wrong username... "
+echo " * Connecting to obtain cookie with wrong username... "
 ( echo "tost" | $OPENCONNECT -q localhost:$PORT -u tost --servercert=d66b507ae074d03b02eafca40d35f87dd81049d3 --cookieonly >/dev/null 2>&1 ) &&
 	fail $PID "Received cookie when we shouldn't"
 
@@ -48,15 +73,12 @@ rm -f ${builddir}/disconnect.ok
 rm -f ${builddir}/host-update.ok
 #test special characters
 
-echo "Connecting to obtain cookie... "
+echo " * Connecting to obtain cookie... "
 ( echo "!@#$%^&*()<>" | $OPENCONNECT -q localhost:$PORT -u "sp@c/al" --servercert=d66b507ae074d03b02eafca40d35f87dd81049d3 --cookieonly >/dev/null 2>&1 ) ||
 	fail $PID "Could not receive cookie from server"
 
-echo "Re-connecting to force script run... "
-echo "!@#$%^&*()<>" | timeout 7 $OPENCONNECT -q --local-hostname='mylocalname' localhost:$PORT -u "sp@c/al" --servercert=d66b507ae074d03b02eafca40d35f87dd81049d3 -s /bin/true #>/dev/null 2>&1
-
-kill $PID
-wait
+echo " * Re-connecting to force script run... "
+echo "!@#$%^&*()<>" | timeout 7 $OPENCONNECT -q --local-hostname='mylocalname' localhost:$PORT -u "sp@c/al" --servercert=d66b507ae074d03b02eafca40d35f87dd81049d3 -s /bin/true
 
 sleep 5
 
@@ -66,18 +88,97 @@ if ! test -f ${builddir}/connect.ok;then
 fi
 
 if ! test -f ${builddir}/host-update.ok;then
-	echo "Host-update script was not run"
+	echo "Host-update script was not run (1)"
 	exit 1
 fi
 
 if ! test -f ${builddir}/disconnect.ok;then
-	echo "Disconnect script was not run properly"
+	echo "Disconnect script was not run properly (1)"
 	exit 1
 fi
 
 rm -f ${builddir}/connect.ok
 rm -f ${builddir}/disconnect.ok
 rm -f ${builddir}/host-update.ok
-rm -f $TMPFILE
+
+echo " * Re-connecting to get cookie... "
+echo "test2" | $OPENCONNECT -q localhost:$PORT -u "test2" --authenticate --servercert=d66b507ae074d03b02eafca40d35f87dd81049d3 -s /bin/true >${PARAMSFILE}
+if test $? != 0;then
+	echo "Could not connect"
+	cat ${PARAMSFILE}
+	exit 1
+fi
+
+grep COOKIE ${PARAMSFILE}
+if test $? != 0;then
+	echo "Did not get cookie"
+	exit 1
+fi
+
+echo " * Re-connecting to force session stealing... "
+eval "$(grep COOKIE ${PARAMSFILE})"
+echo ${COOKIE}| $OPENCONNECT localhost:$PORT -u "test2" --reconnect-timeout 0 --cookie-on-stdin --servercert=d66b507ae074d03b02eafca40d35f87dd81049d3 -s /bin/true --pid-file=${OPIDFILE} -b
+
+sleep 4
+echo " - Pausing client"
+if ! test -f ${OPIDFILE};then
+	echo "Could not find pid file"
+	exit 1
+fi
+kill -s STOP $(cat ${OPIDFILE})
+sleep 12
+
+if ! test -f ${builddir}/connect.ok;then
+	echo "Connect script was not run (2)"
+	exit 1
+fi
+
+rm -f ${builddir}/connect.ok
+rm -f ${builddir}/disconnect.ok
+
+echo " * Re-connecting to steal previous IP address... "
+echo ${COOKIE} | $OPENCONNECT -q localhost:$PORT -u "test2" --reconnect-timeout 0 --cookie-on-stdin --servercert=d66b507ae074d03b02eafca40d35f87dd81049d3 -s /bin/true --pid-file=${OPIDFILE2} -b
+
+echo " - Resuming (disconnected) client"
+kill -s CONT $(cat ${OPIDFILE})
+sleep 6
+
+if ! test -f ${builddir}/connect.ok;then
+	echo "Connect script was not run (3)"
+	exit 1
+fi
+
+if ! test -f ${builddir}/disconnect.ok;then
+	echo "Disconnect script was not run properly (3)"
+	exit 1
+fi
+
+rm -f ${builddir}/connect.ok
+rm -f ${builddir}/disconnect.ok
+
+echo " - Killing all clients"
+sleep 2
+test -f ${OPIDFILE2} && kill $(cat ${OPIDFILE2})
+test -f ${OPIDFILE} && kill $(cat ${OPIDFILE})
+sleep 6
+
+echo " - Last check of files"
+if ! test -f ${builddir}/disconnect.ok;then
+	echo "Disconnect script was not run properly (4)"
+	exit 1
+fi
+
+sleep 5
+echo " - Check server status"
+
+( echo "!@#$%^&*()<>" | $OPENCONNECT -q localhost:$PORT -u "sp@c/al" --servercert=d66b507ae074d03b02eafca40d35f87dd81049d3 --cookieonly >/dev/null 2>&1 ) ||
+	fail $PID "Could not receive cookie from server"
+
+echo " - Killing server"
+kill $PID
+PID=""
+wait
+
+echo "Script tests were successful"
 
 exit 0

@@ -29,6 +29,7 @@
 #include <sys/syscall.h>
 #include <seccomp.h>
 #include <sys/ioctl.h>
+#include <sys/signal.h>
 #include <errno.h>
 
 /* libseccomp 2.4.2 broke accidentally the API. Work around it. */
@@ -40,13 +41,52 @@
 # endif
 #endif
 
+/* On certain cases gnulib defines gettimeofday as macro; avoid that */
+#undef gettimeofday
+
+#ifdef USE_SECCOMP_TRAP
+# define _SECCOMP_ERR SCMP_ACT_TRAP
+#include <execinfo.h>
+#include <signal.h>
+void sigsys_action(int sig, siginfo_t * info, void* ucontext)
+{
+	char * call_addr = *backtrace_symbols(&info->si_call_addr, 1);
+	fprintf(stderr, "Function %s called disabled syscall %d\n", call_addr, info->si_syscall);
+	exit(1);
+}
+
+int set_sigsys_handler(struct worker_st *ws)
+{
+	struct sigaction sa = {};
+
+	sa.sa_sigaction = sigsys_action;
+	sa.sa_flags = SA_SIGINFO;
+
+	return sigaction(SIGSYS, &sa, NULL);
+}
+#else
+# define _SECCOMP_ERR SCMP_ACT_ERRNO(ENOSYS)
+int set_sigsys_handler(struct worker_st *ws)
+{
+	return 0;
+}
+#endif
+
+
+
 int disable_system_calls(struct worker_st *ws)
 {
 	int ret;
 	scmp_filter_ctx ctx;
 	vhost_cfg_st *vhost = NULL;
 
-	ctx = seccomp_init(SCMP_ACT_ERRNO(EPERM));
+	if (set_sigsys_handler(ws))
+	{
+		oclog(ws, LOG_ERR, "set_sigsys_handler");
+		return -1;
+	}
+
+	ctx = seccomp_init(_SECCOMP_ERR);
 	if (ctx == NULL) {
 		oclog(ws, LOG_DEBUG, "could not initialize seccomp");
 		return -1;
@@ -60,6 +100,12 @@ int disable_system_calls(struct worker_st *ws)
 		ret = -1; \
 		goto fail; \
 	}
+
+	/* These seem to be called by libc or some other dependent library;
+	 * they are not necessary for functioning, but we must allow them in order
+	 * to run under trap mode. */
+	ADD_SYSCALL(getcwd, 0);
+	ADD_SYSCALL(lstat, 0);
 
 	/* we use quite some system calls here, and in the end
 	 * we don't even know whether a newer libc will change the
@@ -107,15 +153,22 @@ int disable_system_calls(struct worker_st *ws)
 	ADD_SYSCALL(poll, 0);
 	ADD_SYSCALL(ppoll, 0);
 
+	/* allow setting non-blocking sockets */
+	ADD_SYSCALL(fcntl, 0);
 	ADD_SYSCALL(close, 0);
 	ADD_SYSCALL(exit, 0);
 	ADD_SYSCALL(exit_group, 0);
 	ADD_SYSCALL(socket, 0);
 	ADD_SYSCALL(connect, 0);
 
+	ADD_SYSCALL(openat, 0);
+	ADD_SYSCALL(fstat, 0);
+	ADD_SYSCALL(lseek, 0);
+
 	ADD_SYSCALL(getsockopt, 0);
 	ADD_SYSCALL(setsockopt, 0);
 
+#ifdef ANYCONNECT_CLIENT_COMPAT
 	/* we need to open files when we have an xml_config_file setup on any vhost */
 	list_for_each(ws->vconfig, vhost, list) {
 		if (vhost->perm_config.config->xml_config_file) {
@@ -125,6 +178,7 @@ int disable_system_calls(struct worker_st *ws)
 			break;
 		}
 	}
+#endif	
 
 	/* this we need to get the MTU from
 	 * the TUN device */

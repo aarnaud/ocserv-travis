@@ -47,6 +47,7 @@
 #include <worker-bandwidth.h>
 #include <signal.h>
 #include <poll.h>
+#include <math.h>
 
 #if defined(__linux__) && !defined(IPV6_PATHMTU)
 # define IPV6_PATHMTU 61
@@ -56,8 +57,13 @@
 #include "ipc.pb-c.h"
 #include <worker.h>
 #include <tlslib.h>
-
 #include <http_parser.h>
+
+#if defined(CAPTURE_LATENCY_SUPPORT)
+#include <linux/net_tstamp.h>
+#include <linux/errqueue.h>
+#include <worker-latency.h>
+#endif
 
 #define MIN_MTU(ws) (((ws)->vinfo.ipv6!=NULL)?1280:800)
 
@@ -330,6 +336,9 @@ static int setup_dtls_connection(struct worker_st *ws)
 {
 	int ret;
 	gnutls_session_t session;
+#if defined(CAPTURE_LATENCY_SUPPORT)
+	int ts_socket_opt = SOF_TIMESTAMPING_RX_SOFTWARE | SOF_TIMESTAMPING_SOFTWARE;
+#endif
 
 	/* DTLS cookie verified.
 	 * Initialize session.
@@ -360,7 +369,11 @@ static int setup_dtls_connection(struct worker_st *ws)
 	}
 
 	gnutls_transport_set_push_function(session, dtls_push);
+#if defined(CAPTURE_LATENCY_SUPPORT)
+	gnutls_transport_set_pull_function(session, dtls_pull_latency);
+#else
 	gnutls_transport_set_pull_function(session, dtls_pull);
+#endif
 	gnutls_transport_set_pull_timeout_function(session, dtls_pull_timeout);
 	gnutls_transport_set_ptr(session, &ws->dtls_tptr);
 
@@ -370,6 +383,12 @@ static int setup_dtls_connection(struct worker_st *ws)
 	gnutls_dtls_set_timeouts(session, 400, 60*1000);
 
 	ws->udp_state = UP_HANDSHAKE;
+
+#if defined(CAPTURE_LATENCY_SUPPORT)
+	ret = setsockopt(ws->dtls_tptr.fd, SOL_SOCKET, SO_TIMESTAMPING, &ts_socket_opt, sizeof(ts_socket_opt));
+	if (ret == -1)
+		oclog(ws, LOG_DEBUG, "setsockopt(UDP, SO_TIMESTAMPING), failed.");
+#endif
 
 	/* Setup the fd settings */
 	if (WSCONFIG(ws)->output_buffer > 0) {
@@ -386,6 +405,10 @@ static int setup_dtls_connection(struct worker_st *ws)
 
 	/* reset MTU */
 	link_mtu_set(ws, ws->adv_link_mtu);
+
+	if (ws->dtls_session != NULL) {
+		gnutls_deinit(ws->dtls_session);
+	}
 
 	ws->dtls_session = session;
 
@@ -736,7 +759,6 @@ void vpn_server(struct worker_st *ws)
 			      "could not disable system calls, kernel might not support seccomp");
 		}
 	}
-	ws->session_start_time = time(0);
 
 	if (ws->remote_addr_len == sizeof(struct sockaddr_in))
 		ws->proto = AF_INET;
@@ -818,8 +840,6 @@ void vpn_server(struct worker_st *ws)
 	settings.on_message_complete = http_message_complete_cb;
 	settings.on_body = http_body_cb;
 	http_req_init(ws);
-
-	human_addr2((void*)&ws->remote_addr, ws->remote_addr_len, ws->remote_ip_str, sizeof(ws->remote_ip_str), 0);
 
 	if (WSCONFIG(ws)->listen_proxy_proto) {
 		oclog(ws, LOG_DEBUG, "proxy-hdr: peer is %s\n", ws->remote_ip_str);
@@ -1223,6 +1243,12 @@ int periodic_check(worker_st * ws, struct timespec *tnow, unsigned dpd)
 		send_stats_to_secmod(ws, now, 0);
 	}
 
+#if defined(CAPTURE_LATENCY_SUPPORT)
+	if (now - ws->latency.last_stats_msg >= LATENCY_WORKER_AGGREGATION_TIME) {
+		send_latency_stats_delta_to_main(ws, now);
+	}
+#endif
+
 	/* check DPD. Otherwise exit */
 	if (ws->udp_state == UP_ACTIVE &&
 	    now - ws->last_msg_udp > DPD_TRIES * dpd && dpd > 0) {
@@ -1279,6 +1305,22 @@ int periodic_check(worker_st * ws, struct timespec *tnow, unsigned dpd)
 	ws->last_periodic_check = now;
 
 	return 0;
+}
+
+/* Disable any TCP queuing on the TLS port. This allows a connection that works over
+ * TCP instead of UDP to still be interactive.
+ */
+static void set_no_delay(worker_st * ws, int fd)
+{
+	int flag = 1;
+	int ret;
+
+	ret = setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, &flag, sizeof(flag));
+	if (ret == -1) {
+		oclog(ws, LOG_DEBUG,
+		      "setsockopt(TCP_NODELAY) to %x, failed.", (unsigned)flag);
+		return;
+	}
 }
 
 #define TOSCLASS(x) (IPTOS_CLASS_CS##x)
@@ -1545,6 +1587,7 @@ static int tun_mainloop(struct worker_st *ws, struct timespec *tnow)
 		ws->udp_state = UP_INACTIVE;
 	}
 
+#ifdef ENABLE_COMPRESSION
 	if (ws->udp_state == UP_ACTIVE && ws->dtls_selected_comp != NULL && l > WSCONFIG(ws)->no_compress_limit) {
 		/* otherwise don't compress */
 		ret = ws->dtls_selected_comp->compress(ws->decomp+8, sizeof(ws->decomp)-8, ws->buffer+8, l);
@@ -1572,6 +1615,7 @@ static int tun_mainloop(struct worker_st *ws, struct timespec *tnow)
 			cstp_type = AC_PKT_COMPRESSED;
 		}
 	}
+#endif 
 
 	/* only transmit if allowed */
 	if (bandwidth_update(&ws->b_tx, dtls_to_send.size, tnow)
@@ -2042,6 +2086,15 @@ static int connect_handler(worker_st * ws)
 		SEND_ERR(ret);
 	}
 
+	/* Anyconnect on IOS requires this route in order to use IPv6 */
+	if (ws->full_ipv6 && req->is_ios &&
+	    (ws->user_config->n_routes == 0 || ws->default_route == 0)) {
+		oclog(ws, LOG_INFO, "adding special split DNS for Apple");
+		ret =
+		    cstp_printf(ws, "X-CSTP-Split-Include-IP6: 2000::/3\r\n");
+		SEND_ERR(ret);
+	}
+
 	if (ws->default_route == 0) {
 		ret = send_routes(ws, req, ws->user_config->routes, ws->user_config->n_routes, 1);
 		SEND_ERR(ret);
@@ -2159,6 +2212,7 @@ static int connect_handler(worker_st * ws)
 	set_socket_timeout(ws, ws->conn_fd);
 	set_non_block(ws->conn_fd);
 	set_net_priority(ws, ws->conn_fd, ws->user_config->net_priority);
+	set_no_delay(ws, ws->conn_fd);
 
 	if (ws->udp_state != UP_DISABLED) {
 
@@ -2201,6 +2255,8 @@ static int connect_handler(worker_st * ws)
 		}
 
 		if (ws->req.use_psk || !WSCONFIG(ws)->dtls_legacy) {
+			oclog(ws, LOG_INFO, "X-DTLS-App-ID: %s", ws->buffer);
+
 			ret =
 			    cstp_printf(ws, "X-DTLS-App-ID: %s\r\n",
 				       ws->buffer);
@@ -2210,6 +2266,8 @@ static int connect_handler(worker_st * ws)
 			ret =
 			    cstp_printf(ws, "X-DTLS-CipherSuite: "DTLS_PROTO_INDICATOR"\r\n");
 		} else if (ws->req.selected_ciphersuite) {
+			oclog(ws, LOG_INFO, "X-DTLS-Session-ID: %s", ws->buffer);
+
 			ret =
 			    cstp_printf(ws, "X-DTLS-Session-ID: %s\r\n",
 				       ws->buffer);
@@ -2403,6 +2461,14 @@ static int connect_handler(worker_st * ws)
 				terminate_reason = REASON_ERROR;
 				goto exit;
 			}
+
+#if defined(CAPTURE_LATENCY_SUPPORT)
+			if (ws->dtls_tptr.rx_time.tv_sec != 0) {
+				capture_latency_sample(ws, &ws->dtls_tptr.rx_time);
+				ws->dtls_tptr.rx_time.tv_sec = 0;
+				ws->dtls_tptr.rx_time.tv_nsec = 0;
+			}
+#endif
 		}
 
 		/* read commands from command fd */
@@ -2508,7 +2574,21 @@ static int parse_data(struct worker_st *ws, uint8_t *buf, size_t buf_size,
 		break;
 	case AC_PKT_DISCONN:
 		oclog(ws, LOG_INFO, "received BYE packet; exiting");
-		exit_worker_reason(ws, REASON_USER_DISCONNECT);
+		/* In openconnect the BYE packet indicates an explicit
+		 * user disconnect. In anyconnect clients it may indicate
+		 * an intention to reconnect (e.g., because network was
+		 * changed). We separate the error codes to ensure we do
+		 * do not interpret the intention incorrectly (see #281). */
+		if (plain_size > 0 && plain[0] == 0xb0) {
+			exit_worker_reason(ws, REASON_USER_DISCONNECT);
+		} else {
+			if (plain_size > 0) {
+				oclog(ws, LOG_DEBUG, "bye packet with payload: %u/%.2x", (unsigned)plain_size, plain[0]);
+				return -1;
+			}
+
+			exit_worker_reason(ws, REASON_TEMP_DISCONNECT);
+		}
 		break;
 	case AC_PKT_COMPRESSED:
 		/* decompress */

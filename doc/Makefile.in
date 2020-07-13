@@ -205,6 +205,8 @@ BITSIZEOF_WINT_T = @BITSIZEOF_WINT_T@
 CC = @CC@
 CCDEPMODE = @CCDEPMODE@
 CFLAGS = @CFLAGS@
+CJOSE_CFLAGS = @CJOSE_CFLAGS@
+CJOSE_LIBS = @CJOSE_LIBS@
 CODE_COVERAGE_CFLAGS = @CODE_COVERAGE_CFLAGS@
 CODE_COVERAGE_CPPFLAGS = @CODE_COVERAGE_CPPFLAGS@
 CODE_COVERAGE_CXXFLAGS = @CODE_COVERAGE_CXXFLAGS@
@@ -500,6 +502,7 @@ HAVE_LCHOWN = @HAVE_LCHOWN@
 HAVE_LIBC = @HAVE_LIBC@
 HAVE_LIBCRYPT = @HAVE_LIBCRYPT@
 HAVE_LIBEV = @HAVE_LIBEV@
+HAVE_LIBM = @HAVE_LIBM@
 HAVE_LIBPROTOBUF_C = @HAVE_LIBPROTOBUF_C@
 HAVE_LIBREADLINE = @HAVE_LIBREADLINE@
 HAVE_LIBSECCOMP = @HAVE_LIBSECCOMP@
@@ -601,11 +604,15 @@ INSTALL_DATA = @INSTALL_DATA@
 INSTALL_PROGRAM = @INSTALL_PROGRAM@
 INSTALL_SCRIPT = @INSTALL_SCRIPT@
 INSTALL_STRIP_PROGRAM = @INSTALL_STRIP_PROGRAM@
+JANSSON_CFLAGS = @JANSSON_CFLAGS@
+JANSSON_LIBS = @JANSSON_LIBS@
 LCOV = @LCOV@
 LDFLAGS = @LDFLAGS@
 LIBC = @LIBC@
 LIBCRYPT = @LIBCRYPT@
 LIBCRYPT_PREFIX = @LIBCRYPT_PREFIX@
+LIBCURL_CFLAGS = @LIBCURL_CFLAGS@
+LIBCURL_LIBS = @LIBCURL_LIBS@
 LIBC_PREFIX = @LIBC_PREFIX@
 LIBEV = @LIBEV@
 LIBEV_LIBS = @LIBEV_LIBS@
@@ -618,6 +625,8 @@ LIBKRB5_CFLAGS = @LIBKRB5_CFLAGS@
 LIBKRB5_LIBS = @LIBKRB5_LIBS@
 LIBLZ4_CFLAGS = @LIBLZ4_CFLAGS@
 LIBLZ4_LIBS = @LIBLZ4_LIBS@
+LIBM = @LIBM@
+LIBM_PREFIX = @LIBM_PREFIX@
 LIBNETTLE_CFLAGS = @LIBNETTLE_CFLAGS@
 LIBNETTLE_LIBS = @LIBNETTLE_LIBS@
 LIBNL3_CFLAGS = @LIBNL3_CFLAGS@
@@ -651,6 +660,7 @@ LIBWRAP_PREFIX = @LIBWRAP_PREFIX@
 LTLIBC = @LTLIBC@
 LTLIBCRYPT = @LTLIBCRYPT@
 LTLIBEV = @LTLIBEV@
+LTLIBM = @LTLIBM@
 LTLIBOBJS = @LTLIBOBJS@
 LTLIBPROTOBUF_C = @LTLIBPROTOBUF_C@
 LTLIBREADLINE = @LTLIBREADLINE@
@@ -922,9 +932,9 @@ $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am  $(am__confi
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign doc/Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --gnu doc/Makefile'; \
 	$(am__cd) $(top_srcdir) && \
-	  $(AUTOMAKE) --foreign doc/Makefile
+	  $(AUTOMAKE) --gnu doc/Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \
 	  *config.status*) \
@@ -1158,13 +1168,16 @@ uninstall-man: uninstall-man8
 
 @SKIP_MANPAGES_FALSE@ocserv.8: ocserv.8.md sample.config
 @SKIP_MANPAGES_FALSE@	sed -e '/@CONFIGFILE@/{r sample.config' -e 'd}' <$< >ocserv.tmp
-@SKIP_MANPAGES_FALSE@	ronn -r ocserv.tmp > $@
+@SKIP_MANPAGES_FALSE@	ronn --pipe -r ocserv.tmp > $@.tmp
+@SKIP_MANPAGES_FALSE@	test -s $@.tmp && mv $@.tmp $@
 
 @SKIP_MANPAGES_FALSE@occtl.8: occtl.8.md
-@SKIP_MANPAGES_FALSE@	ronn -r $^ > $@
+@SKIP_MANPAGES_FALSE@	ronn --pipe -r $^ > $@.tmp
+@SKIP_MANPAGES_FALSE@	test -s $@.tmp && mv $@.tmp $@
 
 @SKIP_MANPAGES_FALSE@ocpasswd.8: ocpasswd.8.md
-@SKIP_MANPAGES_FALSE@	ronn -r $^ > $@
+@SKIP_MANPAGES_FALSE@	ronn --pipe -r $^ > $@.tmp
+@SKIP_MANPAGES_FALSE@	test -s $@.tmp && mv $@.tmp $@
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

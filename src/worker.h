@@ -5,7 +5,7 @@
  *
  * This file is part of ocserv.
  *
- * The GnuTLS is free software; you can redistribute it and/or
+ * ocserv is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public License
  * as published by the Free Software Foundation; either version 2.1 of
  * the License, or (at your option) any later version.
@@ -36,6 +36,7 @@
 #include <stdbool.h>
 #include <sys/un.h>
 #include <sys/uio.h>
+#include <hmac.h>
 #include "vhost.h"
 
 typedef enum {
@@ -124,6 +125,7 @@ struct http_req_st {
 	unsigned int header_state;
 
 	char devtype[MAX_AGENT_NAME]; /* Device-Type */
+	char devplatform[MAX_AGENT_NAME]; /* Device-Platform */
 	char hostname[MAX_HOSTNAME_SIZE];
 	char user_agent[MAX_AGENT_NAME];
 	unsigned user_agent_type;
@@ -131,6 +133,7 @@ struct http_req_st {
 	unsigned int next_header;
 
 	bool is_mobile;
+	bool is_ios;
 	bool spnego_set;
 
 	unsigned char master_secret[TLS_MASTER_SIZE];
@@ -158,6 +161,9 @@ typedef struct dtls_transport_ptr {
 	int fd;
 	UdpFdMsg *msg; /* holds the data of the first client hello */
 	int consumed;
+#if defined(CAPTURE_LATENCY_SUPPORT)
+	struct timespec rx_time;
+#endif
 } dtls_transport_ptr;
 
 /* Given a base MTU, this macro provides the DTLS plaintext data we can send;
@@ -201,7 +207,9 @@ typedef struct worker_st {
 	socklen_t our_addr_len;
 	struct sockaddr_storage remote_addr;	/* peer's address */
 	socklen_t remote_addr_len;
+	char our_ip_str[MAX_IP_STR];
 	char remote_ip_str[MAX_IP_STR];
+	const uint8_t sec_auth_init_hmac[HMAC_DIGEST_SIZE];
 
 	int proto; /* AF_INET or AF_INET6 */
 
@@ -290,6 +298,18 @@ typedef struct worker_st {
 	unsigned default_route;
 	
 	void *main_pool; /* to be used only on deinitialization */
+
+#if defined(CAPTURE_LATENCY_SUPPORT)
+	/* latency stats */
+	struct {
+		uint64_t median_total;
+		uint64_t rms_total;
+		uint64_t sample_set_count;
+		size_t next_sample;
+		time_t last_stats_msg;
+		uint32_t samples[LATENCY_SAMPLE_SIZE];
+	} latency;
+#endif
 } worker_st;
 
 void vpn_server(struct worker_st* ws);
@@ -307,7 +327,9 @@ int get_ca_der_handler(worker_st * ws, unsigned http_ver);
 
 int response_404(worker_st *ws, unsigned http_ver);
 int get_empty_handler(worker_st *server, unsigned http_ver);
+#ifdef ANYCONNECT_CLIENT_COMPAT
 int get_config_handler(worker_st *ws, unsigned http_ver);
+#endif
 int get_string_handler(worker_st *ws, unsigned http_ver);
 int get_dl_handler(worker_st *ws, unsigned http_ver);
 int get_cert_names(worker_st * ws, const gnutls_datum_t * raw);

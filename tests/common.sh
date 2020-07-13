@@ -23,15 +23,16 @@
 
 builddir=${builddir:-.}
 
-OPENCONNECT=${OPENCONNECT:-/usr/sbin/openconnect}
+OPENCONNECT=${OPENCONNECT:-$(which openconnect)}
 
-if ! test -x ${OPENCONNECT};then
+if test -z "${OPENCONNECT}" || ! test -x ${OPENCONNECT};then
 	echo "You need openconnect to run this test"
-	exit 77
+	exit 1
 fi
 
 if test -z "$NO_NEED_ROOT";then
 	if test "$(id -u)" != "0";then
+		echo "You need to run this script as root"
 		exit 77
 	fi
 else
@@ -71,6 +72,7 @@ update_config() {
 	       -e 's|@VPNNET6@|'${VPNNET6}'|g' "$file.$$.tmp" \
 	       -e 's|@ROUTE1@|'${ROUTE1}'|g' "$file.$$.tmp" \
 	       -e 's|@ROUTE2@|'${ROUTE2}'|g' "$file.$$.tmp" \
+	       -e 's|@MATCH_CIPHERS@|'${MATCH_CIPHERS}'|g' "$file.$$.tmp" \
 	       -e 's|@OCCTL_SOCKET@|'${OCCTL_SOCKET}'|g' "$file.$$.tmp"
 	CONFIG="$file.$$.tmp"
 }
@@ -137,9 +139,9 @@ launch_pam_server() {
 		SR="libsocket_wrapper.so:"
 	fi
 	if test -n "${VERBOSE}" && test "${VERBOSE}" -ge 1;then
-		LD_PRELOAD=libnss_wrapper.so:${SR}libpam_wrapper.so:libuid_wrapper.so PAM_WRAPPER=1 UID_WRAPPER=1 UID_WRAPPER_ROOT=1 $SERV $* &
+		LD_PRELOAD=libnss_wrapper.so:${SR}libpam_wrapper.so:libuid_wrapper.so PAM_WRAPPER=1 UID_WRAPPER=1 UID_WRAPPER_ROOT=1 $PRELOAD_CMD $SERV $* &
 	else
-		LD_PRELOAD=libnss_wrapper.so:${SR}libpam_wrapper.so:libuid_wrapper.so PAM_WRAPPER=1 UID_WRAPPER=1 UID_WRAPPER_ROOT=1 $SERV $* >/dev/null 2>&1 &
+		LD_PRELOAD=libnss_wrapper.so:${SR}libpam_wrapper.so:libuid_wrapper.so PAM_WRAPPER=1 UID_WRAPPER=1 UID_WRAPPER_ROOT=1 $PRELOAD_CMD $SERV $* >/dev/null 2>&1 &
 	fi
 	LOCALPID="$!";
 	unset NSS_WRAPPER_PASSWD

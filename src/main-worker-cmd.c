@@ -256,6 +256,13 @@ int handle_worker_commands(main_server_st * s, struct proc_st *proc)
 
 	length = ret;
 
+	if (length > MAX_MSG_SIZE) {
+		mslog(s, proc, LOG_DEBUG,
+		      "received too big message (%d)", (int)length);
+		ret = ERR_BAD_COMMAND;
+		return ret;
+	}
+
 	mslog(s, proc, LOG_DEBUG, "main received worker's message '%s' of %u bytes\n",
 	      cmd_request_to_str(cmd), (unsigned)length);
 
@@ -279,6 +286,7 @@ int handle_worker_commands(main_server_st * s, struct proc_st *proc)
 	case CMD_BAN_IP:{
 			BanIpMsg *tmsg;
 			BanIpReplyMsg reply = BAN_IP_REPLY_MSG__INIT;
+			char remote_address[MAX_IP_STR];
 
 			tmsg = ban_ip_msg__unpack(&pa, raw_len, raw);
 			if (tmsg == NULL) {
@@ -287,7 +295,9 @@ int handle_worker_commands(main_server_st * s, struct proc_st *proc)
 				goto cleanup;
 			}
 
-			ret = add_str_ip_to_ban_list(s, tmsg->ip, tmsg->score);
+			human_addr2((struct sockaddr *)&proc->remote_addr, proc->remote_addr_len, remote_address, sizeof(remote_address), 0);
+
+			ret = add_str_ip_to_ban_list(s, remote_address, tmsg->score);
 
 			ban_ip_msg__free_unpacked(tmsg, &pa);
 
@@ -317,6 +327,11 @@ int handle_worker_commands(main_server_st * s, struct proc_st *proc)
 		break;
 	case CMD_TUN_MTU:{
 			TunMtuMsg *tmsg;
+			unsigned minimum_mtu = RFC_791_MTU;
+			unsigned maximum_mtu =
+			    proc->vhost->perm_config.config->default_mtu != 0 ?
+			    proc->vhost->perm_config.config->default_mtu :
+			    MAX_DTLS_MTU;
 
 			if (proc->status != PS_AUTH_COMPLETED) {
 				mslog(s, proc, LOG_ERR,
@@ -328,6 +343,13 @@ int handle_worker_commands(main_server_st * s, struct proc_st *proc)
 			tmsg = tun_mtu_msg__unpack(&pa, raw_len, raw);
 			if (tmsg == NULL) {
 				mslog(s, proc, LOG_ERR, "error unpacking data");
+				ret = ERR_BAD_COMMAND;
+				goto cleanup;
+			}
+
+			if (tmsg->mtu < minimum_mtu || tmsg->mtu > maximum_mtu) {
+				mslog(s, proc, LOG_ERR,
+				      "worker process invalid MTU %d", (int)tmsg->mtu);
 				ret = ERR_BAD_COMMAND;
 				goto cleanup;
 			}
@@ -429,6 +451,32 @@ int handle_worker_commands(main_server_st * s, struct proc_st *proc)
 
 		break;
 
+#if defined(CAPTURE_LATENCY_SUPPORT)
+	case CMD_LATENCY_STATS_DELTA:{
+			LatencyStatsDelta * tmsg;
+ 
+			if (proc->status != PS_AUTH_COMPLETED) {
+				mslog(s, proc, LOG_ERR,
+					"received LATENCY STATS DELTA in unauthenticated state.");
+				ret = ERR_BAD_COMMAND;
+				goto cleanup;
+			}
+
+			tmsg = latency_stats_delta__unpack(&pa, raw_len, raw);
+			if (tmsg == NULL) {
+				mslog(s, proc, LOG_ERR, "error unpacking latency stats delta data");
+				ret = ERR_BAD_COMMAND;
+				goto cleanup;
+			}
+			
+			s->stats.delta_latency_stats.median_total += tmsg->median_delta;
+			s->stats.delta_latency_stats.rms_total += tmsg->rms_delta;
+			s->stats.delta_latency_stats.sample_count += tmsg->sample_count_delta;
+
+			latency_stats_delta__free_unpacked(tmsg, &pa);
+		}
+		break;
+#endif
 	default:
 		mslog(s, proc, LOG_ERR, "unknown CMD from worker: 0x%x", (unsigned)cmd);
 		ret = ERR_BAD_COMMAND;

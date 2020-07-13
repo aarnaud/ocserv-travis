@@ -35,7 +35,12 @@ EXTRA_DIST = certs/ca-key.pem certs/ca.pem ns.sh common.sh certs/server-cert.pem
 	data/radiusclient/dictionary data/radiusclient/radiusclient.conf \
 	data/radiusclient/servers data/radius.config data/radius-group.config data/radius-otp.config \
 	data/test-udp-listen-host.config data/pam-kerberos/passdb.templ \
-	data/test-max-same-1.config
+	data/test-max-same-1.config data/test-script-multi-user.config \
+	sleep-connect-script data/test-psk-negotiate.config data/test-group-name.config \
+	connect-ios-script data/apple-ios.config certs/kerberos-cert.pem \
+	data/kdc.conf data/krb5.conf data/k5.KERBEROS.TEST data/kadm5.acl \
+	data/ipv6-iface.config data/no-route-default.config data/no-route-group.config \
+	data/group-config/group1
 
 SUBDIRS = docker-ocserv
 
@@ -56,20 +61,27 @@ dist_check_SCRIPTS += unix-test \
 endif
 
 #other root requiring tests
-dist_check_SCRIPTS += test-iroute test-multi-cookie test-pass-script \
+dist_check_SCRIPTS += haproxy-connect test-iroute test-multi-cookie test-pass-script \
 	test-cookie-timeout test-cookie-timeout-2 test-explicit-ip \
 	test-cookie-invalidation test-user-config test-append-routes test-ban \
-	multiple-routes haproxy-connect radius-group radius-otp json test-udp-listen-host \
-	test-max-same-1
+	multiple-routes json test-udp-listen-host test-max-same-1 test-script-multi-user \
+	apple-ios ipv6-iface
+
+if RADIUS_ENABLED
+dist_check_SCRIPTS += radius-group radius-otp
+endif
 
 #other tests requiring nuttcp for traffic
 if ENABLE_NUTTCP_TESTS
 dist_check_SCRIPTS += traffic lz4-compression lzs-compression \
 	aes256-cipher aes128-cipher oc-aes256-gcm-cipher oc-aes128-gcm-cipher \
 	test-config-per-group ac-aes128-gcm-cipher ac-aes256-gcm-cipher \
-	no-dtls-cipher radius radius-config
+	no-dtls-cipher psk-negotiate psk-negotiate-match
 endif
 
+if RADIUS_ENABLED
+dist_check_SCRIPTS += radius radius-config
+endif
 endif
 
 
@@ -82,7 +94,8 @@ dist_check_SCRIPTS += test-pass test-pass-cert test-cert test-group-pass \
 	test-pass-group-cert test-pass-group-cert-no-pass test-sighup \
 	test-enc-key test-sighup-key-change test-get-cert test-san-cert \
 	test-gssapi test-pass-opt-cert test-cert-opt-pass test-gssapi-opt-pass \
-	test-gssapi-opt-cert haproxy-auth test-maintenance
+	test-gssapi-opt-cert haproxy-auth test-maintenance \
+	test-group-name no-route-default no-route-group
 
 if HAVE_CWRAP_PAM
 dist_check_SCRIPTS += test-pam test-pam-noauth
@@ -146,9 +159,10 @@ str_test2_LDADD = $(LDADD)
 ipv6_prefix_SOURCES = ipv6-prefix.c
 ipv6_prefix_LDADD = $(LDADD)
 
-human_addr_CPPFLAGS = $(AM_CPPFLAGS) 
+human_addr_CPPFLAGS = $(AM_CPPFLAGS)
 human_addr_SOURCES = human_addr.c
 human_addr_LDADD = $(LDADD)
+
 
 valid_hostname_LDADD = $(LDADD)
 
@@ -158,8 +172,16 @@ check_PROGRAMS = str-test str-test2 ipv4-prefix ipv6-prefix kkdcp-parsing json-e
 	port-parsing human_addr valid-hostname url-escape html-escape cstp-recv \
 	proxyproto-v1
 
+gen_oidc_test_data_CPPFLAGS = $(AM_CPPFLAGS) 
+gen_oidc_test_data_SOURCES = generate_oidc_test_data.c
+gen_oidc_test_data_LDADD = $(LDADD) $(CJOSE_LIBS) $(JANSSON_LIBS)
 
-TESTS = $(dist_check_SCRIPTS) $(check_PROGRAMS) $(xfail_scripts)
+if ENABLE_OIDC_AUTH_TESTS
+check_PROGRAMS += gen_oidc_test_data
+dist_check_SCRIPTS += test-oidc
+endif
+
+TESTS =  $(check_PROGRAMS) $(dist_check_SCRIPTS) $(xfail_scripts)
 
 XFAIL_TESTS = $(xfail_scripts)
 

@@ -142,6 +142,7 @@ int handle_sec_mod_commands(main_server_st * s)
 				ret = ERR_BAD_COMMAND;
 				goto cleanup;
 			}
+			/* No need to authenticate tmsg->ip as sec-mod is trusted */
 			ret = add_str_ip_to_ban_list(s, tmsg->ip, tmsg->score);
 			if (ret < 0) {
 				reply.reply =
@@ -370,9 +371,11 @@ void apply_default_config(main_server_st *s, proc_st *proc, GroupCfgSt *gc)
 		gc->cgroup = vhost->perm_config.config->cgroup;
 	}
 
+#ifdef ANYCONNECT_CLIENT_COMPAT
 	if (!gc->xml_config_file) {
 		gc->xml_config_file = vhost->perm_config.config->xml_config_file;
 	}
+#endif 
 
 	if (!gc->has_rx_per_sec) {
 		gc->rx_per_sec = vhost->perm_config.config->rx_per_sec;
@@ -501,6 +504,18 @@ int session_open(main_server_st *s, struct proc_st *proc, const uint8_t *cookie,
 		return -1;
 	}
 	strlcpy(proc->username, msg->username, sizeof(proc->username));
+
+	if (msg->user_agent != NULL) {
+		strlcpy(proc->user_agent, msg->user_agent, sizeof(proc->user_agent));
+	}
+
+	if (msg->device_type != NULL) {
+		strlcpy(proc->device_type, msg->device_type, sizeof(proc->device_type));
+	}
+
+	if (msg->device_platform != NULL) {
+		strlcpy(proc->device_platform, msg->device_platform, sizeof(proc->device_platform));
+	}
 
 	/* override the group name in order to load the correct configuration in
 	 * case his group is specified in the certificate */
@@ -698,28 +713,6 @@ int secmod_reload(main_server_st * s)
 	return 0;
 }
 
-/* Creates a permanent filename to use for secmod to main communication
- */
-const char *secmod_socket_file_name(struct perm_cfg_st *perm_config)
-{
-	unsigned int rnd;
-	int ret;
-	static char socket_file[_POSIX_PATH_MAX] = {0};
-
-	if (socket_file[0] != 0)
-		return socket_file;
-
-	ret = gnutls_rnd(GNUTLS_RND_NONCE, &rnd, sizeof(rnd));
-	if (ret < 0)
-		exit(1);
-
-	/* make socket name */
-	snprintf(socket_file, sizeof(socket_file), "%s.%x",
-		 perm_config->socket_file_prefix, rnd);
-
-	return socket_file;
-}
-
 static void clear_unneeded_mem(struct list_head *vconfig)
 {
 	vhost_cfg_st *vhost = NULL;
@@ -786,7 +779,7 @@ int run_sec_mod(main_server_st *s, int *sync_fd)
 		set_cloexec_flag (fd[0], 1);
 		set_cloexec_flag (sfd[0], 1);
 		clear_unneeded_mem(s->vconfig);
-		sec_mod_server(s->main_pool, s->config_pool, s->vconfig, p, fd[0], sfd[0]);
+		sec_mod_server(s->main_pool, s->config_pool, s->vconfig, p, fd[0], sfd[0], sizeof(s->hmac_key), s->hmac_key);
 		exit(0);
 	} else if (pid > 0) {	/* parent */
 		close(fd[0]);

@@ -1,3 +1,1463 @@
+commit 56794e4b0c0357000ff5b537922b383ae1e43355
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Tue Jun 16 19:37:45 2020 +0200
+
+    bumped version
+    
+    Signed-off-by: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+
+commit dd648772a636debd31c197d36b6f1cb66bfe369b
+Merge: 62cd7875 fdb80bb2
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Thu Jun 11 21:08:34 2020 +0000
+
+    Merge branch 'tmp-311' into 'master'
+    
+    tests: detect openconnect's path and fail if not found
+    
+    Closes #311
+    
+    See merge request openconnect/ocserv!182
+
+commit fdb80bb23e27b512a9101c7e7a99202c2063787b
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Thu Jun 11 22:26:30 2020 +0200
+
+    tests: detect openconnect's path and fail if not found
+    
+    Resolves: #311
+    
+    Signed-off-by: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+
+commit 62cd78753601e68fa58a444a6b4782820bac162a
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Mon Jun 8 10:41:16 2020 +0200
+
+    Log X-DTLS-App-ID and X-DTLS-Session-ID when sent
+    
+    Signed-off-by: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+
+commit f25875c758b4c8254d4838c7f8aa0a7effaaa08c
+Merge: 59bdd070 1dacbb13
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Tue Jun 2 10:13:36 2020 +0000
+
+    Merge branch 'tmp-268' into 'master'
+    
+    tests: added test cases for no-route in group and main configuration
+    
+    See merge request openconnect/ocserv!181
+
+commit 1dacbb13a7fff0fd941e1de61900df7320189740
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Thu May 28 22:55:26 2020 +0200
+
+    tests: added test cases for no-route in group and main configuration
+    
+    Signed-off-by: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+
+commit 59bdd070b6b9f893d3f552b6a8895a5f4eb014da
+Merge: efa7a615 722e030e
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Wed May 27 08:42:12 2020 +0000
+
+    Merge branch 'latency_stats' into 'master'
+    
+    Add reporting of RX latency
+    
+    Closes #258
+    
+    See merge request openconnect/ocserv!145
+
+commit 722e030e58169c76ad20e792ed6949b7d111fd2b
+Author: Alan Jowett <alan.jowett@microsoft.com>
+Date:   Fri Feb 28 15:49:47 2020 -0700
+
+    Add reporting of RX latency
+    
+    Resolve: #258
+    
+    Signed-off-by: Alan Jowett <alanjo@microsoft.com>
+
+commit efa7a6153864717bfbca245b48bdffaddfc7c00c
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Tue May 26 12:29:13 2020 +0200
+
+    addressed resource leaks pointed by coverity
+    
+    Signed-off-by: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+
+commit 7b294e0b0e5b82441eec1d656c7707c92c82d95b
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Tue May 26 12:25:03 2020 +0200
+
+    snapshot_create: removed dead code
+    
+    Signed-off-by: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+
+commit 0b146e522366982018a5b2988867f1011ecb8afc
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Tue May 26 12:23:52 2020 +0200
+
+    addressed several issues found by coverity
+    
+    Signed-off-by: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+
+commit 2df4eb71fe3bcb7c1e3337f7785c72796ec29086
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Mon May 25 08:37:06 2020 +0200
+
+    NEWS: mention ocserv-worker binary
+    
+    Signed-off-by: Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+commit ce66485ee6eb50fe30b9187b60c818d8353dd337
+Author: Alan Jowett <alanjo@microsoft.com>
+Date:   Sun Apr 19 21:39:18 2020 -0600
+
+    Uses fork/exec to limit memory footprint of ocserv-worker processes
+    
+    Capture all the required worker process state in a protobuf and
+    pass to worker via env. Snapshot all config files to ensure ocserv-sm
+    and ocserv-worker remain in sync. Split ocserv-worker functionality
+    into it's own executable with minimal dependencies.
+    
+    Resolves: #285
+    
+    Signed-off-by: Alan Jowett alanjo@microsoft.com
+
+commit fb4116b2d728f85e2d4bc1395a972c80e1f7e35c
+Merge: 70f1fb27 3a8e280a
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Mon May 25 06:22:35 2020 +0000
+
+    Merge branch 'tmp-267-fix' into 'master'
+    
+    translate labels to groups when provided by client
+    
+    Closes #267
+    
+    See merge request openconnect/ocserv!180
+
+commit 3a8e280a92cea9b5ead4f2bec63d234c6e795430
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Thu May 21 22:08:03 2020 +0200
+
+    translate labels to groups when provided by client
+    
+    This addresses issues with anyconnect clients which send back the descriptive labels.
+    
+    Resolves #267
+    
+    Signed-off-by: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+
+commit 70f1fb27685f7f354759e80a1f5286822334f370
+Merge: d94655fd 7f7bb95f
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Sat May 16 18:15:45 2020 +0000
+
+    Merge branch 'tmp-rpmgen-fix' into 'master'
+    
+    .gitlab-ci.yml: fix rpm generation testing when version matches
+    
+    See merge request openconnect/ocserv!179
+
+commit 7f7bb95f8160b7a5b2c1ac1a62e877689a405f2f
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Sat May 16 11:53:35 2020 +0200
+
+    .gitlab-ci.yml: fix rpm generation testing when version matches
+    
+    Signed-off-by: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+
+commit d94655fd2bf93e6113b555333cf20344a697f9bf
+Merge: 10e3136a a227d6d6
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Wed May 13 21:50:11 2020 +0000
+
+    Merge branch 'tmp-176' into 'master'
+    
+    tun: Bring up interface before setting IPv6 route on Linux
+    
+    Closes #301
+    
+    See merge request openconnect/ocserv!178
+
+commit a227d6d66d645186b68617d8df53a8652279e835
+Author: Michael Brown <mbrown@fensystems.co.uk>
+Date:   Sun May 10 13:11:23 2020 +0100
+
+    tun: Bring up interface before setting IPv6 route on Linux
+    
+    Linux kernel commit 955ec4c ("net/ipv6: Do not allow route add with a
+    device that is down") rejects attempts to install an IPv6 route on an
+    interface that is not yet up.  This commit is first included in kernel
+    4.16.
+    
+    The current code in os_set_ipv6_addr brings up the interface only
+    after attempting to install the IPv6 route.  On kernel 4.16 or later,
+    this fails with the error "Error setting route to remote IPv6: Network
+    is down".
+    
+    Fix by switching the order of code blocks to bring the interface up
+    before attempting to configure the route.
+    
+    Resolves: #301
+    Signed-off-by: Michael Brown <mbrown@fensystems.co.uk>
+
+commit 03b05526c381788c66125f2e9148586095dc5450
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Tue May 12 22:33:40 2020 +0200
+
+    tests: check whether ipv6 interface is up
+    
+    Relates: #301
+    
+    Signed-off-by: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+
+commit 10e3136a43f2cf72b8c2a6705a69d0e96a92a378
+Merge: 4e00087b f9d8b3af
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Mon May 11 19:15:30 2020 +0000
+
+    Merge branch 'tmp-eperm' into 'master'
+    
+    worker: allow filtered calls to fail with signal
+    
+    See merge request openconnect/ocserv!175
+
+commit f9d8b3afc8a9aa3be7427c685d0caaaa36bdce78
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Sun May 10 21:07:47 2020 +0200
+
+    worker: enable all system calls used by worker
+    
+    This allows the set of non-blocking sockets in worker processes.
+    
+    Signed-off-by: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+
+commit 350250ea82d8268179fc597336f9967bde55be5c
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Sat May 9 19:51:53 2020 +0200
+
+    worker: allow filtered calls to fail with a trap
+    
+    This adds a fedora CI run to with filtered calls failing
+    with a signal in order to detect missing syscalls from our filters.
+    
+    Signed-off-by: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+
+commit 4e00087b57e1a8adc589f8b4dc4361dd481cab44
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Sat May 2 06:10:08 2020 +0200
+
+    .gitlab-ci.yml: the freebsd system became unavailable
+    
+    Signed-off-by: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+
+commit 783c2409980095d25cdd17dc8cc5df231f37b707
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Sat May 2 06:08:38 2020 +0200
+
+    ocsigaltstack: posix_memaligns does not return negative on failure
+    
+    Signed-off-by: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+
+commit 7d4190a0a30b7a874a2285b31fe2f4e6ca682401
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Sat May 2 06:03:51 2020 +0200
+
+    seccomp: fail with ENOSYS instead of EPERM
+    
+    When new calls are introduced in the kernel a libc may
+    chose to move to them. Having our filter return ENOSYS
+    will signal libc to fallback to the previous call which
+    exists in the filter.
+    
+    Signed-off-by: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+
+commit 75470d99c30929ce48cd2ebf083052f70f6624fa
+Author: Alan Jowett <alanjo@microsoft.com>
+Date:   Mon Apr 27 09:25:46 2020 -0600
+
+    When setting up the DTLS session, close the previous DTLS session if it exists.
+    
+    Resolves: #293
+    
+    Signed-off-by: Alan Jowett alanjo@microsoft.com
+
+commit d2def367c3177f856fe16daa2f5c68d6ad13f67e
+Merge: df5ea8bd 7e505278
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Mon Apr 27 19:56:56 2020 +0000
+
+    Merge branch 'issue291' into 'master'
+    
+    Remove unused code when --disable-compression is set.
+    
+    Closes #291
+    
+    See merge request openconnect/ocserv!170
+
+commit 7e5052782efa0efee5f149c6c5c3968b269111eb
+Author: Alan Jowett <alanjo@microsoft.com>
+Date:   Sat Apr 25 15:53:31 2020 -0600
+
+    Remove unused code when --disable-compression is set.
+    Resolves: #291
+    
+    Singed-off-by: Alan Jowett <alanjo@microsoft.com>
+
+commit df5ea8bd3da334edb63cbd864253b5adf86a820f
+Merge: c407ef9c 8cac05da
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Mon Apr 27 11:35:58 2020 +0000
+
+    Merge branch 'isssue290' into 'master'
+    
+    Remove unused code when --disable-anyconnect-compat is set.
+    
+    Closes #290
+    
+    See merge request openconnect/ocserv!169
+
+commit 8cac05dac2615ac1e1819b241b621bc05d0bdcf6
+Author: Alan Jowett <alanjo@microsoft.com>
+Date:   Sat Apr 25 15:37:50 2020 -0600
+
+    Remove unused code when --disable-anyconnect-compat is set.
+    
+    Resolves: #290
+    
+    Signed-off-by: Alan Jowett alanjo@microsoft.com
+
+commit c407ef9cc502f949590ddbac4acd2968f18ba75c
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Wed Apr 22 21:35:56 2020 +0200
+
+    doc update
+    
+    Signed-off-by: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+
+commit 626ca7f377d04b504bb0ab9b195133548193a225
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Wed Apr 22 13:01:43 2020 +0200
+
+    configure: fixed enable-oidc-auth help message
+    
+    Signed-off-by: Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+commit b63ecb771710bd2b1e52becb7d91d74a8c2553d2
+Author: Alan Jowett <alanjo@microsoft.com>
+Date:   Fri Apr 10 13:16:12 2020 -0600
+
+    Kill ocserv workers before ocserv-main or ocserv-secmod
+    
+    On systems that are running low on memory, the ocserv worker processes
+    should be killed before the ocserv-main or ocserv-sm process.
+    
+    To achieve this, we set /proc/self/oom_score_adj to 1000
+    
+    Resolves: #283
+    
+    Signed-off-by: Alan TG Jowett <alan.jowett@microsoft.com>
+
+commit deef4603a08dc4ea418adc4783ef22f5c377bc39
+Merge: e79348a1 9d9907ef
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Wed Apr 22 10:56:55 2020 +0000
+
+    Merge branch 'issue284' into 'master'
+    
+    Attempt to download updated JWKs if the client presents an unknown key.
+    
+    Closes #284
+    
+    See merge request openconnect/ocserv!168
+
+commit 9d9907ef5e919744b93c5478b591cc46930b619d
+Author: Alan Jowett <alanjo@microsoft.com>
+Date:   Tue Apr 14 10:10:19 2020 -0600
+
+    Attempt to download updated JWKs if the client presents an unknown key.
+    Limit the download of keys to every 900s.
+    
+    Resolves: #284
+    Signed-off-by: Alan Jowett <alanjo@microsoft.com>
+
+commit e79348a15442dffd3622613967e450c177c1ace9
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Fri Apr 17 22:14:58 2020 +0200
+
+    corrected typo
+    
+    Signed-off-by: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+
+commit df3b925524dd002178016a8cee61bcbb500d5888
+Merge: c702227b a63164e1
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Sat Apr 11 17:31:22 2020 +0000
+
+    Merge branch 'tmp-disable-nagle' into 'master'
+    
+    Disable TCP queuing on the TLS port.
+    
+    See merge request openconnect/ocserv!165
+
+commit c702227b3b9ce41008c3ee706dfbe6c164faa2c2
+Merge: 8cb14b7e fd2bd42c
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Fri Apr 10 21:44:55 2020 +0000
+
+    Merge branch 'tmp-enable-kerberos' into 'master'
+    
+    Fix kerberos tests
+    
+    See merge request openconnect/ocserv!149
+
+commit fd2bd42cb2e43dae4c48748def03f5a75b6b001c
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Thu Mar 12 18:40:39 2020 +0100
+
+    .gitlab-ci.yml: corrected kerberos tests
+    
+    This also corrects the kerberos test script environment
+    to enable running the test.
+    
+    Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+commit a63164e182e3d438da358032d2ad566093a88001
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Fri Apr 10 21:10:17 2020 +0200
+
+    Disable TCP queuing on the TLS port.
+    
+    This makes the CSTP connection more interactive for clients that
+    cannot run over UDP.
+    
+    See openconnect#122 for discussion.
+    
+    Signed-off-by: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+
+commit 8cb14b7ebd32177c857c255db8e7916a69c0cd2e
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Thu Apr 9 23:07:19 2020 +0200
+
+    released 1.0.1
+    
+    Signed-off-by: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+
+commit 304dc8af2dd60bdbf2b74c01709435234672f441
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Thu Apr 9 23:05:23 2020 +0200
+
+    doc update [ci skip]
+    
+    Signed-off-by: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+
+commit 33f225108af2211b4129c14d68c143c146d32e6c
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Thu Apr 9 22:56:40 2020 +0200
+
+    config: removed reference of user-profile in group config
+    
+    Signed-off-by: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+
+commit b24c427b157d3b555ff422d6cbcdcec8bae98876
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Thu Apr 9 22:51:49 2020 +0200
+
+    config: document that user-profile cannot be set per user
+    
+    Relates: #270
+    Resolves: #179
+    
+    Signed-off-by: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+
+commit 87bee0b7cb498893eb9bb760e50bee5ac04215d0
+Merge: 2c93618c fca41e2f
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Thu Apr 9 12:30:54 2020 +0000
+
+    Merge branch 'tmp-fix-anyconnect-disconnect' into 'master'
+    
+    Distinguish the bye packet interpretation
+    
+    Closes #281
+    
+    See merge request openconnect/ocserv!162
+
+commit fca41e2fa294ac53770b240ee0ed663b6632cbb8
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Mon Apr 6 14:21:34 2020 +0200
+
+    Distinguish the bye packet interpretation
+    
+    In openconnect client the BYE packet indicates an explicit
+    user disconnect by sending 0x0b as payload. In anyconnect clients it
+    may indicate an intention to reconnect (e.g., because network was changed).
+    We introduce a check for 0x0b to identify the user disconnect and
+    add debugging output for other disconnect reasons.
+    
+    Relates: #281
+    
+    Signed-off-by: Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+commit 2c93618c903c16272a1d316725f5a0ee16a69b4d
+Merge: b6d879d1 e9251a66
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Wed Apr 8 18:15:13 2020 +0000
+
+    Merge branch 'tmp-tests-updates' into 'master'
+    
+    Minor updates in tests
+    
+    See merge request openconnect/ocserv!164
+
+commit e9251a66e88448d0edff6757604feeca7f3aec13
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Mon Apr 6 16:48:03 2020 +0200
+
+    tests: test-max-same-1/test-multi-cookie: use update_config
+    
+    Signed-off-by: Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+commit 9246431590f16f4df47b62921582c9b3e571baac
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Sun Apr 5 13:11:16 2020 +0200
+
+    tests: radius tests are not run when radius is disabled
+    
+    Signed-off-by: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+
+commit 689843e87490956641eb4f2cecc0cc9765e79a38
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Sun Apr 5 13:11:16 2020 +0200
+
+    tests: separate resources in haproxy-connect in test-udp-listen-host
+    
+    Signed-off-by: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+
+commit b6d879d18f3249d5f63dd5ec2560530ba01612d3
+Merge: 2291a373 1e657a61
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Mon Apr 6 14:58:52 2020 +0000
+
+    Merge branch 'tmp-san-update' into 'master'
+    
+    Cleanup get_cert_names()
+    
+    See merge request openconnect/ocserv!163
+
+commit 1e657a618a62342c365dcd3b5bcf2913df65d0d1
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Mon Apr 6 16:21:01 2020 +0200
+
+    Cleanup get_cert_names()
+    
+    Ensure that we do not recognize unsupported names as
+    supported.
+    
+    Relates: #822
+    
+    Signed-off-by: Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+commit 2291a37336621e8cc107c6bb2069c5c4c8f4be21
+Merge: 82dc37df fe99e77c
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Mon Apr 6 12:26:20 2020 +0000
+
+    Merge branch 'tmp-fix-vpnc-script' into 'master'
+    
+    vpnc-script: added attempt-reconnect
+    
+    See merge request openconnect/ocserv!161
+
+commit fe99e77ccb9804de6687782292e6e451c39f4aad
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Sun Apr 5 13:29:44 2020 +0200
+
+    vpnc-script: added attempt-reconnect
+    
+    Signed-off-by: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+
+commit 82dc37df0ce8739ce5d188eabf14818a23030bbe
+Merge: 79cb3cb7 2d9bc11f
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Sat Apr 4 13:22:01 2020 +0000
+
+    Merge branch 'tmp-fix-banned-printing' into 'master'
+    
+    occtl: list actual banned entries
+    
+    Closes #272
+    
+    See merge request openconnect/ocserv!160
+
+commit 2d9bc11f59f55d0e4619f82db6860d5e7d182bcc
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Fri Apr 3 13:56:57 2020 +0200
+
+    occtl: list actual banned entries
+    
+    This fixes the ban entries listing from printing all the items in
+    the database, to all the items that are actually banned from
+    connecting.
+    
+    Resolves: #272
+    
+    Signed-off-by: Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+commit 79cb3cb7ff9bd2b19eeb244c7ad49f7d7089b969
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Fri Apr 3 13:45:33 2020 +0200
+
+    occtl: avoid division by zero
+    
+    Resolves: #278
+    
+    Signed-off-by: Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+commit c34b84e0d10fdece8829af48780a7c4b0c991f1c
+Merge: f65eb9f3 aa9c401c
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Fri Apr 3 11:39:28 2020 +0000
+
+    Merge branch 'tmp-ignore-broken-dtls' into 'master'
+    
+    Prevent clients with a broken GnuTLS version from connecting using DTLS
+    
+    Closes #277
+    
+    See merge request openconnect/ocserv!157
+
+commit aa9c401cacfaceb24009763942da94d79d43735b
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Tue Mar 31 20:04:14 2020 +0200
+
+    Prevent clients with a broken GnuTLS version from connecting using DTLS
+    
+    That prevents clients that send an all-zero DTLS client hello from being
+    able to establish a connection.
+    
+    That also introduces the OCSERV_ALLOW_BROKEN_CLIENTS environment variable
+    which when set to 1 it allows broken clients to connect. This is used
+    mainly to allow test cases to pass to existing vulnerable systems in our
+    CI.
+    
+    Resolves: #277
+    
+    Signed-off-by: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+
+commit f65eb9f318cef59bc2589a43453dc4d4371460d7
+Merge: 275ab571 d551b8ba
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Thu Apr 2 13:52:58 2020 +0000
+
+    Merge branch 'tmp-fix-cstp-send' into 'master'
+    
+    cstp_send_file: fixed handling of syscall interrupts
+    
+    See merge request openconnect/ocserv!159
+
+commit d551b8badcb934f19f0abb1b5a74ece14d28c670
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Thu Apr 2 15:04:29 2020 +0200
+
+    cstp_send_file: fixed handling of syscall interrupts
+    
+    This also increases the buffer size.
+    
+    Signed-off-by: Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+commit 275ab571b3a52bd725836d22062eefa91e5bffaa
+Merge: ced7ba9f 899a1323
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Wed Apr 1 11:31:01 2020 +0000
+
+    Merge branch 'master' into 'master'
+    
+    Fix hmac hash problem for time_t and unit64_t, they may have different size in 32bit/64bit systems
+    
+    See merge request openconnect/ocserv!156
+
+commit 899a1323a9106210fd462ccf72677a117b8922ce
+Author: sunnyqeen <sunnyqeen@gmail.com>
+Date:   Tue Mar 31 09:58:09 2020 +0000
+
+    Fix hmac hash problem for time_t and unit64_t, they may have different size in 32bit/64bit systems
+
+commit ced7ba9fd3e46f19770885f963ea1f62c2699f36
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Fri Mar 27 08:24:15 2020 +0100
+
+    doc update
+    
+    Signed-off-by: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+
+commit 0e6a791a40ff92d6112dc94b61767687c56edfad
+Author: Stefan Bühler <stbuehler@web.de>
+Date:   Wed Mar 25 14:45:27 2020 +0100
+
+    occtl show status: produce machine-readable output for json
+    
+    This adds additional variables to include machine-readable output
+    in json form.
+    
+    Resolves: #271
+    
+    Signed-off-by: Stefan Bühler <stbuehler@web.de>
+
+commit 07948320ad08ea812d3926122bbbe9715b77aa6c
+Merge: c1428689 f19c3f7d
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Wed Mar 25 09:24:39 2020 +0000
+
+    Merge branch 'fix_compilation_warnings_in_pcl' into 'master'
+    
+    Fixed minor compilation warnings
+    
+    See merge request openconnect/ocserv!153
+
+commit f19c3f7d230bd2d5b348e9c64a60f908ad47f00d
+Author: Pierre Souchay <pierre@souchay.net>
+Date:   Mon Mar 23 18:20:08 2020 +0100
+
+    Fixed minor compilation warnings
+    
+    Warnings outputed by gcc (Ubuntu 7.5.0-3ubuntu1~18.04) 7.5.0
+    
+    * pcl/pcl.c:385:17: warning: unused variable ‘r’ [-Wunused-variable]
+    
+    * Use pre-compilation directive to avoid defining unused function when not needed:
+    
+      * pcl/pcl.c:62:12: warning: ‘co_ctx_stackdir’ defined but not used [-Wunused-function]
+        static int co_ctx_stackdir(void)
+    
+      * pcl/pcl.c:54:12: warning: ‘co_ctx_sdir’ defined but not used [-Wunused-function]
+        static int co_ctx_sdir(unsigned long psp)
+    
+    Signed-off-by: Pierre Souchay <pierre@souchay.net>
+
+commit c142868909490e65acea22add83ff4e6237fb63a
+Merge: 3382277e 23430d11
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Mon Mar 23 07:16:44 2020 +0000
+
+    Merge branch 'fix-ban-log' into 'master'
+    
+    ban log: only log once when adding, not when increasing score when already banned
+    
+    See merge request openconnect/ocserv!152
+
+commit 23430d11185a3404b1009a940776e9071803adfb
+Author: Stefan Bühler <stbuehler@web.de>
+Date:   Sun Mar 22 12:11:05 2020 +0100
+
+    ban log: only log once when adding, not when increasing score when already banned
+    
+    Signed-off-by: Stefan Bühler <stbuehler@web.de>
+
+commit 3382277e978f4b6c2fef9bbe50adfad29c94af8b
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Fri Mar 20 13:58:25 2020 +0100
+
+    released 1.0.0
+    
+    Signed-off-by: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+
+commit 8ff144992cc2170bcc1c4646ceaed7969e4b146c
+Merge: e97022e0 cf0bca2c
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Fri Mar 20 12:40:08 2020 +0000
+
+    Merge branch 'tmp-fix-nas-port' into 'master'
+    
+    radius: do not include NAS-Port via rc_aaa()
+    
+    Closes #269
+    
+    See merge request openconnect/ocserv!150
+
+commit cf0bca2caeebc9d3090ea5344d876ffad3671047
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Thu Mar 19 21:26:34 2020 +0100
+
+    radius: do not include NAS-Port via rc_aaa()
+    
+    We were previously asking rc_aaa() to include NAS-Port pair to
+    the request which has undesirable results.
+    
+    Resolves: #269
+    
+    Signed-off-by: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+
+commit e97022e01d009f5ca227d00eae9c24fa8d11764d
+Merge: 881953c2 88059e43
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Mon Mar 16 22:33:42 2020 +0000
+
+    Merge branch 'tmp-detect-ios' into 'master'
+    
+    Provide a special IPv6 route for iOS
+    
+    Closes #254
+    
+    See merge request openconnect/ocserv!146
+
+commit 88059e43ac23594849b4c073c7cc443b480b2ddc
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Mon Mar 16 22:55:26 2020 +0100
+
+    .gitlab-ci.yml: no longer test on Centos6
+    
+    This is a very old platform with old openconnect available in EPEL.
+    We do not need to keep compatibility with it.
+    
+    Signed-off-by: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+
+commit 3544e3ee2b1a6aee592be11acdb09483ba5b637d
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Sat Mar 14 21:38:42 2020 +0100
+
+    tests: verify environment under Apple clients
+    
+    Signed-off-by: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+
+commit 3475e2b0fc08719229dad846396f8a1df4a894db
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Wed Mar 11 21:20:44 2020 +0100
+
+    Provide a special IPv6 route for iOS
+    
+    When IPv6 is requested by iphone we provide a special route that is
+    necessary by these clients to use IPv6.
+    
+    Resolves: #254
+    
+    Signed-off-by: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+
+commit 65a7fcab67601921dd08d7f4dc5ca265968cc193
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Wed Mar 11 21:56:04 2020 +0100
+
+    tests: remove option pointing to non-existant script
+    
+    Signed-off-by: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+
+commit 881953c2931c3c1f12d6d734c12daf550b4e8d56
+Merge: af11e05f 5e817d3d
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Thu Mar 12 19:40:32 2020 +0000
+
+    Merge branch 'tmp-test-psk-negotiate' into 'master'
+    
+    Fix PSK-NEGOTIATE ciphers
+    
+    Closes #262
+    
+    See merge request openconnect/ocserv!147
+
+commit af11e05ff7bf822103b3c64c3934694271127a22
+Merge: 780fbb89 c4759fd3
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Thu Mar 12 19:26:18 2020 +0000
+
+    Merge branch 'tmp-werror' into 'master'
+    
+    Introduce a -Werror build
+    
+    See merge request openconnect/ocserv!148
+
+commit c4759fd3344f72b7d578f02674890813485bbd21
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Thu Mar 12 17:26:21 2020 +0100
+
+    .gitlab-ci.yml: introduce run with -Werror
+    
+    This allows catching warnings that could have slipped in.
+    
+    Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+commit f14385e1b447bd6541d79deaddd4f1a86d9ba7fb
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Thu Mar 12 19:32:52 2020 +0100
+
+    worker-proxyproto: corrected type of data_size to avoid warnings in comparisons
+    
+    Signed-off-by: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+
+commit fb07fcca87b74d619b7ec486ff41f368185dae82
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Thu Mar 12 19:26:29 2020 +0100
+
+    vpn.h: made sign of max_ban_score more appropriate
+    
+    Signed-off-by: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+
+commit bcc07c935e60048eab4983c0b1a1ebb8a6734366
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Thu Mar 12 19:20:42 2020 +0100
+
+    tests: improved ipv6-prefix
+    
+    Signed-off-by: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+
+commit 449e608f86f1b412bfdc97129cdfc478799da59d
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Thu Mar 12 18:36:19 2020 +0100
+
+    str_replace_str: ensure types match for comparison
+    
+    Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+commit bf8616cbca32dd5f55b3d100f5266b7ba8043c7c
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Thu Mar 12 17:34:45 2020 +0100
+
+    tests: generate_oidc_test_data: fixed used of strncat
+    
+    Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+commit 370cc7cdf7010a845020c14e1bcfece9d7c923a2
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Thu Mar 12 17:25:56 2020 +0100
+
+    disable_system_calls: ensure gettimeofday is not a macro
+    
+    Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+commit 6b84d7e6818a08e890da718e11b604a1a7cc0e21
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Thu Mar 12 17:22:27 2020 +0100
+
+    eliminate warnings when used for unit testing tests
+    
+    Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+commit 13b92d3b11866e37b16556bcea0f724e874f98ea
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Thu Mar 12 17:11:51 2020 +0100
+
+    Fix crypt.h detection
+    
+    Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+commit 5e817d3d6067140bae5bd511ae05bfc3d30f6ca6
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Thu Mar 12 16:22:04 2020 +0100
+
+    tests: added test to test match-tls-dtls-ciphers config option
+    
+    Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+commit b0c885ca6353a17342a8e1a35a787b3fbadfb4e5
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Thu Mar 12 16:13:46 2020 +0100
+
+    ocserv: fix PSK negotiation
+    
+    This fixes a regression which prevented DTLS-PSK (or PSK-NEGOTIATE)
+    from being negotiated.
+    
+    Resolves: #262
+    
+    Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+commit 5097604d4dbec887144c63d6b41c6384a15e9fb8
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Thu Mar 12 13:18:31 2020 +0100
+
+    tests: added test for PSK-NEGOTIATE ciphers
+    
+    Relates: #262
+    
+    Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+commit 780fbb89a000b20260d81040ef8deea91e37a696
+Author: Alan Jowett <alan.jowett@microsoft.com>
+Date:   Mon Mar 2 12:12:43 2020 -0700
+
+    Script needs access to additional client metadata.
+    
+    Export more information to the script, including client device platform,
+    type and user agent.
+    
+    Resolves: #256
+    
+    Signed-off-by: Alan Jowett <alanjo@microsoft.com>
+
+commit 9a41a27b1859251fa36a9005fab9ab4c1c4b28c0
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Mon Mar 9 21:51:06 2020 +0100
+
+    NEWS: documented bearer token support
+    
+    Signed-off-by: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+
+commit b43e782b121555af4fcd000dee4ceb40865dbc0c
+Author: Alan Jowett <alan.jowett@microsoft.com>
+Date:   Mon Feb 10 15:32:13 2020 -0700
+
+    Add support for RFC6750 bearer tokens to ocserv
+    
+    This permits the validation of OpenID Connect auth tokens OpenID
+    Connect is an OAuth 2.0 protocol used to identify a resource owner
+    (VPN client end-user) to a resource server (VPN server) intermediated
+    by an Authorization server.
+    
+    Resolves: #240
+    
+    Signed-off-by: Alan TG Jowett <alan.jowett@microsoft.com>
+
+commit a6c2d36952ff946f1a93f8dbf43fe1551d5b3d26
+Merge: 31719b2c 6d3b295b
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Thu Mar 5 19:26:32 2020 +0000
+
+    Merge branch 'coverity_scan_defects' into 'master'
+    
+    Fix issues flag by Coverity:
+    
+    See merge request openconnect/ocserv!144
+
+commit 6d3b295b1259730c342ca22c783557e9fb73391d
+Author: Alan Jowett <alan.jowett@microsoft.com>
+Date:   Wed Mar 4 09:20:01 2020 -0700
+
+    Fix issues flag by Coverity:
+    288530 Dereference after null check
+    288529 Array compared against 0
+    
+    Signed-off-by: Alan Jowett <alanjo@microsoft.com>
+
+commit 31719b2cec1397d051013bbc657e3cf3e8ca1df5
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Wed Mar 4 12:14:54 2020 +0100
+
+    main: no need to check nullity on an array
+    
+    Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+commit e70573d9fcefba2f8437029105befe115654ef3b
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Wed Mar 4 12:14:29 2020 +0100
+
+    new_client_entry: prevent null pointer dereference
+    
+    Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+commit 85912c705e6c772a918c06d3fd81697f8f34faf8
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Sat Feb 29 19:43:54 2020 +0100
+
+    Fixed incorrect pointer arithmetic on configuration error
+    
+    This addresses a crash on incorrect configuration.
+    Reported by Zero King <l2dy@icloud.com>
+    
+    Signed-off-by: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+
+commit 4aeb5ea52e15a2167ab6856bae6ba37e50bf952a
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Fri Feb 28 22:47:42 2020 +0100
+
+    NEWS: doc update
+    
+    Signed-off-by: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+
+commit 31104c4de90664d4dca9354d4f35c96cb336418b
+Merge: 3449eefd bfa44237
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Fri Feb 28 21:41:39 2020 +0000
+
+    Merge branch 'issue251' into 'master'
+    
+    ocserv-worker that fails to complete it's authentication should be killed
+    
+    Closes #251
+    
+    See merge request openconnect/ocserv!141
+
+commit 3449eefdc3809ad9a767006d27cdd5ba0c92d7f8
+Merge: e0e3cc9c c9662282
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Fri Feb 28 20:16:47 2020 +0000
+
+    Merge branch 'issue252' into 'master'
+    
+    Use an HMAC to verify the local and remote IP presented during SEC_AUTH_INIT phase.
+    
+    Closes #252
+    
+    See merge request openconnect/ocserv!139
+
+commit c9662282a1477116034060a589f20fc55ea115a4
+Author: Alan Jowett <alan.jowett@microsoft.com>
+Date:   Fri Feb 21 12:44:48 2020 -0700
+
+    Prevent tampering of our_ip, ip, session_start_time in SEC_AUTH_INIT from ocserv-worker to ocserv->sm and reject replay of auth_init_messages from old sessions.
+    
+    Resolves: #252
+    
+    Signed-off-by: Alan Jowett <alanjo@microsoft.com>
+
+commit e0e3cc9c977f45a4e64b97fb4fc8acd28107cd02
+Merge: 6558653c 65189651
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Thu Feb 27 20:15:04 2020 +0000
+
+    Merge branch 'issue245' into 'master'
+    
+    CMD_BAN_IP should not use the IP address provided by worker process as it is not verified.
+    
+    Closes #245
+    
+    See merge request openconnect/ocserv!140
+
+commit 6518965129462dbfd31518dbe702ec3521e23b02
+Author: Alan Jowett <alan.jowett@microsoft.com>
+Date:   Thu Feb 27 09:33:56 2020 -0700
+
+    CMD_BAN_IP should not use the IP address provided by worker process as it is not verified.
+    
+    Resolves: #245
+    
+    Signed-off-by: Alan Jowett <alanjo@microsoft.com>
+
+commit bfa442379dc7defc6d04e2ac0e66caa7cc5b07b8
+Author: Alan Jowett <alan.jowett@microsoft.com>
+Date:   Thu Feb 27 10:48:26 2020 -0700
+
+    ocserv-worker that fails to complete it's authentication should be killed
+    
+    Resolves: #251
+    
+    Signed-off-by: Alan Jowett <alanjo@microsoft.com>
+
+commit 6558653c4be7d34e8cb142b9ae239d99c427258e
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Wed Feb 26 12:47:56 2020 +0100
+
+    .gitlab-ci.yml: include the right build in schedules [ci skip]
+    
+    Signed-off-by: Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+commit 85108c75981a9241143d6d40873374c70021dcc8
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Wed Feb 26 12:42:50 2020 +0100
+
+    .gitlab-ci.yml: corrected 'only' use in coverity build
+    
+    Signed-off-by: Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+commit 12c69171a8c086aa3d88d8bf8706fd52027b7e39
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Tue Feb 25 08:25:24 2020 +0100
+
+    steal_ip_leases: reorg to avoid null pointer dereference
+    
+    Signed-off-by: Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+commit de3d3cb7869f562a19552091cfd4781b776cb7bd
+Merge: 91de6c88 cc651b9d
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Mon Feb 24 21:32:59 2020 +0000
+
+    Merge branch 'tmp-fix231' into 'master'
+    
+    Ensure scripts have all the information on all disconnection types
+    
+    Closes #231
+    
+    See merge request openconnect/ocserv!137
+
+commit cc651b9de537a7fd504b1a633365530af58a9d7c
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Sat Feb 22 23:33:43 2020 +0100
+
+    Ensure scripts have all the information on all disconnection types
+    
+    When a client re-uses a cookie and takes over a previous connection
+    previously the disconnect script of the old connection wouldn't receive
+    the IP information. Ensure that all information is provided to scripts
+    at this case.
+    
+    Resolves: #231
+    
+    Signed-off-by: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+
+commit 91de6c889e6fcd038c0e66a2398425b50be31a52
+Merge: 6ad8da86 bc092793
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Sat Feb 22 23:21:16 2020 +0000
+
+    Merge branch 'tmp-coverity' into 'master'
+    
+    .gitlab-ci.yml: coverity jobs only run on schedules
+    
+    See merge request openconnect/ocserv!138
+
+commit bc092793f043cb9a48d7ebc3cd670c80813bd8a5
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Sat Feb 22 23:40:14 2020 +0100
+
+    .gitlab-ci.yml: coverity jobs only run on schedules
+    
+    Signed-off-by: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+
+commit 6ad8da867146b4737e59b25184585414719fd8fc
+Merge: 2932043d c3ff69e7
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Sat Feb 22 22:21:56 2020 +0000
+
+    Merge branch 'tmp-ubuntu18' into 'master'
+    
+    added ubuntu18 build and minor cleanup
+    
+    See merge request openconnect/ocserv!136
+
+commit c3ff69e7c496706798bbf79ce356f52752666598
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Sat Feb 22 22:43:55 2020 +0100
+
+    added ubuntu18 build and minor cleanup
+    
+    Signed-off-by: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+
+commit 2932043dd9f8f2f5504fb8451505b567be01d615
+Merge: f333e600 f410a5c6
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Thu Feb 20 16:47:52 2020 +0000
+
+    Merge branch 'issue244' into 'master'
+    
+    ocserv-main should limit the maximum message size a client can send
+    
+    Closes #244
+    
+    See merge request openconnect/ocserv!132
+
+commit f333e600b5fa2378c8cca321e022c9814e4848c6
+Merge: c4f9d6cf 87b1dc65
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Thu Feb 20 16:46:07 2020 +0000
+
+    Merge branch 'issue247' into 'master'
+    
+    Resolves: #247 - Bound negotiated MTU between RFC 791 defined minimum and configured maximum.
+    
+    Closes #247
+    
+    See merge request openconnect/ocserv!135
+
+commit 87b1dc65babc8d5f3ac1b1b076efc2ace7e568c2
+Author: Alan Jowett <alan.jowett@microsoft.com>
+Date:   Tue Feb 18 09:20:21 2020 -0700
+
+    Bound negotited MTU between RFC 791 defined minumum and configured maximum.
+    
+    Resolves: #247
+    
+    Signed-off-by: Alan Jowett <alanjo@microsoft.com>
+
+commit f410a5c637802a9d931beb00929250c8d403e5cc
+Author: Alan Jowett <alan.jowett@microsoft.com>
+Date:   Fri Feb 14 08:58:40 2020 -0700
+
+    ocserv-main should limit the maximum message size a client can send
+    
+    Resolves: #244
+    
+    Signed-off-by: Alan Jowett <alanjo@microsoft.com>
+
+commit c4f9d6cffb375d55912ccdae7493939dcaee4efa
+Merge: 8d1aa343 d852195e
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Wed Feb 19 21:55:19 2020 +0000
+
+    Merge branch 'tmp-fix-disconnect-script' into 'master'
+    
+    tests: try to reproduce #231
+    
+    See merge request openconnect/ocserv!127
+
+commit d852195e64d3f779bef2cc403f7f7203720ed925
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Fri Feb 7 17:12:38 2020 +0100
+
+    tests: reproduce #231
+    
+    This modifies test-pass-script to force a DPD timeout to
+    verify whether ${IP_REMOTE} is set on the disconnect script.
+    
+    Signed-off-by: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+
+commit 8d1aa343b4dd013ba6b564036febb764f1ebf42a
+Author: Alan Jowett <alan.jowett@microsoft.com>
+Date:   Fri Feb 14 13:36:17 2020 -0700
+
+    Ban score should always increase.
+    
+    Resolves: #246
+    
+    Signed-off-by: Alan Jowett <alanjo@microsoft.com>
+
+commit 17957ed98f9211c0618a10c329a60423480a7304
+Merge: d2884640 a6994ef1
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Thu Feb 13 22:39:16 2020 +0000
+
+    Merge branch 'tmp-reorg-gitlab-ci-yml' into 'master'
+    
+    .gitlab-ci.yml: avoid the use of '&&'
+    
+    See merge request openconnect/ocserv!131
+
+commit d28846404d7fdfbbaa2eecf860f68eaa35da2f8f
+Merge: 5aea4680 f4126fa0
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Thu Feb 13 22:15:17 2020 +0000
+
+    Merge branch 'tmp-centos8' into 'master'
+    
+    .gitlab-ci.yml: added centos8 build
+    
+    See merge request openconnect/ocserv!129
+
+commit 5aea4680f5c390340430e685fe6b384247fc5f97
+Merge: 1bce6526 ebe7c3bf
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Thu Feb 13 22:15:06 2020 +0000
+
+    Merge branch 'tmp-check-multi-users' into 'master'
+    
+    tests: added test to check whether server blocks if script blocks
+    
+    Closes #241
+    
+    See merge request openconnect/ocserv!126
+
+commit a6994ef1e7cf3dc7258a4aaa4e420cc84ed57d19
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Thu Feb 13 23:04:38 2020 +0100
+
+    .gitlab-ci.yml: specify the master branch coverity and web pages generation runs
+    
+    Signed-off-by: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+
+commit 613242f343856db9901967ff3528db97ab51ba40
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Thu Feb 13 23:02:55 2020 +0100
+
+    .gitlab-ci.yml: added epel8 rpm build
+    
+    Signed-off-by: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+
+commit 476638a52a15bcc9da790e2b0b133e4a1994e459
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Thu Feb 13 22:49:58 2020 +0100
+
+    .gitlab-ci.yml: avoid the use of '&&'
+    
+    gitlab CI will often mask a failure when multiple '&&' are
+    present.
+    
+    Signed-off-by: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+
+commit f4126fa0954c19253b11bbb67bf10ab4dbcf9536
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Thu Feb 13 22:45:42 2020 +0100
+
+    .gitlab-ci.yml: change raddb permissions
+    
+    Signed-off-by: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+
+commit a8d34a80b925e68d3c323340873f7137de733aaa
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Thu Feb 13 22:07:00 2020 +0100
+
+    tests: radius: save log on CI failure
+    
+    Signed-off-by: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+
+commit fc901e03c403d60330336c4263e44791beae4c50
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Thu Feb 13 21:31:44 2020 +0100
+
+    .gitlab-ci.yml: use parallel builds
+    
+    Signed-off-by: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+
+commit 243c5e9fa2bc5d2092352e46413c7ed2b8e12368
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Tue Feb 11 12:33:39 2020 +0100
+
+    .gitlab-ci.yml: added centos8 build
+    
+    Signed-off-by: Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+commit 1bce6526f31ab27cae3cfd5df4f8a29d964586ce
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Fri Feb 7 22:50:00 2020 +0100
+
+    updated NEWS entries [ci skip]
+    
+    Signed-off-by: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+
+commit ebe7c3bfb4da19aed593b7b4e5d6ecc98527c9a4
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Fri Feb 7 22:15:43 2020 +0100
+
+    tests: added test to check whether server blocks if script blocks
+    
+    This test verifies that the server will continue to operate
+    even if the up script will block indefinitely.
+    
+    Resolves: #241
+    
+    Signed-off-by: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+
+commit cd4aac23054eaff2483882036e06eb85f3d1fcf0
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Fri Feb 7 21:56:46 2020 +0100
+
+    inih: updated to latest version
+    
+    Signed-off-by: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+
+commit 0402df11de6a40ba0e34346061da97881f98c9cd
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Fri Feb 7 22:01:02 2020 +0100
+
+    config: avoid crash on invalid entries
+    
+    Signed-off-by: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+
+commit ea3f6900c157ac2ac0c246a139eaee5784b4b1e1
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Fri Feb 7 16:48:19 2020 +0100
+
+    common.sh: print message when script cannot run
+    
+    Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+commit 1a6776c3a71b7a67bb21fa1eb2d278478cfae6f4
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Fri Feb 7 17:09:03 2020 +0100
+
+    doc: updated ronn usage and fail when manpage cannot be generated
+    
+    Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+commit 9bd3c136e1cc5fa2658fda4fbfa7b10914a85d54
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Sun Jan 26 09:25:44 2020 +0100
+
+    .gitlab-ci.yml: run jobs on linux only
+    
+    Signed-off-by: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+
 commit 1d7a7088bf4f15a19568d8cff2d6574dbbab45fb
 Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
 Date:   Sat Dec 28 20:19:44 2019 +0100

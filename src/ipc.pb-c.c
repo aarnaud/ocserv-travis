@@ -457,6 +457,96 @@ void   udp_fd_msg__free_unpacked
   assert(message->base.descriptor == &udp_fd_msg__descriptor);
   protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
 }
+void   snapshot_entry_msg__init
+                     (SnapshotEntryMsg         *message)
+{
+  static const SnapshotEntryMsg init_value = SNAPSHOT_ENTRY_MSG__INIT;
+  *message = init_value;
+}
+size_t snapshot_entry_msg__get_packed_size
+                     (const SnapshotEntryMsg *message)
+{
+  assert(message->base.descriptor == &snapshot_entry_msg__descriptor);
+  return protobuf_c_message_get_packed_size ((const ProtobufCMessage*)(message));
+}
+size_t snapshot_entry_msg__pack
+                     (const SnapshotEntryMsg *message,
+                      uint8_t       *out)
+{
+  assert(message->base.descriptor == &snapshot_entry_msg__descriptor);
+  return protobuf_c_message_pack ((const ProtobufCMessage*)message, out);
+}
+size_t snapshot_entry_msg__pack_to_buffer
+                     (const SnapshotEntryMsg *message,
+                      ProtobufCBuffer *buffer)
+{
+  assert(message->base.descriptor == &snapshot_entry_msg__descriptor);
+  return protobuf_c_message_pack_to_buffer ((const ProtobufCMessage*)message, buffer);
+}
+SnapshotEntryMsg *
+       snapshot_entry_msg__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data)
+{
+  return (SnapshotEntryMsg *)
+     protobuf_c_message_unpack (&snapshot_entry_msg__descriptor,
+                                allocator, len, data);
+}
+void   snapshot_entry_msg__free_unpacked
+                     (SnapshotEntryMsg *message,
+                      ProtobufCAllocator *allocator)
+{
+  if(!message)
+    return;
+  assert(message->base.descriptor == &snapshot_entry_msg__descriptor);
+  protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
+}
+void   worker_startup_msg__init
+                     (WorkerStartupMsg         *message)
+{
+  static const WorkerStartupMsg init_value = WORKER_STARTUP_MSG__INIT;
+  *message = init_value;
+}
+size_t worker_startup_msg__get_packed_size
+                     (const WorkerStartupMsg *message)
+{
+  assert(message->base.descriptor == &worker_startup_msg__descriptor);
+  return protobuf_c_message_get_packed_size ((const ProtobufCMessage*)(message));
+}
+size_t worker_startup_msg__pack
+                     (const WorkerStartupMsg *message,
+                      uint8_t       *out)
+{
+  assert(message->base.descriptor == &worker_startup_msg__descriptor);
+  return protobuf_c_message_pack ((const ProtobufCMessage*)message, out);
+}
+size_t worker_startup_msg__pack_to_buffer
+                     (const WorkerStartupMsg *message,
+                      ProtobufCBuffer *buffer)
+{
+  assert(message->base.descriptor == &worker_startup_msg__descriptor);
+  return protobuf_c_message_pack_to_buffer ((const ProtobufCMessage*)message, buffer);
+}
+WorkerStartupMsg *
+       worker_startup_msg__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data)
+{
+  return (WorkerStartupMsg *)
+     protobuf_c_message_unpack (&worker_startup_msg__descriptor,
+                                allocator, len, data);
+}
+void   worker_startup_msg__free_unpacked
+                     (WorkerStartupMsg *message,
+                      ProtobufCAllocator *allocator)
+{
+  if(!message)
+    return;
+  assert(message->base.descriptor == &worker_startup_msg__descriptor);
+  protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
+}
 void   session_info_msg__init
                      (SessionInfoMsg         *message)
 {
@@ -590,6 +680,51 @@ void   ban_ip_reply_msg__free_unpacked
   if(!message)
     return;
   assert(message->base.descriptor == &ban_ip_reply_msg__descriptor);
+  protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
+}
+void   latency_stats_delta__init
+                     (LatencyStatsDelta         *message)
+{
+  static const LatencyStatsDelta init_value = LATENCY_STATS_DELTA__INIT;
+  *message = init_value;
+}
+size_t latency_stats_delta__get_packed_size
+                     (const LatencyStatsDelta *message)
+{
+  assert(message->base.descriptor == &latency_stats_delta__descriptor);
+  return protobuf_c_message_get_packed_size ((const ProtobufCMessage*)(message));
+}
+size_t latency_stats_delta__pack
+                     (const LatencyStatsDelta *message,
+                      uint8_t       *out)
+{
+  assert(message->base.descriptor == &latency_stats_delta__descriptor);
+  return protobuf_c_message_pack ((const ProtobufCMessage*)message, out);
+}
+size_t latency_stats_delta__pack_to_buffer
+                     (const LatencyStatsDelta *message,
+                      ProtobufCBuffer *buffer)
+{
+  assert(message->base.descriptor == &latency_stats_delta__descriptor);
+  return protobuf_c_message_pack_to_buffer ((const ProtobufCMessage*)message, buffer);
+}
+LatencyStatsDelta *
+       latency_stats_delta__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data)
+{
+  return (LatencyStatsDelta *)
+     protobuf_c_message_unpack (&latency_stats_delta__descriptor,
+                                allocator, len, data);
+}
+void   latency_stats_delta__free_unpacked
+                     (LatencyStatsDelta *message,
+                      ProtobufCAllocator *allocator)
+{
+  if(!message)
+    return;
+  assert(message->base.descriptor == &latency_stats_delta__descriptor);
   protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
 }
 void   sec_auth_init_msg__init
@@ -1085,6 +1220,51 @@ void   secm_list_cookies_reply_msg__free_unpacked
   if(!message)
     return;
   assert(message->base.descriptor == &secm_list_cookies_reply_msg__descriptor);
+  protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
+}
+void   snapshot_state_msg__init
+                     (SnapshotStateMsg         *message)
+{
+  static const SnapshotStateMsg init_value = SNAPSHOT_STATE_MSG__INIT;
+  *message = init_value;
+}
+size_t snapshot_state_msg__get_packed_size
+                     (const SnapshotStateMsg *message)
+{
+  assert(message->base.descriptor == &snapshot_state_msg__descriptor);
+  return protobuf_c_message_get_packed_size ((const ProtobufCMessage*)(message));
+}
+size_t snapshot_state_msg__pack
+                     (const SnapshotStateMsg *message,
+                      uint8_t       *out)
+{
+  assert(message->base.descriptor == &snapshot_state_msg__descriptor);
+  return protobuf_c_message_pack ((const ProtobufCMessage*)message, out);
+}
+size_t snapshot_state_msg__pack_to_buffer
+                     (const SnapshotStateMsg *message,
+                      ProtobufCBuffer *buffer)
+{
+  assert(message->base.descriptor == &snapshot_state_msg__descriptor);
+  return protobuf_c_message_pack_to_buffer ((const ProtobufCMessage*)message, buffer);
+}
+SnapshotStateMsg *
+       snapshot_state_msg__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data)
+{
+  return (SnapshotStateMsg *)
+     protobuf_c_message_unpack (&snapshot_state_msg__descriptor,
+                                allocator, len, data);
+}
+void   snapshot_state_msg__free_unpacked
+                     (SnapshotStateMsg *message,
+                      ProtobufCAllocator *allocator)
+{
+  if(!message)
+    return;
+  assert(message->base.descriptor == &snapshot_state_msg__descriptor);
   protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
 }
 static const ProtobufCFieldDescriptor auth_cookie_request_msg__field_descriptors[1] =
@@ -2254,6 +2434,294 @@ const ProtobufCMessageDescriptor udp_fd_msg__descriptor =
   (ProtobufCMessageInit) udp_fd_msg__init,
   NULL,NULL,NULL    /* reserved[123] */
 };
+static const ProtobufCFieldDescriptor snapshot_entry_msg__field_descriptors[2] =
+{
+  {
+    "file_descriptor",
+    1,
+    PROTOBUF_C_LABEL_REQUIRED,
+    PROTOBUF_C_TYPE_UINT32,
+    0,   /* quantifier_offset */
+    offsetof(SnapshotEntryMsg, file_descriptor),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "file_name",
+    2,
+    PROTOBUF_C_LABEL_REQUIRED,
+    PROTOBUF_C_TYPE_STRING,
+    0,   /* quantifier_offset */
+    offsetof(SnapshotEntryMsg, file_name),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+};
+static const unsigned snapshot_entry_msg__field_indices_by_name[] = {
+  0,   /* field[0] = file_descriptor */
+  1,   /* field[1] = file_name */
+};
+static const ProtobufCIntRange snapshot_entry_msg__number_ranges[1 + 1] =
+{
+  { 1, 0 },
+  { 0, 2 }
+};
+const ProtobufCMessageDescriptor snapshot_entry_msg__descriptor =
+{
+  PROTOBUF_C__MESSAGE_DESCRIPTOR_MAGIC,
+  "snapshot_entry_msg",
+  "SnapshotEntryMsg",
+  "SnapshotEntryMsg",
+  "",
+  sizeof(SnapshotEntryMsg),
+  2,
+  snapshot_entry_msg__field_descriptors,
+  snapshot_entry_msg__field_indices_by_name,
+  1,  snapshot_entry_msg__number_ranges,
+  (ProtobufCMessageInit) snapshot_entry_msg__init,
+  NULL,NULL,NULL    /* reserved[123] */
+};
+static const ProtobufCEnumValue worker_startup_msg__conn__type__enum_values_by_number[3] =
+{
+  { "TCP", "WORKER_STARTUP_MSG__CONN__TYPE__TCP", 0 },
+  { "UDP", "WORKER_STARTUP_MSG__CONN__TYPE__UDP", 1 },
+  { "UNIX", "WORKER_STARTUP_MSG__CONN__TYPE__UNIX", 2 },
+};
+static const ProtobufCIntRange worker_startup_msg__conn__type__value_ranges[] = {
+{0, 0},{0, 3}
+};
+static const ProtobufCEnumValueIndex worker_startup_msg__conn__type__enum_values_by_name[3] =
+{
+  { "TCP", 0 },
+  { "UDP", 1 },
+  { "UNIX", 2 },
+};
+const ProtobufCEnumDescriptor worker_startup_msg__conn__type__descriptor =
+{
+  PROTOBUF_C__ENUM_DESCRIPTOR_MAGIC,
+  "worker_startup_msg.CONN_TYPE",
+  "CONN_TYPE",
+  "WorkerStartupMsg__CONNTYPE",
+  "",
+  3,
+  worker_startup_msg__conn__type__enum_values_by_number,
+  3,
+  worker_startup_msg__conn__type__enum_values_by_name,
+  1,
+  worker_startup_msg__conn__type__value_ranges,
+  NULL,NULL,NULL,NULL   /* reserved[1234] */
+};
+static const ProtobufCFieldDescriptor worker_startup_msg__field_descriptors[14] =
+{
+  {
+    "secmod_addr",
+    1,
+    PROTOBUF_C_LABEL_REQUIRED,
+    PROTOBUF_C_TYPE_BYTES,
+    0,   /* quantifier_offset */
+    offsetof(WorkerStartupMsg, secmod_addr),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "cmd_fd",
+    2,
+    PROTOBUF_C_LABEL_REQUIRED,
+    PROTOBUF_C_TYPE_UINT32,
+    0,   /* quantifier_offset */
+    offsetof(WorkerStartupMsg, cmd_fd),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "conn_fd",
+    3,
+    PROTOBUF_C_LABEL_REQUIRED,
+    PROTOBUF_C_TYPE_UINT32,
+    0,   /* quantifier_offset */
+    offsetof(WorkerStartupMsg, conn_fd),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "conn_type",
+    4,
+    PROTOBUF_C_LABEL_REQUIRED,
+    PROTOBUF_C_TYPE_ENUM,
+    0,   /* quantifier_offset */
+    offsetof(WorkerStartupMsg, conn_type),
+    &worker_startup_msg__conn__type__descriptor,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "remote_ip_str",
+    5,
+    PROTOBUF_C_LABEL_REQUIRED,
+    PROTOBUF_C_TYPE_STRING,
+    0,   /* quantifier_offset */
+    offsetof(WorkerStartupMsg, remote_ip_str),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "our_ip_str",
+    6,
+    PROTOBUF_C_LABEL_REQUIRED,
+    PROTOBUF_C_TYPE_STRING,
+    0,   /* quantifier_offset */
+    offsetof(WorkerStartupMsg, our_ip_str),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "session_start_time",
+    7,
+    PROTOBUF_C_LABEL_REQUIRED,
+    PROTOBUF_C_TYPE_UINT64,
+    0,   /* quantifier_offset */
+    offsetof(WorkerStartupMsg, session_start_time),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "remote_addr",
+    8,
+    PROTOBUF_C_LABEL_REQUIRED,
+    PROTOBUF_C_TYPE_BYTES,
+    0,   /* quantifier_offset */
+    offsetof(WorkerStartupMsg, remote_addr),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "our_addr",
+    9,
+    PROTOBUF_C_LABEL_REQUIRED,
+    PROTOBUF_C_TYPE_BYTES,
+    0,   /* quantifier_offset */
+    offsetof(WorkerStartupMsg, our_addr),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "sec_auth_init_hmac",
+    10,
+    PROTOBUF_C_LABEL_REQUIRED,
+    PROTOBUF_C_TYPE_BYTES,
+    0,   /* quantifier_offset */
+    offsetof(WorkerStartupMsg, sec_auth_init_hmac),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "snapshot_entries",
+    11,
+    PROTOBUF_C_LABEL_REPEATED,
+    PROTOBUF_C_TYPE_MESSAGE,
+    offsetof(WorkerStartupMsg, n_snapshot_entries),
+    offsetof(WorkerStartupMsg, snapshot_entries),
+    &snapshot_entry_msg__descriptor,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "pam_auth_group_list",
+    12,
+    PROTOBUF_C_LABEL_REPEATED,
+    PROTOBUF_C_TYPE_STRING,
+    offsetof(WorkerStartupMsg, n_pam_auth_group_list),
+    offsetof(WorkerStartupMsg, pam_auth_group_list),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "gssapi_auth_group_list",
+    13,
+    PROTOBUF_C_LABEL_REPEATED,
+    PROTOBUF_C_TYPE_STRING,
+    offsetof(WorkerStartupMsg, n_gssapi_auth_group_list),
+    offsetof(WorkerStartupMsg, gssapi_auth_group_list),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "plain_auth_group_list",
+    14,
+    PROTOBUF_C_LABEL_REPEATED,
+    PROTOBUF_C_TYPE_STRING,
+    offsetof(WorkerStartupMsg, n_plain_auth_group_list),
+    offsetof(WorkerStartupMsg, plain_auth_group_list),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+};
+static const unsigned worker_startup_msg__field_indices_by_name[] = {
+  1,   /* field[1] = cmd_fd */
+  2,   /* field[2] = conn_fd */
+  3,   /* field[3] = conn_type */
+  12,   /* field[12] = gssapi_auth_group_list */
+  8,   /* field[8] = our_addr */
+  5,   /* field[5] = our_ip_str */
+  11,   /* field[11] = pam_auth_group_list */
+  13,   /* field[13] = plain_auth_group_list */
+  7,   /* field[7] = remote_addr */
+  4,   /* field[4] = remote_ip_str */
+  9,   /* field[9] = sec_auth_init_hmac */
+  0,   /* field[0] = secmod_addr */
+  6,   /* field[6] = session_start_time */
+  10,   /* field[10] = snapshot_entries */
+};
+static const ProtobufCIntRange worker_startup_msg__number_ranges[1 + 1] =
+{
+  { 1, 0 },
+  { 0, 14 }
+};
+const ProtobufCMessageDescriptor worker_startup_msg__descriptor =
+{
+  PROTOBUF_C__MESSAGE_DESCRIPTOR_MAGIC,
+  "worker_startup_msg",
+  "WorkerStartupMsg",
+  "WorkerStartupMsg",
+  "",
+  sizeof(WorkerStartupMsg),
+  14,
+  worker_startup_msg__field_descriptors,
+  worker_startup_msg__field_indices_by_name,
+  1,  worker_startup_msg__number_ranges,
+  (ProtobufCMessageInit) worker_startup_msg__init,
+  NULL,NULL,NULL    /* reserved[123] */
+};
 static const ProtobufCFieldDescriptor session_info_msg__field_descriptors[9] =
 {
   {
@@ -2511,9 +2979,73 @@ const ProtobufCMessageDescriptor ban_ip_reply_msg__descriptor =
   (ProtobufCMessageInit) ban_ip_reply_msg__init,
   NULL,NULL,NULL    /* reserved[123] */
 };
+static const ProtobufCFieldDescriptor latency_stats_delta__field_descriptors[3] =
+{
+  {
+    "median_delta",
+    1,
+    PROTOBUF_C_LABEL_REQUIRED,
+    PROTOBUF_C_TYPE_UINT64,
+    0,   /* quantifier_offset */
+    offsetof(LatencyStatsDelta, median_delta),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "rms_delta",
+    2,
+    PROTOBUF_C_LABEL_REQUIRED,
+    PROTOBUF_C_TYPE_UINT64,
+    0,   /* quantifier_offset */
+    offsetof(LatencyStatsDelta, rms_delta),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "sample_count_delta",
+    3,
+    PROTOBUF_C_LABEL_REQUIRED,
+    PROTOBUF_C_TYPE_UINT64,
+    0,   /* quantifier_offset */
+    offsetof(LatencyStatsDelta, sample_count_delta),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+};
+static const unsigned latency_stats_delta__field_indices_by_name[] = {
+  0,   /* field[0] = median_delta */
+  1,   /* field[1] = rms_delta */
+  2,   /* field[2] = sample_count_delta */
+};
+static const ProtobufCIntRange latency_stats_delta__number_ranges[1 + 1] =
+{
+  { 1, 0 },
+  { 0, 3 }
+};
+const ProtobufCMessageDescriptor latency_stats_delta__descriptor =
+{
+  PROTOBUF_C__MESSAGE_DESCRIPTOR_MAGIC,
+  "latency_stats_delta",
+  "LatencyStatsDelta",
+  "LatencyStatsDelta",
+  "",
+  sizeof(LatencyStatsDelta),
+  3,
+  latency_stats_delta__field_descriptors,
+  latency_stats_delta__field_indices_by_name,
+  1,  latency_stats_delta__number_ranges,
+  (ProtobufCMessageInit) latency_stats_delta__init,
+  NULL,NULL,NULL    /* reserved[123] */
+};
 static const protobuf_c_boolean sec_auth_init_msg__tls_auth_ok__default_value = 0;
 static const uint32_t sec_auth_init_msg__auth_type__default_value = 0u;
-static const ProtobufCFieldDescriptor sec_auth_init_msg__field_descriptors[10] =
+static const ProtobufCFieldDescriptor sec_auth_init_msg__field_descriptors[14] =
 {
   {
     "tls_auth_ok",
@@ -2624,12 +3156,60 @@ static const ProtobufCFieldDescriptor sec_auth_init_msg__field_descriptors[10] =
     0,NULL,NULL    /* reserved1,reserved2, etc */
   },
   {
-    "vhost",
+    "device_platform",
     12,
     PROTOBUF_C_LABEL_OPTIONAL,
     PROTOBUF_C_TYPE_STRING,
     0,   /* quantifier_offset */
+    offsetof(SecAuthInitMsg, device_platform),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "device_type",
+    13,
+    PROTOBUF_C_LABEL_OPTIONAL,
+    PROTOBUF_C_TYPE_STRING,
+    0,   /* quantifier_offset */
+    offsetof(SecAuthInitMsg, device_type),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "vhost",
+    14,
+    PROTOBUF_C_LABEL_OPTIONAL,
+    PROTOBUF_C_TYPE_STRING,
+    0,   /* quantifier_offset */
     offsetof(SecAuthInitMsg, vhost),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "session_start_time",
+    15,
+    PROTOBUF_C_LABEL_REQUIRED,
+    PROTOBUF_C_TYPE_UINT64,
+    0,   /* quantifier_offset */
+    offsetof(SecAuthInitMsg, session_start_time),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "hmac",
+    16,
+    PROTOBUF_C_LABEL_REQUIRED,
+    PROTOBUF_C_TYPE_BYTES,
+    0,   /* quantifier_offset */
+    offsetof(SecAuthInitMsg, hmac),
     NULL,
     NULL,
     0,             /* flags */
@@ -2640,19 +3220,23 @@ static const unsigned sec_auth_init_msg__field_indices_by_name[] = {
   6,   /* field[6] = auth_type */
   4,   /* field[4] = cert_group_names */
   3,   /* field[3] = cert_user_name */
+  9,   /* field[9] = device_platform */
+  10,   /* field[10] = device_type */
   2,   /* field[2] = group_name */
+  13,   /* field[13] = hmac */
   5,   /* field[5] = ip */
   7,   /* field[7] = our_ip */
+  12,   /* field[12] = session_start_time */
   0,   /* field[0] = tls_auth_ok */
   8,   /* field[8] = user_agent */
   1,   /* field[1] = user_name */
-  9,   /* field[9] = vhost */
+  11,   /* field[11] = vhost */
 };
 static const ProtobufCIntRange sec_auth_init_msg__number_ranges[2 + 1] =
 {
   { 2, 0 },
   { 8, 5 },
-  { 0, 10 }
+  { 0, 14 }
 };
 const ProtobufCMessageDescriptor sec_auth_init_msg__descriptor =
 {
@@ -2662,7 +3246,7 @@ const ProtobufCMessageDescriptor sec_auth_init_msg__descriptor =
   "SecAuthInitMsg",
   "",
   sizeof(SecAuthInitMsg),
-  10,
+  14,
   sec_auth_init_msg__field_descriptors,
   sec_auth_init_msg__field_indices_by_name,
   2,  sec_auth_init_msg__number_ranges,
@@ -3251,7 +3835,7 @@ const ProtobufCMessageDescriptor secm_stats_msg__descriptor =
   (ProtobufCMessageInit) secm_stats_msg__init,
   NULL,NULL,NULL    /* reserved[123] */
 };
-static const ProtobufCFieldDescriptor secm_session_reply_msg__field_descriptors[9] =
+static const ProtobufCFieldDescriptor secm_session_reply_msg__field_descriptors[12] =
 {
   {
     "reply",
@@ -3361,15 +3945,54 @@ static const ProtobufCFieldDescriptor secm_session_reply_msg__field_descriptors[
     0,             /* flags */
     0,NULL,NULL    /* reserved1,reserved2, etc */
   },
+  {
+    "user_agent",
+    12,
+    PROTOBUF_C_LABEL_OPTIONAL,
+    PROTOBUF_C_TYPE_STRING,
+    0,   /* quantifier_offset */
+    offsetof(SecmSessionReplyMsg, user_agent),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "device_platform",
+    13,
+    PROTOBUF_C_LABEL_OPTIONAL,
+    PROTOBUF_C_TYPE_STRING,
+    0,   /* quantifier_offset */
+    offsetof(SecmSessionReplyMsg, device_platform),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "device_type",
+    14,
+    PROTOBUF_C_LABEL_OPTIONAL,
+    PROTOBUF_C_TYPE_STRING,
+    0,   /* quantifier_offset */
+    offsetof(SecmSessionReplyMsg, device_type),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
 };
 static const unsigned secm_session_reply_msg__field_indices_by_name[] = {
   1,   /* field[1] = config */
+  10,   /* field[10] = device_platform */
+  11,   /* field[11] = device_type */
   3,   /* field[3] = groupname */
   4,   /* field[4] = ip */
   5,   /* field[5] = ipv4_seed */
   0,   /* field[0] = reply */
   6,   /* field[6] = sid */
   7,   /* field[7] = tls_auth_ok */
+  9,   /* field[9] = user_agent */
   2,   /* field[2] = username */
   8,   /* field[8] = vhost */
 };
@@ -3378,7 +4001,7 @@ static const ProtobufCIntRange secm_session_reply_msg__number_ranges[3 + 1] =
   { 1, 0 },
   { 6, 4 },
   { 8, 5 },
-  { 0, 9 }
+  { 0, 12 }
 };
 const ProtobufCMessageDescriptor secm_session_reply_msg__descriptor =
 {
@@ -3388,7 +4011,7 @@ const ProtobufCMessageDescriptor secm_session_reply_msg__descriptor =
   "SecmSessionReplyMsg",
   "",
   sizeof(SecmSessionReplyMsg),
-  9,
+  12,
   secm_session_reply_msg__field_descriptors,
   secm_session_reply_msg__field_indices_by_name,
   3,  secm_session_reply_msg__number_ranges,
@@ -3612,6 +4235,24 @@ const ProtobufCMessageDescriptor secm_list_cookies_reply_msg__descriptor =
   secm_list_cookies_reply_msg__field_indices_by_name,
   1,  secm_list_cookies_reply_msg__number_ranges,
   (ProtobufCMessageInit) secm_list_cookies_reply_msg__init,
+  NULL,NULL,NULL    /* reserved[123] */
+};
+#define snapshot_state_msg__field_descriptors NULL
+#define snapshot_state_msg__field_indices_by_name NULL
+#define snapshot_state_msg__number_ranges NULL
+const ProtobufCMessageDescriptor snapshot_state_msg__descriptor =
+{
+  PROTOBUF_C__MESSAGE_DESCRIPTOR_MAGIC,
+  "snapshot_state_msg",
+  "SnapshotStateMsg",
+  "SnapshotStateMsg",
+  "",
+  sizeof(SnapshotStateMsg),
+  0,
+  snapshot_state_msg__field_descriptors,
+  snapshot_state_msg__field_indices_by_name,
+  0,  snapshot_state_msg__number_ranges,
+  (ProtobufCMessageInit) snapshot_state_msg__init,
   NULL,NULL,NULL    /* reserved[123] */
 };
 static const ProtobufCEnumValue auth__rep__enum_values_by_number[3] =

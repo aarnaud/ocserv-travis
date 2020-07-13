@@ -21,6 +21,9 @@
 /* Define to the number of bits in type 'wint_t'. */
 #undef BITSIZEOF_WINT_T
 
+/* Enable capturing latency stats */
+#undef CAPTURE_LATENCY_SUPPORT
+
 /* compression enabled */
 #undef ENABLE_COMPRESSION
 
@@ -201,6 +204,9 @@
 /* Define if you have the libev library. */
 #undef HAVE_LIBEV
 
+/* Define if you have the libm library. */
+#undef HAVE_LIBM
+
 /* have libnl */
 #undef HAVE_LIBNL
 
@@ -230,6 +236,9 @@
 
 /* Define to 1 if you have the <linux/if_tun.h> header file. */
 #undef HAVE_LINUX_IF_TUN_H
+
+/* Define to 1 if you have the <linux/net_tstamp.h> header file. */
+#undef HAVE_LINUX_NET_TSTAMP_H
 
 /* Define to 1 if you have the `longjmp' function. */
 #undef HAVE_LONGJMP
@@ -756,6 +765,9 @@
 /* Define to 1 if `ihl' is a member of `struct iphdr'. */
 #undef HAVE_STRUCT_IPHDR_IHL
 
+/* Define to 1 if the system has the type `struct scm_timestamping'. */
+#undef HAVE_STRUCT_SCM_TIMESTAMPING
+
 /* Define to 1 if the system has the type `struct ucred'. */
 #undef HAVE_STRUCT_UCRED
 
@@ -897,8 +909,14 @@
 /* Define to 1 if you have the ANSI C header files. */
 #undef STDC_HEADERS
 
+/* Enable support for OpenID Connect auth */
+#undef SUPPORT_OIDC_AUTH
+
 /* have original glibc */
 #undef TRY_SHA2_CRYPT
+
+/* use signal on filtered calls */
+#undef USE_SECCOMP_TRAP
 
 /* Enable extensions on AIX 3, Interix.  */
 #ifndef _ALL_SOURCE

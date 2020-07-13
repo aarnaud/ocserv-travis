@@ -93,23 +93,28 @@ host_triplet = @host@
 @LOCAL_TALLOC_TRUE@am__append_1 = -I$(top_srcdir)/src/ccan/talloc
 @LOCAL_HTTP_PARSER_TRUE@am__append_2 = -I$(top_srcdir)/src/http-parser/
 @LOCAL_PROTOBUF_C_TRUE@am__append_3 = -I$(top_builddir)/src/protobuf/
-sbin_PROGRAMS = ocserv$(EXEEXT)
-@ENABLE_COMPRESSION_TRUE@am__append_4 = lzs.c lzs.h
-@HAVE_GSSAPI_TRUE@am__append_5 = kkdcp_asn1_tab.c kkdcp.asn
+@ENABLE_OIDC_AUTH_TRUE@am__append_4 = $(LIBCURL_CFLAGS) $(CJOSE_CFLAGS) $(JANSSON_CFLAGS)
+sbin_PROGRAMS = ocserv$(EXEEXT) ocserv-worker$(EXEEXT)
+@ENABLE_OIDC_AUTH_TRUE@am__append_5 = auth/openidconnect.c auth/openidconnect.h
+@ENABLE_LATENCY_SUPPORT_TRUE@am__append_6 = worker-latency.c worker-latency.h
+@ENABLE_COMPRESSION_TRUE@am__append_7 = lzs.c lzs.h
+@HAVE_GSSAPI_TRUE@am__append_8 = kkdcp_asn1_tab.c kkdcp.asn
+@ENABLE_LATENCY_SUPPORT_TRUE@am__append_9 = $(LIBM)
+@ENABLE_OIDC_AUTH_TRUE@am__append_10 = $(LIBCURL_LIBS) $(CJOSE_LIBS) $(JANSSON_LIBS)
 bin_PROGRAMS = occtl/occtl$(EXEEXT) ocpasswd/ocpasswd$(EXEEXT)
-@HAVE_MAXMIND_TRUE@am__append_6 = occtl/maxmind.c
-@HAVE_MAXMIND_FALSE@am__append_7 = occtl/geoip.c
-@LOCAL_TALLOC_TRUE@am__append_8 = ccan/talloc/talloc.c ccan/talloc/talloc.h ccan/compiler/compiler.h \
+@HAVE_MAXMIND_TRUE@am__append_11 = occtl/maxmind.c
+@HAVE_MAXMIND_FALSE@am__append_12 = occtl/geoip.c
+@LOCAL_TALLOC_TRUE@am__append_13 = ccan/talloc/talloc.c ccan/talloc/talloc.h ccan/compiler/compiler.h \
 @LOCAL_TALLOC_TRUE@	ccan/typesafe_cb/typesafe_cb.h
 
 
 # libpcl
-@PCL_TRUE@am__append_9 = $(PCL_LIBS)
-@PCL_FALSE@am__append_10 = libpcl.a
-@PCL_FALSE@am__append_11 = -I$(srcdir)/pcl/
-@PCL_FALSE@am__append_12 = libpcl.a
-@LOCAL_PROTOBUF_C_TRUE@am__append_13 = libprotobuf.a
-@LOCAL_PROTOBUF_C_TRUE@am__append_14 = -I$(srcdir)/protobuf/
+@PCL_TRUE@am__append_14 = $(PCL_LIBS)
+@PCL_FALSE@am__append_15 = libpcl.a
+@PCL_FALSE@am__append_16 = -I$(srcdir)/pcl/
+@PCL_FALSE@am__append_17 = libpcl.a
+@LOCAL_PROTOBUF_C_TRUE@am__append_18 = libprotobuf.a
+@LOCAL_PROTOBUF_C_TRUE@am__append_19 = -I$(srcdir)/protobuf/
 subdir = src
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/gl/m4/00gnulib.m4 \
@@ -235,62 +240,60 @@ ocpasswd_ocpasswd_OBJECTS = $(am_ocpasswd_ocpasswd_OBJECTS)
 ocpasswd_ocpasswd_DEPENDENCIES = ../gl/libgnu.a $(am__DEPENDENCIES_1) \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
 	$(am__DEPENDENCIES_1)
-am__ocserv_SOURCES_DIST = main.c main-auth.c worker-vpn.c \
-	worker-auth.c tlslib.c main-worker-cmd.c ip-lease.c ip-lease.h \
-	vhost.h main-proc.c vpn.h tlslib.h log.c tun.c tun.h \
-	config-kkdcp.c config.c worker-resume.c worker.h \
-	sec-mod-resume.c main.h worker-http-handlers.c html.c html.h \
-	worker-http.c main-user.c worker-misc.c route-add.c \
-	route-add.h worker-privs.c sec-mod.c sec-mod-db.c \
-	sec-mod-auth.c sec-mod-auth.h sec-mod.h script-list.h \
-	auth/pam.c auth/pam.h auth/plain.c auth/plain.h auth/radius.c \
-	auth/radius.h auth/common.c auth/common.h auth/gssapi.h \
-	auth/gssapi.c auth-unix.c auth-unix.h acct/radius.c \
-	acct/radius.h acct/pam.c acct/pam.h icmp-ping.c icmp-ping.h \
-	worker-kkdcp.c subconfig.c sec-mod-sup-config.c \
-	sec-mod-sup-config.h sup-config/file.c sup-config/file.h \
-	main-sec-mod-cmd.c sup-config/radius.c sup-config/radius.h \
-	worker-bandwidth.c worker-bandwidth.h main-ctl.h vasprintf.c \
-	vasprintf.h worker-proxyproto.c config-ports.c proc-search.c \
-	proc-search.h http-heads.h ip-util.c ip-util.h main-ban.c \
-	main-ban.h common-config.h valid-hostname.c str.c str.h \
-	gettime.h http-parser/http_parser.c http-parser/http_parser.h \
-	sec-mod-acct.h setproctitle.c setproctitle.h sec-mod-resume.h \
-	sec-mod-cookies.c defs.h inih/ini.c inih/ini.h lzs.c lzs.h \
-	kkdcp_asn1_tab.c kkdcp.asn main-ctl-unix.c
-am__objects_4 = auth/pam.$(OBJEXT) auth/plain.$(OBJEXT) \
-	auth/radius.$(OBJEXT) auth/common.$(OBJEXT) \
-	auth/gssapi.$(OBJEXT) auth-unix.$(OBJEXT)
-am__objects_5 = acct/radius.$(OBJEXT) acct/pam.$(OBJEXT)
-@LOCAL_HTTP_PARSER_TRUE@am__objects_6 =  \
+am__ocserv_SOURCES_DIST = http-parser/http_parser.c \
+	http-parser/http_parser.h common/hmac.c common/hmac.h \
+	common/snapshot.c common/snapshot.h common-config.h config.c \
+	config-kkdcp.c config-ports.c defs.h gettime.h icmp-ping.c \
+	icmp-ping.h inih/ini.c inih/ini.h ip-lease.c ip-lease.h \
+	ip-util.c ip-util.h isolate.h isolate.c log.c main.h \
+	main-ctl.h script-list.h setproctitle.c setproctitle.h str.c \
+	str.h subconfig.c sup-config/file.c sup-config/file.h \
+	sup-config/radius.c sup-config/radius.h tlslib.c tlslib.h \
+	tun.c tun.h valid-hostname.c vasprintf.c vasprintf.h vhost.h \
+	vpn.h lzs.c lzs.h kkdcp_asn1_tab.c kkdcp.asn auth/common.c \
+	auth/common.h auth/gssapi.c auth/gssapi.h auth/pam.c \
+	auth/pam.h auth/plain.c auth/plain.h auth/radius.c \
+	auth/radius.h auth-unix.c auth-unix.h auth/openidconnect.c \
+	auth/openidconnect.h acct/radius.c acct/radius.h acct/pam.c \
+	acct/pam.h main.c main-auth.c main-ban.c main-ban.h \
+	main-ctl-unix.c main-proc.c main-sec-mod-cmd.c main-user.c \
+	main-worker-cmd.c proc-search.c proc-search.h route-add.c \
+	route-add.h sec-mod.c sec-mod.h sec-mod-acct.h sec-mod-auth.c \
+	sec-mod-auth.h sec-mod-cookies.c sec-mod-db.c sec-mod-resume.c \
+	sec-mod-resume.h sec-mod-sup-config.c sec-mod-sup-config.h
+@LOCAL_HTTP_PARSER_TRUE@am__objects_4 =  \
 @LOCAL_HTTP_PARSER_TRUE@	http-parser/http_parser.$(OBJEXT)
-@ENABLE_COMPRESSION_TRUE@am__objects_7 = lzs.$(OBJEXT)
-@HAVE_GSSAPI_TRUE@am__objects_8 = kkdcp_asn1_tab.$(OBJEXT)
-am_ocserv_OBJECTS = main.$(OBJEXT) main-auth.$(OBJEXT) \
-	worker-vpn.$(OBJEXT) worker-auth.$(OBJEXT) tlslib.$(OBJEXT) \
-	main-worker-cmd.$(OBJEXT) ip-lease.$(OBJEXT) \
-	main-proc.$(OBJEXT) log.$(OBJEXT) tun.$(OBJEXT) \
-	config-kkdcp.$(OBJEXT) config.$(OBJEXT) \
-	worker-resume.$(OBJEXT) sec-mod-resume.$(OBJEXT) \
-	worker-http-handlers.$(OBJEXT) html.$(OBJEXT) \
-	worker-http.$(OBJEXT) main-user.$(OBJEXT) \
-	worker-misc.$(OBJEXT) route-add.$(OBJEXT) \
-	worker-privs.$(OBJEXT) sec-mod.$(OBJEXT) sec-mod-db.$(OBJEXT) \
-	sec-mod-auth.$(OBJEXT) $(am__objects_4) $(am__objects_5) \
-	icmp-ping.$(OBJEXT) worker-kkdcp.$(OBJEXT) subconfig.$(OBJEXT) \
-	sec-mod-sup-config.$(OBJEXT) sup-config/file.$(OBJEXT) \
-	main-sec-mod-cmd.$(OBJEXT) sup-config/radius.$(OBJEXT) \
-	worker-bandwidth.$(OBJEXT) vasprintf.$(OBJEXT) \
-	worker-proxyproto.$(OBJEXT) config-ports.$(OBJEXT) \
-	proc-search.$(OBJEXT) ip-util.$(OBJEXT) main-ban.$(OBJEXT) \
-	valid-hostname.$(OBJEXT) str.$(OBJEXT) $(am__objects_6) \
-	setproctitle.$(OBJEXT) sec-mod-cookies.$(OBJEXT) \
-	inih/ini.$(OBJEXT) $(am__objects_7) $(am__objects_8) \
-	main-ctl-unix.$(OBJEXT)
+@ENABLE_COMPRESSION_TRUE@am__objects_5 = lzs.$(OBJEXT)
+@HAVE_GSSAPI_TRUE@am__objects_6 = kkdcp_asn1_tab.$(OBJEXT)
+am__objects_7 = $(am__objects_4) common/hmac.$(OBJEXT) \
+	common/snapshot.$(OBJEXT) config.$(OBJEXT) \
+	config-kkdcp.$(OBJEXT) config-ports.$(OBJEXT) \
+	icmp-ping.$(OBJEXT) inih/ini.$(OBJEXT) ip-lease.$(OBJEXT) \
+	ip-util.$(OBJEXT) isolate.$(OBJEXT) log.$(OBJEXT) \
+	setproctitle.$(OBJEXT) str.$(OBJEXT) subconfig.$(OBJEXT) \
+	sup-config/file.$(OBJEXT) sup-config/radius.$(OBJEXT) \
+	tlslib.$(OBJEXT) tun.$(OBJEXT) valid-hostname.$(OBJEXT) \
+	vasprintf.$(OBJEXT) $(am__objects_5) $(am__objects_6)
+@ENABLE_OIDC_AUTH_TRUE@am__objects_8 = auth/openidconnect.$(OBJEXT)
+am__objects_9 = auth/common.$(OBJEXT) auth/gssapi.$(OBJEXT) \
+	auth/pam.$(OBJEXT) auth/plain.$(OBJEXT) auth/radius.$(OBJEXT) \
+	auth-unix.$(OBJEXT) $(am__objects_8)
+am__objects_10 = acct/radius.$(OBJEXT) acct/pam.$(OBJEXT)
+am_ocserv_OBJECTS = $(am__objects_7) $(am__objects_9) \
+	$(am__objects_10) main.$(OBJEXT) main-auth.$(OBJEXT) \
+	main-ban.$(OBJEXT) main-ctl-unix.$(OBJEXT) main-proc.$(OBJEXT) \
+	main-sec-mod-cmd.$(OBJEXT) main-user.$(OBJEXT) \
+	main-worker-cmd.$(OBJEXT) proc-search.$(OBJEXT) \
+	route-add.$(OBJEXT) sec-mod.$(OBJEXT) sec-mod-auth.$(OBJEXT) \
+	sec-mod-cookies.$(OBJEXT) sec-mod-db.$(OBJEXT) \
+	sec-mod-resume.$(OBJEXT) sec-mod-sup-config.$(OBJEXT)
 ocserv_OBJECTS = $(am_ocserv_OBJECTS)
 @LOCAL_HTTP_PARSER_FALSE@am__DEPENDENCIES_3 = $(am__DEPENDENCIES_1)
-@PCL_TRUE@am__DEPENDENCIES_4 = $(am__DEPENDENCIES_1)
-ocserv_DEPENDENCIES = ../gl/libgnu.a libccan.a libcommon.a \
+@ENABLE_OIDC_AUTH_TRUE@am__DEPENDENCIES_4 = $(am__DEPENDENCIES_1) \
+@ENABLE_OIDC_AUTH_TRUE@	$(am__DEPENDENCIES_1) \
+@ENABLE_OIDC_AUTH_TRUE@	$(am__DEPENDENCIES_1)
+@PCL_TRUE@am__DEPENDENCIES_5 = $(am__DEPENDENCIES_1)
+am__DEPENDENCIES_6 = ../gl/libgnu.a libccan.a libcommon.a \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
@@ -300,7 +303,65 @@ ocserv_DEPENDENCIES = ../gl/libgnu.a libccan.a libcommon.a \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
 	$(am__DEPENDENCIES_1) libipc.a $(am__DEPENDENCIES_2) \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_4) $(am__append_10)
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_4) \
+	$(am__DEPENDENCIES_5) $(am__append_15)
+ocserv_DEPENDENCIES = $(am__DEPENDENCIES_6)
+am__ocserv_worker_SOURCES_DIST = http-parser/http_parser.c \
+	http-parser/http_parser.h common/hmac.c common/hmac.h \
+	common/snapshot.c common/snapshot.h common-config.h config.c \
+	config-kkdcp.c config-ports.c defs.h gettime.h icmp-ping.c \
+	icmp-ping.h inih/ini.c inih/ini.h ip-lease.c ip-lease.h \
+	ip-util.c ip-util.h isolate.h isolate.c log.c main.h \
+	main-ctl.h script-list.h setproctitle.c setproctitle.h str.c \
+	str.h subconfig.c sup-config/file.c sup-config/file.h \
+	sup-config/radius.c sup-config/radius.h tlslib.c tlslib.h \
+	tun.c tun.h valid-hostname.c vasprintf.c vasprintf.h vhost.h \
+	vpn.h lzs.c lzs.h kkdcp_asn1_tab.c kkdcp.asn html.c html.h \
+	http-heads.h worker.c worker.h worker-auth.c \
+	worker-bandwidth.c worker-bandwidth.h worker-http.c \
+	worker-http-handlers.c worker-kkdcp.c worker-misc.c \
+	worker-privs.c worker-proxyproto.c worker-resume.c \
+	worker-vpn.c worker-latency.c worker-latency.h
+@LOCAL_HTTP_PARSER_TRUE@am__objects_11 = http-parser/ocserv_worker-http_parser.$(OBJEXT)
+@ENABLE_COMPRESSION_TRUE@am__objects_12 = ocserv_worker-lzs.$(OBJEXT)
+@HAVE_GSSAPI_TRUE@am__objects_13 =  \
+@HAVE_GSSAPI_TRUE@	ocserv_worker-kkdcp_asn1_tab.$(OBJEXT)
+am__objects_14 = $(am__objects_11) common/ocserv_worker-hmac.$(OBJEXT) \
+	common/ocserv_worker-snapshot.$(OBJEXT) \
+	ocserv_worker-config.$(OBJEXT) \
+	ocserv_worker-config-kkdcp.$(OBJEXT) \
+	ocserv_worker-config-ports.$(OBJEXT) \
+	ocserv_worker-icmp-ping.$(OBJEXT) \
+	inih/ocserv_worker-ini.$(OBJEXT) \
+	ocserv_worker-ip-lease.$(OBJEXT) \
+	ocserv_worker-ip-util.$(OBJEXT) \
+	ocserv_worker-isolate.$(OBJEXT) ocserv_worker-log.$(OBJEXT) \
+	ocserv_worker-setproctitle.$(OBJEXT) \
+	ocserv_worker-str.$(OBJEXT) ocserv_worker-subconfig.$(OBJEXT) \
+	sup-config/ocserv_worker-file.$(OBJEXT) \
+	sup-config/ocserv_worker-radius.$(OBJEXT) \
+	ocserv_worker-tlslib.$(OBJEXT) ocserv_worker-tun.$(OBJEXT) \
+	ocserv_worker-valid-hostname.$(OBJEXT) \
+	ocserv_worker-vasprintf.$(OBJEXT) $(am__objects_12) \
+	$(am__objects_13)
+@ENABLE_LATENCY_SUPPORT_TRUE@am__objects_15 = ocserv_worker-worker-latency.$(OBJEXT)
+am_ocserv_worker_OBJECTS = $(am__objects_14) \
+	ocserv_worker-html.$(OBJEXT) ocserv_worker-worker.$(OBJEXT) \
+	ocserv_worker-worker-auth.$(OBJEXT) \
+	ocserv_worker-worker-bandwidth.$(OBJEXT) \
+	ocserv_worker-worker-http.$(OBJEXT) \
+	ocserv_worker-worker-http-handlers.$(OBJEXT) \
+	ocserv_worker-worker-kkdcp.$(OBJEXT) \
+	ocserv_worker-worker-misc.$(OBJEXT) \
+	ocserv_worker-worker-privs.$(OBJEXT) \
+	ocserv_worker-worker-proxyproto.$(OBJEXT) \
+	ocserv_worker-worker-resume.$(OBJEXT) \
+	ocserv_worker-worker-vpn.$(OBJEXT) $(am__objects_15)
+ocserv_worker_OBJECTS = $(am_ocserv_worker_OBJECTS)
+@ENABLE_LATENCY_SUPPORT_TRUE@am__DEPENDENCIES_7 =  \
+@ENABLE_LATENCY_SUPPORT_TRUE@	$(am__DEPENDENCIES_1)
+ocserv_worker_DEPENDENCIES = $(am__DEPENDENCIES_6) \
+	$(am__DEPENDENCIES_7)
 am__vpath_adj_setup = srcdirstrip=`echo "$(srcdir)" | sed 's|.|.|g'`;
 am__vpath_adj = case $$p in \
     $(srcdir)/*) f=`echo "$$p" | sed "s|^$$srcdirstrip/||"`;; \
@@ -347,14 +408,43 @@ am__maybe_remake_depfiles = depfiles
 am__depfiles_remade = ./$(DEPDIR)/auth-unix.Po \
 	./$(DEPDIR)/config-kkdcp.Po ./$(DEPDIR)/config-ports.Po \
 	./$(DEPDIR)/config.Po ./$(DEPDIR)/ctl.pb-c.Po \
-	./$(DEPDIR)/html.Po ./$(DEPDIR)/icmp-ping.Po \
-	./$(DEPDIR)/ip-lease.Po ./$(DEPDIR)/ip-util.Po \
-	./$(DEPDIR)/ipc.pb-c.Po ./$(DEPDIR)/kkdcp_asn1_tab.Po \
+	./$(DEPDIR)/icmp-ping.Po ./$(DEPDIR)/ip-lease.Po \
+	./$(DEPDIR)/ip-util.Po ./$(DEPDIR)/ipc.pb-c.Po \
+	./$(DEPDIR)/isolate.Po ./$(DEPDIR)/kkdcp_asn1_tab.Po \
 	./$(DEPDIR)/log.Po ./$(DEPDIR)/lzs.Po ./$(DEPDIR)/main-auth.Po \
 	./$(DEPDIR)/main-ban.Po ./$(DEPDIR)/main-ctl-unix.Po \
 	./$(DEPDIR)/main-proc.Po ./$(DEPDIR)/main-sec-mod-cmd.Po \
 	./$(DEPDIR)/main-user.Po ./$(DEPDIR)/main-worker-cmd.Po \
-	./$(DEPDIR)/main.Po ./$(DEPDIR)/proc-search.Po \
+	./$(DEPDIR)/main.Po ./$(DEPDIR)/ocserv_worker-config-kkdcp.Po \
+	./$(DEPDIR)/ocserv_worker-config-ports.Po \
+	./$(DEPDIR)/ocserv_worker-config.Po \
+	./$(DEPDIR)/ocserv_worker-html.Po \
+	./$(DEPDIR)/ocserv_worker-icmp-ping.Po \
+	./$(DEPDIR)/ocserv_worker-ip-lease.Po \
+	./$(DEPDIR)/ocserv_worker-ip-util.Po \
+	./$(DEPDIR)/ocserv_worker-isolate.Po \
+	./$(DEPDIR)/ocserv_worker-kkdcp_asn1_tab.Po \
+	./$(DEPDIR)/ocserv_worker-log.Po \
+	./$(DEPDIR)/ocserv_worker-lzs.Po \
+	./$(DEPDIR)/ocserv_worker-setproctitle.Po \
+	./$(DEPDIR)/ocserv_worker-str.Po \
+	./$(DEPDIR)/ocserv_worker-subconfig.Po \
+	./$(DEPDIR)/ocserv_worker-tlslib.Po \
+	./$(DEPDIR)/ocserv_worker-tun.Po \
+	./$(DEPDIR)/ocserv_worker-valid-hostname.Po \
+	./$(DEPDIR)/ocserv_worker-vasprintf.Po \
+	./$(DEPDIR)/ocserv_worker-worker-auth.Po \
+	./$(DEPDIR)/ocserv_worker-worker-bandwidth.Po \
+	./$(DEPDIR)/ocserv_worker-worker-http-handlers.Po \
+	./$(DEPDIR)/ocserv_worker-worker-http.Po \
+	./$(DEPDIR)/ocserv_worker-worker-kkdcp.Po \
+	./$(DEPDIR)/ocserv_worker-worker-latency.Po \
+	./$(DEPDIR)/ocserv_worker-worker-misc.Po \
+	./$(DEPDIR)/ocserv_worker-worker-privs.Po \
+	./$(DEPDIR)/ocserv_worker-worker-proxyproto.Po \
+	./$(DEPDIR)/ocserv_worker-worker-resume.Po \
+	./$(DEPDIR)/ocserv_worker-worker-vpn.Po \
+	./$(DEPDIR)/ocserv_worker-worker.Po ./$(DEPDIR)/proc-search.Po \
 	./$(DEPDIR)/route-add.Po ./$(DEPDIR)/sec-mod-auth.Po \
 	./$(DEPDIR)/sec-mod-cookies.Po ./$(DEPDIR)/sec-mod-db.Po \
 	./$(DEPDIR)/sec-mod-resume.Po \
@@ -362,24 +452,25 @@ am__depfiles_remade = ./$(DEPDIR)/auth-unix.Po \
 	./$(DEPDIR)/setproctitle.Po ./$(DEPDIR)/str.Po \
 	./$(DEPDIR)/subconfig.Po ./$(DEPDIR)/tlslib.Po \
 	./$(DEPDIR)/tun.Po ./$(DEPDIR)/valid-hostname.Po \
-	./$(DEPDIR)/vasprintf.Po ./$(DEPDIR)/worker-auth.Po \
-	./$(DEPDIR)/worker-bandwidth.Po \
-	./$(DEPDIR)/worker-http-handlers.Po ./$(DEPDIR)/worker-http.Po \
-	./$(DEPDIR)/worker-kkdcp.Po ./$(DEPDIR)/worker-misc.Po \
-	./$(DEPDIR)/worker-privs.Po ./$(DEPDIR)/worker-proxyproto.Po \
-	./$(DEPDIR)/worker-resume.Po ./$(DEPDIR)/worker-vpn.Po \
-	acct/$(DEPDIR)/pam.Po acct/$(DEPDIR)/radius.Po \
-	auth/$(DEPDIR)/common.Po auth/$(DEPDIR)/gssapi.Po \
+	./$(DEPDIR)/vasprintf.Po acct/$(DEPDIR)/pam.Po \
+	acct/$(DEPDIR)/radius.Po auth/$(DEPDIR)/common.Po \
+	auth/$(DEPDIR)/gssapi.Po auth/$(DEPDIR)/openidconnect.Po \
 	auth/$(DEPDIR)/pam.Po auth/$(DEPDIR)/plain.Po \
 	auth/$(DEPDIR)/radius.Po ccan/hash/$(DEPDIR)/libccan_a-hash.Po \
 	ccan/htable/$(DEPDIR)/libccan_a-htable.Po \
 	ccan/list/$(DEPDIR)/libccan_a-list.Po \
 	ccan/talloc/$(DEPDIR)/libccan_a-talloc.Po \
+	common/$(DEPDIR)/hmac.Po \
 	common/$(DEPDIR)/libcommon_a-base64-helper.Po \
 	common/$(DEPDIR)/libcommon_a-cloexec.Po \
 	common/$(DEPDIR)/libcommon_a-common.Po \
 	common/$(DEPDIR)/libcommon_a-system.Po \
-	http-parser/$(DEPDIR)/http_parser.Po inih/$(DEPDIR)/ini.Po \
+	common/$(DEPDIR)/ocserv_worker-hmac.Po \
+	common/$(DEPDIR)/ocserv_worker-snapshot.Po \
+	common/$(DEPDIR)/snapshot.Po \
+	http-parser/$(DEPDIR)/http_parser.Po \
+	http-parser/$(DEPDIR)/ocserv_worker-http_parser.Po \
+	inih/$(DEPDIR)/ini.Po inih/$(DEPDIR)/ocserv_worker-ini.Po \
 	occtl/$(DEPDIR)/occtl-cache.Po occtl/$(DEPDIR)/occtl-geoip.Po \
 	occtl/$(DEPDIR)/occtl-hex.Po occtl/$(DEPDIR)/occtl-ip-cache.Po \
 	occtl/$(DEPDIR)/occtl-json.Po occtl/$(DEPDIR)/occtl-maxmind.Po \
@@ -392,7 +483,10 @@ am__depfiles_remade = ./$(DEPDIR)/auth-unix.Po \
 	pcl/$(DEPDIR)/libpcl_a-pcl_private.Po \
 	pcl/$(DEPDIR)/libpcl_a-pcl_version.Po \
 	protobuf/protobuf-c/$(DEPDIR)/libprotobuf_a-protobuf-c.Po \
-	sup-config/$(DEPDIR)/file.Po sup-config/$(DEPDIR)/radius.Po
+	sup-config/$(DEPDIR)/file.Po \
+	sup-config/$(DEPDIR)/ocserv_worker-file.Po \
+	sup-config/$(DEPDIR)/ocserv_worker-radius.Po \
+	sup-config/$(DEPDIR)/radius.Po
 am__mv = mv -f
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -413,12 +507,13 @@ am__v_CCLD_1 =
 SOURCES = $(libccan_a_SOURCES) $(libcommon_a_SOURCES) \
 	$(libipc_a_SOURCES) $(libpcl_a_SOURCES) \
 	$(libprotobuf_a_SOURCES) $(occtl_occtl_SOURCES) \
-	$(ocpasswd_ocpasswd_SOURCES) $(ocserv_SOURCES)
+	$(ocpasswd_ocpasswd_SOURCES) $(ocserv_SOURCES) \
+	$(ocserv_worker_SOURCES)
 DIST_SOURCES = $(am__libccan_a_SOURCES_DIST) $(libcommon_a_SOURCES) \
 	$(libipc_a_SOURCES) $(am__libpcl_a_SOURCES_DIST) \
 	$(am__libprotobuf_a_SOURCES_DIST) \
 	$(am__occtl_occtl_SOURCES_DIST) $(ocpasswd_ocpasswd_SOURCES) \
-	$(am__ocserv_SOURCES_DIST)
+	$(am__ocserv_SOURCES_DIST) $(am__ocserv_worker_SOURCES_DIST)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -463,6 +558,8 @@ BITSIZEOF_WINT_T = @BITSIZEOF_WINT_T@
 CC = @CC@
 CCDEPMODE = @CCDEPMODE@
 CFLAGS = @CFLAGS@
+CJOSE_CFLAGS = @CJOSE_CFLAGS@
+CJOSE_LIBS = @CJOSE_LIBS@
 CODE_COVERAGE_CFLAGS = @CODE_COVERAGE_CFLAGS@
 CODE_COVERAGE_CPPFLAGS = @CODE_COVERAGE_CPPFLAGS@
 CODE_COVERAGE_CXXFLAGS = @CODE_COVERAGE_CXXFLAGS@
@@ -758,6 +855,7 @@ HAVE_LCHOWN = @HAVE_LCHOWN@
 HAVE_LIBC = @HAVE_LIBC@
 HAVE_LIBCRYPT = @HAVE_LIBCRYPT@
 HAVE_LIBEV = @HAVE_LIBEV@
+HAVE_LIBM = @HAVE_LIBM@
 HAVE_LIBPROTOBUF_C = @HAVE_LIBPROTOBUF_C@
 HAVE_LIBREADLINE = @HAVE_LIBREADLINE@
 HAVE_LIBSECCOMP = @HAVE_LIBSECCOMP@
@@ -859,11 +957,15 @@ INSTALL_DATA = @INSTALL_DATA@
 INSTALL_PROGRAM = @INSTALL_PROGRAM@
 INSTALL_SCRIPT = @INSTALL_SCRIPT@
 INSTALL_STRIP_PROGRAM = @INSTALL_STRIP_PROGRAM@
+JANSSON_CFLAGS = @JANSSON_CFLAGS@
+JANSSON_LIBS = @JANSSON_LIBS@
 LCOV = @LCOV@
 LDFLAGS = @LDFLAGS@
 LIBC = @LIBC@
 LIBCRYPT = @LIBCRYPT@
 LIBCRYPT_PREFIX = @LIBCRYPT_PREFIX@
+LIBCURL_CFLAGS = @LIBCURL_CFLAGS@
+LIBCURL_LIBS = @LIBCURL_LIBS@
 LIBC_PREFIX = @LIBC_PREFIX@
 LIBEV = @LIBEV@
 LIBEV_LIBS = @LIBEV_LIBS@
@@ -876,6 +978,8 @@ LIBKRB5_CFLAGS = @LIBKRB5_CFLAGS@
 LIBKRB5_LIBS = @LIBKRB5_LIBS@
 LIBLZ4_CFLAGS = @LIBLZ4_CFLAGS@
 LIBLZ4_LIBS = @LIBLZ4_LIBS@
+LIBM = @LIBM@
+LIBM_PREFIX = @LIBM_PREFIX@
 LIBNETTLE_CFLAGS = @LIBNETTLE_CFLAGS@
 LIBNETTLE_LIBS = @LIBNETTLE_LIBS@
 LIBNL3_CFLAGS = @LIBNL3_CFLAGS@
@@ -909,6 +1013,7 @@ LIBWRAP_PREFIX = @LIBWRAP_PREFIX@
 LTLIBC = @LTLIBC@
 LTLIBCRYPT = @LTLIBCRYPT@
 LTLIBEV = @LTLIBEV@
+LTLIBM = @LTLIBM@
 LTLIBOBJS = @LTLIBOBJS@
 LTLIBPROTOBUF_C = @LTLIBPROTOBUF_C@
 LTLIBREADLINE = @LTLIBREADLINE@
@@ -1169,8 +1274,8 @@ AM_CPPFLAGS = $(am__append_1) $(am__append_2) $(am__append_3) \
 	$(LIBPROTOBUF_C_CFLAGS) $(LIBLZ4_CFLAGS) $(LIBREADLINE_CFLAGS) \
 	$(CODE_COVERAGE_CFLAGS) $(LIBTALLOC_CFLAGS) $(LIBDBUS_CFLAGS) \
 	$(LIBOATH_CFLAGS) $(LIBKRB5_CFLAGS) $(LIBTASN1_CFLAGS) \
-	$(RADCLI_CFLAGS) $(SRC_CFLAGS) $(am__append_11) \
-	$(am__append_14)
+	$(RADCLI_CFLAGS) $(SRC_CFLAGS) $(am__append_4) \
+	$(am__append_16) $(am__append_19)
 @LOCAL_HTTP_PARSER_FALSE@NEEDED_HTTP_PARSER_LIBS = $(HTTP_PARSER_LIBS)
 @LOCAL_HTTP_PARSER_TRUE@NEEDED_HTTP_PARSER_LIBS = 
 @LOCAL_PROTOBUF_C_FALSE@NEEDED_LIBPROTOBUF_LIBS = $(LIBPROTOBUF_C_LIBS)
@@ -1184,50 +1289,56 @@ EXTRA_DIST = version.inc.in version.inc ipc.proto ctl.proto \
 	http-heads.gperf common.mk ocserv-fw ccan/licenses/BSD-MIT \
 	ccan/licenses/CC0 ccan/licenses/LGPL-2.1
 bin_SCRIPTS = ocserv-fw
-noinst_LIBRARIES = libipc.a libcommon.a libccan.a $(am__append_12) \
-	$(am__append_13)
+ocserv_SOURCES = $(CORE_SOURCES) $(AUTH_SOURCES) $(ACCT_SOURCES) \
+	main.c main-auth.c main-ban.c main-ban.h main-ctl-unix.c main-proc.c \
+	main-sec-mod-cmd.c main-user.c main-worker-cmd.c proc-search.c \
+	proc-search.h route-add.c route-add.h sec-mod.c sec-mod.h sec-mod-acct.h \
+	sec-mod-auth.c sec-mod-auth.h sec-mod-cookies.c sec-mod-db.c \
+	sec-mod-resume.c sec-mod-resume.h sec-mod-sup-config.c sec-mod-sup-config.h
+
+ocserv_LDADD = $(CORE_LDADD)
+ocserv_worker_CPPFLAGS = $(AM_CPPFLAGS) -DOCSERV_WORKER_PROCESS
+ocserv_worker_SOURCES = $(CORE_SOURCES) html.c html.h http-heads.h \
+	worker.c worker.h worker-auth.c worker-bandwidth.c \
+	worker-bandwidth.h worker-http.c worker-http-handlers.c \
+	worker-kkdcp.c worker-misc.c worker-privs.c \
+	worker-proxyproto.c worker-resume.c worker-vpn.c \
+	$(am__append_6)
+ocserv_worker_LDADD = $(CORE_LDADD) $(am__append_9)
+noinst_LIBRARIES = libipc.a libcommon.a libccan.a $(am__append_17) \
+	$(am__append_18)
 
 # Authentication module sources
-AUTH_SOURCES = auth/pam.c auth/pam.h auth/plain.c auth/plain.h auth/radius.c auth/radius.h \
-	auth/common.c auth/common.h auth/gssapi.h auth/gssapi.c auth-unix.c \
-	auth-unix.h
-
+AUTH_SOURCES = auth/common.c auth/common.h auth/gssapi.c auth/gssapi.h \
+	auth/pam.c auth/pam.h auth/plain.c auth/plain.h auth/radius.c \
+	auth/radius.h auth-unix.c auth-unix.h $(am__append_5)
 ACCT_SOURCES = acct/radius.c acct/radius.h acct/pam.c acct/pam.h
-ocserv_SOURCES = main.c main-auth.c worker-vpn.c worker-auth.c \
-	tlslib.c main-worker-cmd.c ip-lease.c ip-lease.h vhost.h \
-	main-proc.c vpn.h tlslib.h log.c tun.c tun.h config-kkdcp.c \
-	config.c worker-resume.c worker.h sec-mod-resume.c main.h \
-	worker-http-handlers.c html.c html.h worker-http.c main-user.c \
-	worker-misc.c route-add.c route-add.h worker-privs.c sec-mod.c \
-	sec-mod-db.c sec-mod-auth.c sec-mod-auth.h sec-mod.h \
-	script-list.h $(AUTH_SOURCES) $(ACCT_SOURCES) icmp-ping.c \
-	icmp-ping.h worker-kkdcp.c subconfig.c sec-mod-sup-config.c \
-	sec-mod-sup-config.h sup-config/file.c sup-config/file.h \
-	main-sec-mod-cmd.c sup-config/radius.c sup-config/radius.h \
-	worker-bandwidth.c worker-bandwidth.h main-ctl.h vasprintf.c \
-	vasprintf.h worker-proxyproto.c config-ports.c proc-search.c \
-	proc-search.h http-heads.h ip-util.c ip-util.h main-ban.c \
-	main-ban.h common-config.h valid-hostname.c str.c str.h \
-	gettime.h $(CCAN_SOURCES) $(HTTP_PARSER_SOURCES) \
-	sec-mod-acct.h setproctitle.c setproctitle.h sec-mod-resume.h \
-	sec-mod-cookies.c defs.h inih/ini.c inih/ini.h $(am__append_4) \
-	$(am__append_5) main-ctl-unix.c
+CORE_SOURCES = $(CCAN_SOURCES) $(HTTP_PARSER_SOURCES) common/hmac.c \
+	common/hmac.h common/snapshot.c common/snapshot.h \
+	common-config.h config.c config-kkdcp.c config-ports.c defs.h \
+	gettime.h icmp-ping.c icmp-ping.h inih/ini.c inih/ini.h \
+	ip-lease.c ip-lease.h ip-util.c ip-util.h isolate.h isolate.c \
+	log.c main.h main-ctl.h script-list.h setproctitle.c \
+	setproctitle.h str.c str.h subconfig.c sup-config/file.c \
+	sup-config/file.h sup-config/radius.c sup-config/radius.h \
+	tlslib.c tlslib.h tun.c tun.h valid-hostname.c vasprintf.c \
+	vasprintf.h vhost.h vpn.h $(am__append_7) $(am__append_8)
 @LOCAL_HTTP_PARSER_TRUE@HTTP_PARSER_SOURCES = http-parser/http_parser.c http-parser/http_parser.h
-ocserv_LDADD = ../gl/libgnu.a libccan.a libcommon.a $(LIBGNUTLS_LIBS) \
+CORE_LDADD = ../gl/libgnu.a libccan.a libcommon.a $(LIBGNUTLS_LIBS) \
 	$(PAM_LIBS) $(LIBUTIL) $(LIBSECCOMP) $(LIBWRAP) $(LIBCRYPT) \
 	$(NEEDED_HTTP_PARSER_LIBS) $(NEEDED_LIBPROTOBUF_LIBS) \
 	$(LIBSYSTEMD) $(LIBTALLOC_LIBS) $(RADCLI_LIBS) $(LIBLZ4_LIBS) \
 	$(LIBKRB5_LIBS) $(LIBTASN1_LIBS) $(LIBOATH_LIBS) \
 	$(LIBNETTLE_LIBS) $(LIBEV_LIBS) libipc.a \
 	$(NEEDED_LIBPROTOBUF_LIBS) $(CODE_COVERAGE_LDFLAGS) \
-	$(am__append_9) $(am__append_10)
+	$(am__append_10) $(am__append_14) $(am__append_15)
 libipc_a_SOURCES = ctl.pb-c.c ctl.pb-c.h ipc.pb-c.h ipc.pb-c.c
 occtl_occtl_CPPFLAGS = $(AM_CPPFLAGS) -I$(srcdir)/occtl $(LIBNL3_CFLAGS) $(GEOIP_CFLAGS) $(MAXMIND_CFLAGS)
 occtl_occtl_SOURCES = occtl/occtl.c occtl/pager.c occtl/occtl.h \
 	occtl/time.c occtl/cache.c occtl/ip-cache.c occtl/nl.c \
 	occtl/ctl.h occtl/print.c occtl/json.c occtl/json.h \
 	occtl/hex.c occtl/hex.h occtl/unix.c occtl/geoip.h \
-	occtl/session-cache.c $(am__append_6) $(am__append_7)
+	occtl/session-cache.c $(am__append_11) $(am__append_12)
 occtl_occtl_LDADD = ../gl/libgnu.a libcommon.a $(LIBREADLINE_LIBS) \
 	$(LIBNL3_LIBS) $(NEEDED_LIBPROTOBUF_LIBS) $(LIBTALLOC_LIBS) libccan.a \
 	libipc.a $(NEEDED_LIBPROTOBUF_LIBS) $(CODE_COVERAGE_LDFLAGS) \
@@ -1250,7 +1361,7 @@ libccan_a_SOURCES = ccan/build_assert/build_assert.h \
 	ccan/check_type/check_type.h ccan/container_of/container_of.h \
 	ccan/hash/hash.c ccan/hash/hash.h ccan/htable/htable.c \
 	ccan/htable/htable.h ccan/htable/htable_type.h \
-	ccan/list/list.c ccan/list/list.h $(am__append_8)
+	ccan/list/list.c ccan/list/list.h $(am__append_13)
 @PCL_FALSE@libpcl_a_CPPFLAGS = -I$(srcdir)/pcl -I$(builddir)/../
 @PCL_FALSE@libpcl_a_SOURCES = pcl/pcl.c pcl/pcl_version.c pcl/pcl_private.c \
 @PCL_FALSE@	pcl/pcl_config.h pcl/pcl.h pcl/pcl_private.h
@@ -1271,9 +1382,9 @@ $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am $(srcdir)/co
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign src/Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --gnu src/Makefile'; \
 	$(am__cd) $(top_srcdir) && \
-	  $(AUTOMAKE) --foreign src/Makefile
+	  $(AUTOMAKE) --gnu src/Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \
 	  *config.status*) \
@@ -1521,21 +1632,53 @@ ocpasswd/ocpasswd-ocpasswd.$(OBJEXT): ocpasswd/$(am__dirstamp) \
 ocpasswd/ocpasswd$(EXEEXT): $(ocpasswd_ocpasswd_OBJECTS) $(ocpasswd_ocpasswd_DEPENDENCIES) $(EXTRA_ocpasswd_ocpasswd_DEPENDENCIES) ocpasswd/$(am__dirstamp)
 	@rm -f ocpasswd/ocpasswd$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(ocpasswd_ocpasswd_OBJECTS) $(ocpasswd_ocpasswd_LDADD) $(LIBS)
+http-parser/$(am__dirstamp):
+	@$(MKDIR_P) http-parser
+	@: > http-parser/$(am__dirstamp)
+http-parser/$(DEPDIR)/$(am__dirstamp):
+	@$(MKDIR_P) http-parser/$(DEPDIR)
+	@: > http-parser/$(DEPDIR)/$(am__dirstamp)
+http-parser/http_parser.$(OBJEXT): http-parser/$(am__dirstamp) \
+	http-parser/$(DEPDIR)/$(am__dirstamp)
+common/hmac.$(OBJEXT): common/$(am__dirstamp) \
+	common/$(DEPDIR)/$(am__dirstamp)
+common/snapshot.$(OBJEXT): common/$(am__dirstamp) \
+	common/$(DEPDIR)/$(am__dirstamp)
+inih/$(am__dirstamp):
+	@$(MKDIR_P) inih
+	@: > inih/$(am__dirstamp)
+inih/$(DEPDIR)/$(am__dirstamp):
+	@$(MKDIR_P) inih/$(DEPDIR)
+	@: > inih/$(DEPDIR)/$(am__dirstamp)
+inih/ini.$(OBJEXT): inih/$(am__dirstamp) \
+	inih/$(DEPDIR)/$(am__dirstamp)
+sup-config/$(am__dirstamp):
+	@$(MKDIR_P) sup-config
+	@: > sup-config/$(am__dirstamp)
+sup-config/$(DEPDIR)/$(am__dirstamp):
+	@$(MKDIR_P) sup-config/$(DEPDIR)
+	@: > sup-config/$(DEPDIR)/$(am__dirstamp)
+sup-config/file.$(OBJEXT): sup-config/$(am__dirstamp) \
+	sup-config/$(DEPDIR)/$(am__dirstamp)
+sup-config/radius.$(OBJEXT): sup-config/$(am__dirstamp) \
+	sup-config/$(DEPDIR)/$(am__dirstamp)
 auth/$(am__dirstamp):
 	@$(MKDIR_P) auth
 	@: > auth/$(am__dirstamp)
 auth/$(DEPDIR)/$(am__dirstamp):
 	@$(MKDIR_P) auth/$(DEPDIR)
 	@: > auth/$(DEPDIR)/$(am__dirstamp)
+auth/common.$(OBJEXT): auth/$(am__dirstamp) \
+	auth/$(DEPDIR)/$(am__dirstamp)
+auth/gssapi.$(OBJEXT): auth/$(am__dirstamp) \
+	auth/$(DEPDIR)/$(am__dirstamp)
 auth/pam.$(OBJEXT): auth/$(am__dirstamp) \
 	auth/$(DEPDIR)/$(am__dirstamp)
 auth/plain.$(OBJEXT): auth/$(am__dirstamp) \
 	auth/$(DEPDIR)/$(am__dirstamp)
 auth/radius.$(OBJEXT): auth/$(am__dirstamp) \
 	auth/$(DEPDIR)/$(am__dirstamp)
-auth/common.$(OBJEXT): auth/$(am__dirstamp) \
-	auth/$(DEPDIR)/$(am__dirstamp)
-auth/gssapi.$(OBJEXT): auth/$(am__dirstamp) \
+auth/openidconnect.$(OBJEXT): auth/$(am__dirstamp) \
 	auth/$(DEPDIR)/$(am__dirstamp)
 acct/$(am__dirstamp):
 	@$(MKDIR_P) acct
@@ -1547,36 +1690,27 @@ acct/radius.$(OBJEXT): acct/$(am__dirstamp) \
 	acct/$(DEPDIR)/$(am__dirstamp)
 acct/pam.$(OBJEXT): acct/$(am__dirstamp) \
 	acct/$(DEPDIR)/$(am__dirstamp)
-sup-config/$(am__dirstamp):
-	@$(MKDIR_P) sup-config
-	@: > sup-config/$(am__dirstamp)
-sup-config/$(DEPDIR)/$(am__dirstamp):
-	@$(MKDIR_P) sup-config/$(DEPDIR)
-	@: > sup-config/$(DEPDIR)/$(am__dirstamp)
-sup-config/file.$(OBJEXT): sup-config/$(am__dirstamp) \
-	sup-config/$(DEPDIR)/$(am__dirstamp)
-sup-config/radius.$(OBJEXT): sup-config/$(am__dirstamp) \
-	sup-config/$(DEPDIR)/$(am__dirstamp)
-http-parser/$(am__dirstamp):
-	@$(MKDIR_P) http-parser
-	@: > http-parser/$(am__dirstamp)
-http-parser/$(DEPDIR)/$(am__dirstamp):
-	@$(MKDIR_P) http-parser/$(DEPDIR)
-	@: > http-parser/$(DEPDIR)/$(am__dirstamp)
-http-parser/http_parser.$(OBJEXT): http-parser/$(am__dirstamp) \
-	http-parser/$(DEPDIR)/$(am__dirstamp)
-inih/$(am__dirstamp):
-	@$(MKDIR_P) inih
-	@: > inih/$(am__dirstamp)
-inih/$(DEPDIR)/$(am__dirstamp):
-	@$(MKDIR_P) inih/$(DEPDIR)
-	@: > inih/$(DEPDIR)/$(am__dirstamp)
-inih/ini.$(OBJEXT): inih/$(am__dirstamp) \
-	inih/$(DEPDIR)/$(am__dirstamp)
 
 ocserv$(EXEEXT): $(ocserv_OBJECTS) $(ocserv_DEPENDENCIES) $(EXTRA_ocserv_DEPENDENCIES) 
 	@rm -f ocserv$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(ocserv_OBJECTS) $(ocserv_LDADD) $(LIBS)
+http-parser/ocserv_worker-http_parser.$(OBJEXT):  \
+	http-parser/$(am__dirstamp) \
+	http-parser/$(DEPDIR)/$(am__dirstamp)
+common/ocserv_worker-hmac.$(OBJEXT): common/$(am__dirstamp) \
+	common/$(DEPDIR)/$(am__dirstamp)
+common/ocserv_worker-snapshot.$(OBJEXT): common/$(am__dirstamp) \
+	common/$(DEPDIR)/$(am__dirstamp)
+inih/ocserv_worker-ini.$(OBJEXT): inih/$(am__dirstamp) \
+	inih/$(DEPDIR)/$(am__dirstamp)
+sup-config/ocserv_worker-file.$(OBJEXT): sup-config/$(am__dirstamp) \
+	sup-config/$(DEPDIR)/$(am__dirstamp)
+sup-config/ocserv_worker-radius.$(OBJEXT): sup-config/$(am__dirstamp) \
+	sup-config/$(DEPDIR)/$(am__dirstamp)
+
+ocserv-worker$(EXEEXT): $(ocserv_worker_OBJECTS) $(ocserv_worker_DEPENDENCIES) $(EXTRA_ocserv_worker_DEPENDENCIES) 
+	@rm -f ocserv-worker$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(ocserv_worker_OBJECTS) $(ocserv_worker_LDADD) $(LIBS)
 install-binSCRIPTS: $(bin_SCRIPTS)
 	@$(NORMAL_INSTALL)
 	@list='$(bin_SCRIPTS)'; test -n "$(bindir)" || list=; \
@@ -1638,11 +1772,11 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/config-ports.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/config.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ctl.pb-c.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/html.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/icmp-ping.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ip-lease.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ip-util.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ipc.pb-c.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/isolate.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/kkdcp_asn1_tab.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/log.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lzs.Po@am__quote@ # am--include-marker
@@ -1654,6 +1788,36 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/main-user.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/main-worker-cmd.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/main.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ocserv_worker-config-kkdcp.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ocserv_worker-config-ports.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ocserv_worker-config.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ocserv_worker-html.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ocserv_worker-icmp-ping.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ocserv_worker-ip-lease.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ocserv_worker-ip-util.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ocserv_worker-isolate.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ocserv_worker-kkdcp_asn1_tab.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ocserv_worker-log.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ocserv_worker-lzs.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ocserv_worker-setproctitle.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ocserv_worker-str.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ocserv_worker-subconfig.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ocserv_worker-tlslib.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ocserv_worker-tun.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ocserv_worker-valid-hostname.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ocserv_worker-vasprintf.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ocserv_worker-worker-auth.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ocserv_worker-worker-bandwidth.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ocserv_worker-worker-http-handlers.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ocserv_worker-worker-http.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ocserv_worker-worker-kkdcp.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ocserv_worker-worker-latency.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ocserv_worker-worker-misc.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ocserv_worker-worker-privs.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ocserv_worker-worker-proxyproto.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ocserv_worker-worker-resume.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ocserv_worker-worker-vpn.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ocserv_worker-worker.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/proc-search.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/route-add.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sec-mod-auth.Po@am__quote@ # am--include-marker
@@ -1669,20 +1833,11 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tun.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/valid-hostname.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/vasprintf.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/worker-auth.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/worker-bandwidth.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/worker-http-handlers.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/worker-http.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/worker-kkdcp.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/worker-misc.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/worker-privs.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/worker-proxyproto.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/worker-resume.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/worker-vpn.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@acct/$(DEPDIR)/pam.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@acct/$(DEPDIR)/radius.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@auth/$(DEPDIR)/common.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@auth/$(DEPDIR)/gssapi.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@auth/$(DEPDIR)/openidconnect.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@auth/$(DEPDIR)/pam.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@auth/$(DEPDIR)/plain.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@auth/$(DEPDIR)/radius.Po@am__quote@ # am--include-marker
@@ -1690,12 +1845,18 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@ccan/htable/$(DEPDIR)/libccan_a-htable.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@ccan/list/$(DEPDIR)/libccan_a-list.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@ccan/talloc/$(DEPDIR)/libccan_a-talloc.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@common/$(DEPDIR)/hmac.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@common/$(DEPDIR)/libcommon_a-base64-helper.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@common/$(DEPDIR)/libcommon_a-cloexec.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@common/$(DEPDIR)/libcommon_a-common.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@common/$(DEPDIR)/libcommon_a-system.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@common/$(DEPDIR)/ocserv_worker-hmac.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@common/$(DEPDIR)/ocserv_worker-snapshot.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@common/$(DEPDIR)/snapshot.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@http-parser/$(DEPDIR)/http_parser.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@http-parser/$(DEPDIR)/ocserv_worker-http_parser.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@inih/$(DEPDIR)/ini.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@inih/$(DEPDIR)/ocserv_worker-ini.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@occtl/$(DEPDIR)/occtl-cache.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@occtl/$(DEPDIR)/occtl-geoip.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@occtl/$(DEPDIR)/occtl-hex.Po@am__quote@ # am--include-marker
@@ -1715,6 +1876,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@pcl/$(DEPDIR)/libpcl_a-pcl_version.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@protobuf/protobuf-c/$(DEPDIR)/libprotobuf_a-protobuf-c.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@sup-config/$(DEPDIR)/file.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@sup-config/$(DEPDIR)/ocserv_worker-file.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@sup-config/$(DEPDIR)/ocserv_worker-radius.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@sup-config/$(DEPDIR)/radius.Po@am__quote@ # am--include-marker
 
 $(am__depfiles_remade):
@@ -2103,6 +2266,510 @@ ocpasswd/ocpasswd-ocpasswd.obj: ocpasswd/ocpasswd.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocpasswd_ocpasswd_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ocpasswd/ocpasswd-ocpasswd.obj `if test -f 'ocpasswd/ocpasswd.c'; then $(CYGPATH_W) 'ocpasswd/ocpasswd.c'; else $(CYGPATH_W) '$(srcdir)/ocpasswd/ocpasswd.c'; fi`
 
+http-parser/ocserv_worker-http_parser.o: http-parser/http_parser.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT http-parser/ocserv_worker-http_parser.o -MD -MP -MF http-parser/$(DEPDIR)/ocserv_worker-http_parser.Tpo -c -o http-parser/ocserv_worker-http_parser.o `test -f 'http-parser/http_parser.c' || echo '$(srcdir)/'`http-parser/http_parser.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) http-parser/$(DEPDIR)/ocserv_worker-http_parser.Tpo http-parser/$(DEPDIR)/ocserv_worker-http_parser.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='http-parser/http_parser.c' object='http-parser/ocserv_worker-http_parser.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o http-parser/ocserv_worker-http_parser.o `test -f 'http-parser/http_parser.c' || echo '$(srcdir)/'`http-parser/http_parser.c
+
+http-parser/ocserv_worker-http_parser.obj: http-parser/http_parser.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT http-parser/ocserv_worker-http_parser.obj -MD -MP -MF http-parser/$(DEPDIR)/ocserv_worker-http_parser.Tpo -c -o http-parser/ocserv_worker-http_parser.obj `if test -f 'http-parser/http_parser.c'; then $(CYGPATH_W) 'http-parser/http_parser.c'; else $(CYGPATH_W) '$(srcdir)/http-parser/http_parser.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) http-parser/$(DEPDIR)/ocserv_worker-http_parser.Tpo http-parser/$(DEPDIR)/ocserv_worker-http_parser.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='http-parser/http_parser.c' object='http-parser/ocserv_worker-http_parser.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o http-parser/ocserv_worker-http_parser.obj `if test -f 'http-parser/http_parser.c'; then $(CYGPATH_W) 'http-parser/http_parser.c'; else $(CYGPATH_W) '$(srcdir)/http-parser/http_parser.c'; fi`
+
+common/ocserv_worker-hmac.o: common/hmac.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT common/ocserv_worker-hmac.o -MD -MP -MF common/$(DEPDIR)/ocserv_worker-hmac.Tpo -c -o common/ocserv_worker-hmac.o `test -f 'common/hmac.c' || echo '$(srcdir)/'`common/hmac.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) common/$(DEPDIR)/ocserv_worker-hmac.Tpo common/$(DEPDIR)/ocserv_worker-hmac.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='common/hmac.c' object='common/ocserv_worker-hmac.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o common/ocserv_worker-hmac.o `test -f 'common/hmac.c' || echo '$(srcdir)/'`common/hmac.c
+
+common/ocserv_worker-hmac.obj: common/hmac.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT common/ocserv_worker-hmac.obj -MD -MP -MF common/$(DEPDIR)/ocserv_worker-hmac.Tpo -c -o common/ocserv_worker-hmac.obj `if test -f 'common/hmac.c'; then $(CYGPATH_W) 'common/hmac.c'; else $(CYGPATH_W) '$(srcdir)/common/hmac.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) common/$(DEPDIR)/ocserv_worker-hmac.Tpo common/$(DEPDIR)/ocserv_worker-hmac.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='common/hmac.c' object='common/ocserv_worker-hmac.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o common/ocserv_worker-hmac.obj `if test -f 'common/hmac.c'; then $(CYGPATH_W) 'common/hmac.c'; else $(CYGPATH_W) '$(srcdir)/common/hmac.c'; fi`
+
+common/ocserv_worker-snapshot.o: common/snapshot.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT common/ocserv_worker-snapshot.o -MD -MP -MF common/$(DEPDIR)/ocserv_worker-snapshot.Tpo -c -o common/ocserv_worker-snapshot.o `test -f 'common/snapshot.c' || echo '$(srcdir)/'`common/snapshot.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) common/$(DEPDIR)/ocserv_worker-snapshot.Tpo common/$(DEPDIR)/ocserv_worker-snapshot.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='common/snapshot.c' object='common/ocserv_worker-snapshot.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o common/ocserv_worker-snapshot.o `test -f 'common/snapshot.c' || echo '$(srcdir)/'`common/snapshot.c
+
+common/ocserv_worker-snapshot.obj: common/snapshot.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT common/ocserv_worker-snapshot.obj -MD -MP -MF common/$(DEPDIR)/ocserv_worker-snapshot.Tpo -c -o common/ocserv_worker-snapshot.obj `if test -f 'common/snapshot.c'; then $(CYGPATH_W) 'common/snapshot.c'; else $(CYGPATH_W) '$(srcdir)/common/snapshot.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) common/$(DEPDIR)/ocserv_worker-snapshot.Tpo common/$(DEPDIR)/ocserv_worker-snapshot.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='common/snapshot.c' object='common/ocserv_worker-snapshot.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o common/ocserv_worker-snapshot.obj `if test -f 'common/snapshot.c'; then $(CYGPATH_W) 'common/snapshot.c'; else $(CYGPATH_W) '$(srcdir)/common/snapshot.c'; fi`
+
+ocserv_worker-config.o: config.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ocserv_worker-config.o -MD -MP -MF $(DEPDIR)/ocserv_worker-config.Tpo -c -o ocserv_worker-config.o `test -f 'config.c' || echo '$(srcdir)/'`config.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/ocserv_worker-config.Tpo $(DEPDIR)/ocserv_worker-config.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='config.c' object='ocserv_worker-config.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ocserv_worker-config.o `test -f 'config.c' || echo '$(srcdir)/'`config.c
+
+ocserv_worker-config.obj: config.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ocserv_worker-config.obj -MD -MP -MF $(DEPDIR)/ocserv_worker-config.Tpo -c -o ocserv_worker-config.obj `if test -f 'config.c'; then $(CYGPATH_W) 'config.c'; else $(CYGPATH_W) '$(srcdir)/config.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/ocserv_worker-config.Tpo $(DEPDIR)/ocserv_worker-config.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='config.c' object='ocserv_worker-config.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ocserv_worker-config.obj `if test -f 'config.c'; then $(CYGPATH_W) 'config.c'; else $(CYGPATH_W) '$(srcdir)/config.c'; fi`
+
+ocserv_worker-config-kkdcp.o: config-kkdcp.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ocserv_worker-config-kkdcp.o -MD -MP -MF $(DEPDIR)/ocserv_worker-config-kkdcp.Tpo -c -o ocserv_worker-config-kkdcp.o `test -f 'config-kkdcp.c' || echo '$(srcdir)/'`config-kkdcp.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/ocserv_worker-config-kkdcp.Tpo $(DEPDIR)/ocserv_worker-config-kkdcp.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='config-kkdcp.c' object='ocserv_worker-config-kkdcp.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ocserv_worker-config-kkdcp.o `test -f 'config-kkdcp.c' || echo '$(srcdir)/'`config-kkdcp.c
+
+ocserv_worker-config-kkdcp.obj: config-kkdcp.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ocserv_worker-config-kkdcp.obj -MD -MP -MF $(DEPDIR)/ocserv_worker-config-kkdcp.Tpo -c -o ocserv_worker-config-kkdcp.obj `if test -f 'config-kkdcp.c'; then $(CYGPATH_W) 'config-kkdcp.c'; else $(CYGPATH_W) '$(srcdir)/config-kkdcp.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/ocserv_worker-config-kkdcp.Tpo $(DEPDIR)/ocserv_worker-config-kkdcp.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='config-kkdcp.c' object='ocserv_worker-config-kkdcp.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ocserv_worker-config-kkdcp.obj `if test -f 'config-kkdcp.c'; then $(CYGPATH_W) 'config-kkdcp.c'; else $(CYGPATH_W) '$(srcdir)/config-kkdcp.c'; fi`
+
+ocserv_worker-config-ports.o: config-ports.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ocserv_worker-config-ports.o -MD -MP -MF $(DEPDIR)/ocserv_worker-config-ports.Tpo -c -o ocserv_worker-config-ports.o `test -f 'config-ports.c' || echo '$(srcdir)/'`config-ports.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/ocserv_worker-config-ports.Tpo $(DEPDIR)/ocserv_worker-config-ports.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='config-ports.c' object='ocserv_worker-config-ports.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ocserv_worker-config-ports.o `test -f 'config-ports.c' || echo '$(srcdir)/'`config-ports.c
+
+ocserv_worker-config-ports.obj: config-ports.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ocserv_worker-config-ports.obj -MD -MP -MF $(DEPDIR)/ocserv_worker-config-ports.Tpo -c -o ocserv_worker-config-ports.obj `if test -f 'config-ports.c'; then $(CYGPATH_W) 'config-ports.c'; else $(CYGPATH_W) '$(srcdir)/config-ports.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/ocserv_worker-config-ports.Tpo $(DEPDIR)/ocserv_worker-config-ports.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='config-ports.c' object='ocserv_worker-config-ports.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ocserv_worker-config-ports.obj `if test -f 'config-ports.c'; then $(CYGPATH_W) 'config-ports.c'; else $(CYGPATH_W) '$(srcdir)/config-ports.c'; fi`
+
+ocserv_worker-icmp-ping.o: icmp-ping.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ocserv_worker-icmp-ping.o -MD -MP -MF $(DEPDIR)/ocserv_worker-icmp-ping.Tpo -c -o ocserv_worker-icmp-ping.o `test -f 'icmp-ping.c' || echo '$(srcdir)/'`icmp-ping.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/ocserv_worker-icmp-ping.Tpo $(DEPDIR)/ocserv_worker-icmp-ping.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='icmp-ping.c' object='ocserv_worker-icmp-ping.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ocserv_worker-icmp-ping.o `test -f 'icmp-ping.c' || echo '$(srcdir)/'`icmp-ping.c
+
+ocserv_worker-icmp-ping.obj: icmp-ping.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ocserv_worker-icmp-ping.obj -MD -MP -MF $(DEPDIR)/ocserv_worker-icmp-ping.Tpo -c -o ocserv_worker-icmp-ping.obj `if test -f 'icmp-ping.c'; then $(CYGPATH_W) 'icmp-ping.c'; else $(CYGPATH_W) '$(srcdir)/icmp-ping.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/ocserv_worker-icmp-ping.Tpo $(DEPDIR)/ocserv_worker-icmp-ping.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='icmp-ping.c' object='ocserv_worker-icmp-ping.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ocserv_worker-icmp-ping.obj `if test -f 'icmp-ping.c'; then $(CYGPATH_W) 'icmp-ping.c'; else $(CYGPATH_W) '$(srcdir)/icmp-ping.c'; fi`
+
+inih/ocserv_worker-ini.o: inih/ini.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT inih/ocserv_worker-ini.o -MD -MP -MF inih/$(DEPDIR)/ocserv_worker-ini.Tpo -c -o inih/ocserv_worker-ini.o `test -f 'inih/ini.c' || echo '$(srcdir)/'`inih/ini.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) inih/$(DEPDIR)/ocserv_worker-ini.Tpo inih/$(DEPDIR)/ocserv_worker-ini.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='inih/ini.c' object='inih/ocserv_worker-ini.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o inih/ocserv_worker-ini.o `test -f 'inih/ini.c' || echo '$(srcdir)/'`inih/ini.c
+
+inih/ocserv_worker-ini.obj: inih/ini.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT inih/ocserv_worker-ini.obj -MD -MP -MF inih/$(DEPDIR)/ocserv_worker-ini.Tpo -c -o inih/ocserv_worker-ini.obj `if test -f 'inih/ini.c'; then $(CYGPATH_W) 'inih/ini.c'; else $(CYGPATH_W) '$(srcdir)/inih/ini.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) inih/$(DEPDIR)/ocserv_worker-ini.Tpo inih/$(DEPDIR)/ocserv_worker-ini.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='inih/ini.c' object='inih/ocserv_worker-ini.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o inih/ocserv_worker-ini.obj `if test -f 'inih/ini.c'; then $(CYGPATH_W) 'inih/ini.c'; else $(CYGPATH_W) '$(srcdir)/inih/ini.c'; fi`
+
+ocserv_worker-ip-lease.o: ip-lease.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ocserv_worker-ip-lease.o -MD -MP -MF $(DEPDIR)/ocserv_worker-ip-lease.Tpo -c -o ocserv_worker-ip-lease.o `test -f 'ip-lease.c' || echo '$(srcdir)/'`ip-lease.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/ocserv_worker-ip-lease.Tpo $(DEPDIR)/ocserv_worker-ip-lease.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='ip-lease.c' object='ocserv_worker-ip-lease.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ocserv_worker-ip-lease.o `test -f 'ip-lease.c' || echo '$(srcdir)/'`ip-lease.c
+
+ocserv_worker-ip-lease.obj: ip-lease.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ocserv_worker-ip-lease.obj -MD -MP -MF $(DEPDIR)/ocserv_worker-ip-lease.Tpo -c -o ocserv_worker-ip-lease.obj `if test -f 'ip-lease.c'; then $(CYGPATH_W) 'ip-lease.c'; else $(CYGPATH_W) '$(srcdir)/ip-lease.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/ocserv_worker-ip-lease.Tpo $(DEPDIR)/ocserv_worker-ip-lease.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='ip-lease.c' object='ocserv_worker-ip-lease.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ocserv_worker-ip-lease.obj `if test -f 'ip-lease.c'; then $(CYGPATH_W) 'ip-lease.c'; else $(CYGPATH_W) '$(srcdir)/ip-lease.c'; fi`
+
+ocserv_worker-ip-util.o: ip-util.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ocserv_worker-ip-util.o -MD -MP -MF $(DEPDIR)/ocserv_worker-ip-util.Tpo -c -o ocserv_worker-ip-util.o `test -f 'ip-util.c' || echo '$(srcdir)/'`ip-util.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/ocserv_worker-ip-util.Tpo $(DEPDIR)/ocserv_worker-ip-util.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='ip-util.c' object='ocserv_worker-ip-util.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ocserv_worker-ip-util.o `test -f 'ip-util.c' || echo '$(srcdir)/'`ip-util.c
+
+ocserv_worker-ip-util.obj: ip-util.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ocserv_worker-ip-util.obj -MD -MP -MF $(DEPDIR)/ocserv_worker-ip-util.Tpo -c -o ocserv_worker-ip-util.obj `if test -f 'ip-util.c'; then $(CYGPATH_W) 'ip-util.c'; else $(CYGPATH_W) '$(srcdir)/ip-util.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/ocserv_worker-ip-util.Tpo $(DEPDIR)/ocserv_worker-ip-util.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='ip-util.c' object='ocserv_worker-ip-util.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ocserv_worker-ip-util.obj `if test -f 'ip-util.c'; then $(CYGPATH_W) 'ip-util.c'; else $(CYGPATH_W) '$(srcdir)/ip-util.c'; fi`
+
+ocserv_worker-isolate.o: isolate.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ocserv_worker-isolate.o -MD -MP -MF $(DEPDIR)/ocserv_worker-isolate.Tpo -c -o ocserv_worker-isolate.o `test -f 'isolate.c' || echo '$(srcdir)/'`isolate.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/ocserv_worker-isolate.Tpo $(DEPDIR)/ocserv_worker-isolate.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='isolate.c' object='ocserv_worker-isolate.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ocserv_worker-isolate.o `test -f 'isolate.c' || echo '$(srcdir)/'`isolate.c
+
+ocserv_worker-isolate.obj: isolate.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ocserv_worker-isolate.obj -MD -MP -MF $(DEPDIR)/ocserv_worker-isolate.Tpo -c -o ocserv_worker-isolate.obj `if test -f 'isolate.c'; then $(CYGPATH_W) 'isolate.c'; else $(CYGPATH_W) '$(srcdir)/isolate.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/ocserv_worker-isolate.Tpo $(DEPDIR)/ocserv_worker-isolate.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='isolate.c' object='ocserv_worker-isolate.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ocserv_worker-isolate.obj `if test -f 'isolate.c'; then $(CYGPATH_W) 'isolate.c'; else $(CYGPATH_W) '$(srcdir)/isolate.c'; fi`
+
+ocserv_worker-log.o: log.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ocserv_worker-log.o -MD -MP -MF $(DEPDIR)/ocserv_worker-log.Tpo -c -o ocserv_worker-log.o `test -f 'log.c' || echo '$(srcdir)/'`log.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/ocserv_worker-log.Tpo $(DEPDIR)/ocserv_worker-log.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='log.c' object='ocserv_worker-log.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ocserv_worker-log.o `test -f 'log.c' || echo '$(srcdir)/'`log.c
+
+ocserv_worker-log.obj: log.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ocserv_worker-log.obj -MD -MP -MF $(DEPDIR)/ocserv_worker-log.Tpo -c -o ocserv_worker-log.obj `if test -f 'log.c'; then $(CYGPATH_W) 'log.c'; else $(CYGPATH_W) '$(srcdir)/log.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/ocserv_worker-log.Tpo $(DEPDIR)/ocserv_worker-log.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='log.c' object='ocserv_worker-log.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ocserv_worker-log.obj `if test -f 'log.c'; then $(CYGPATH_W) 'log.c'; else $(CYGPATH_W) '$(srcdir)/log.c'; fi`
+
+ocserv_worker-setproctitle.o: setproctitle.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ocserv_worker-setproctitle.o -MD -MP -MF $(DEPDIR)/ocserv_worker-setproctitle.Tpo -c -o ocserv_worker-setproctitle.o `test -f 'setproctitle.c' || echo '$(srcdir)/'`setproctitle.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/ocserv_worker-setproctitle.Tpo $(DEPDIR)/ocserv_worker-setproctitle.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='setproctitle.c' object='ocserv_worker-setproctitle.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ocserv_worker-setproctitle.o `test -f 'setproctitle.c' || echo '$(srcdir)/'`setproctitle.c
+
+ocserv_worker-setproctitle.obj: setproctitle.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ocserv_worker-setproctitle.obj -MD -MP -MF $(DEPDIR)/ocserv_worker-setproctitle.Tpo -c -o ocserv_worker-setproctitle.obj `if test -f 'setproctitle.c'; then $(CYGPATH_W) 'setproctitle.c'; else $(CYGPATH_W) '$(srcdir)/setproctitle.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/ocserv_worker-setproctitle.Tpo $(DEPDIR)/ocserv_worker-setproctitle.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='setproctitle.c' object='ocserv_worker-setproctitle.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ocserv_worker-setproctitle.obj `if test -f 'setproctitle.c'; then $(CYGPATH_W) 'setproctitle.c'; else $(CYGPATH_W) '$(srcdir)/setproctitle.c'; fi`
+
+ocserv_worker-str.o: str.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ocserv_worker-str.o -MD -MP -MF $(DEPDIR)/ocserv_worker-str.Tpo -c -o ocserv_worker-str.o `test -f 'str.c' || echo '$(srcdir)/'`str.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/ocserv_worker-str.Tpo $(DEPDIR)/ocserv_worker-str.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='str.c' object='ocserv_worker-str.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ocserv_worker-str.o `test -f 'str.c' || echo '$(srcdir)/'`str.c
+
+ocserv_worker-str.obj: str.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ocserv_worker-str.obj -MD -MP -MF $(DEPDIR)/ocserv_worker-str.Tpo -c -o ocserv_worker-str.obj `if test -f 'str.c'; then $(CYGPATH_W) 'str.c'; else $(CYGPATH_W) '$(srcdir)/str.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/ocserv_worker-str.Tpo $(DEPDIR)/ocserv_worker-str.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='str.c' object='ocserv_worker-str.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ocserv_worker-str.obj `if test -f 'str.c'; then $(CYGPATH_W) 'str.c'; else $(CYGPATH_W) '$(srcdir)/str.c'; fi`
+
+ocserv_worker-subconfig.o: subconfig.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ocserv_worker-subconfig.o -MD -MP -MF $(DEPDIR)/ocserv_worker-subconfig.Tpo -c -o ocserv_worker-subconfig.o `test -f 'subconfig.c' || echo '$(srcdir)/'`subconfig.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/ocserv_worker-subconfig.Tpo $(DEPDIR)/ocserv_worker-subconfig.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='subconfig.c' object='ocserv_worker-subconfig.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ocserv_worker-subconfig.o `test -f 'subconfig.c' || echo '$(srcdir)/'`subconfig.c
+
+ocserv_worker-subconfig.obj: subconfig.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ocserv_worker-subconfig.obj -MD -MP -MF $(DEPDIR)/ocserv_worker-subconfig.Tpo -c -o ocserv_worker-subconfig.obj `if test -f 'subconfig.c'; then $(CYGPATH_W) 'subconfig.c'; else $(CYGPATH_W) '$(srcdir)/subconfig.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/ocserv_worker-subconfig.Tpo $(DEPDIR)/ocserv_worker-subconfig.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='subconfig.c' object='ocserv_worker-subconfig.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ocserv_worker-subconfig.obj `if test -f 'subconfig.c'; then $(CYGPATH_W) 'subconfig.c'; else $(CYGPATH_W) '$(srcdir)/subconfig.c'; fi`
+
+sup-config/ocserv_worker-file.o: sup-config/file.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT sup-config/ocserv_worker-file.o -MD -MP -MF sup-config/$(DEPDIR)/ocserv_worker-file.Tpo -c -o sup-config/ocserv_worker-file.o `test -f 'sup-config/file.c' || echo '$(srcdir)/'`sup-config/file.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) sup-config/$(DEPDIR)/ocserv_worker-file.Tpo sup-config/$(DEPDIR)/ocserv_worker-file.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sup-config/file.c' object='sup-config/ocserv_worker-file.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o sup-config/ocserv_worker-file.o `test -f 'sup-config/file.c' || echo '$(srcdir)/'`sup-config/file.c
+
+sup-config/ocserv_worker-file.obj: sup-config/file.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT sup-config/ocserv_worker-file.obj -MD -MP -MF sup-config/$(DEPDIR)/ocserv_worker-file.Tpo -c -o sup-config/ocserv_worker-file.obj `if test -f 'sup-config/file.c'; then $(CYGPATH_W) 'sup-config/file.c'; else $(CYGPATH_W) '$(srcdir)/sup-config/file.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) sup-config/$(DEPDIR)/ocserv_worker-file.Tpo sup-config/$(DEPDIR)/ocserv_worker-file.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sup-config/file.c' object='sup-config/ocserv_worker-file.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o sup-config/ocserv_worker-file.obj `if test -f 'sup-config/file.c'; then $(CYGPATH_W) 'sup-config/file.c'; else $(CYGPATH_W) '$(srcdir)/sup-config/file.c'; fi`
+
+sup-config/ocserv_worker-radius.o: sup-config/radius.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT sup-config/ocserv_worker-radius.o -MD -MP -MF sup-config/$(DEPDIR)/ocserv_worker-radius.Tpo -c -o sup-config/ocserv_worker-radius.o `test -f 'sup-config/radius.c' || echo '$(srcdir)/'`sup-config/radius.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) sup-config/$(DEPDIR)/ocserv_worker-radius.Tpo sup-config/$(DEPDIR)/ocserv_worker-radius.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sup-config/radius.c' object='sup-config/ocserv_worker-radius.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o sup-config/ocserv_worker-radius.o `test -f 'sup-config/radius.c' || echo '$(srcdir)/'`sup-config/radius.c
+
+sup-config/ocserv_worker-radius.obj: sup-config/radius.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT sup-config/ocserv_worker-radius.obj -MD -MP -MF sup-config/$(DEPDIR)/ocserv_worker-radius.Tpo -c -o sup-config/ocserv_worker-radius.obj `if test -f 'sup-config/radius.c'; then $(CYGPATH_W) 'sup-config/radius.c'; else $(CYGPATH_W) '$(srcdir)/sup-config/radius.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) sup-config/$(DEPDIR)/ocserv_worker-radius.Tpo sup-config/$(DEPDIR)/ocserv_worker-radius.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sup-config/radius.c' object='sup-config/ocserv_worker-radius.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o sup-config/ocserv_worker-radius.obj `if test -f 'sup-config/radius.c'; then $(CYGPATH_W) 'sup-config/radius.c'; else $(CYGPATH_W) '$(srcdir)/sup-config/radius.c'; fi`
+
+ocserv_worker-tlslib.o: tlslib.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ocserv_worker-tlslib.o -MD -MP -MF $(DEPDIR)/ocserv_worker-tlslib.Tpo -c -o ocserv_worker-tlslib.o `test -f 'tlslib.c' || echo '$(srcdir)/'`tlslib.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/ocserv_worker-tlslib.Tpo $(DEPDIR)/ocserv_worker-tlslib.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tlslib.c' object='ocserv_worker-tlslib.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ocserv_worker-tlslib.o `test -f 'tlslib.c' || echo '$(srcdir)/'`tlslib.c
+
+ocserv_worker-tlslib.obj: tlslib.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ocserv_worker-tlslib.obj -MD -MP -MF $(DEPDIR)/ocserv_worker-tlslib.Tpo -c -o ocserv_worker-tlslib.obj `if test -f 'tlslib.c'; then $(CYGPATH_W) 'tlslib.c'; else $(CYGPATH_W) '$(srcdir)/tlslib.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/ocserv_worker-tlslib.Tpo $(DEPDIR)/ocserv_worker-tlslib.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tlslib.c' object='ocserv_worker-tlslib.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ocserv_worker-tlslib.obj `if test -f 'tlslib.c'; then $(CYGPATH_W) 'tlslib.c'; else $(CYGPATH_W) '$(srcdir)/tlslib.c'; fi`
+
+ocserv_worker-tun.o: tun.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ocserv_worker-tun.o -MD -MP -MF $(DEPDIR)/ocserv_worker-tun.Tpo -c -o ocserv_worker-tun.o `test -f 'tun.c' || echo '$(srcdir)/'`tun.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/ocserv_worker-tun.Tpo $(DEPDIR)/ocserv_worker-tun.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tun.c' object='ocserv_worker-tun.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ocserv_worker-tun.o `test -f 'tun.c' || echo '$(srcdir)/'`tun.c
+
+ocserv_worker-tun.obj: tun.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ocserv_worker-tun.obj -MD -MP -MF $(DEPDIR)/ocserv_worker-tun.Tpo -c -o ocserv_worker-tun.obj `if test -f 'tun.c'; then $(CYGPATH_W) 'tun.c'; else $(CYGPATH_W) '$(srcdir)/tun.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/ocserv_worker-tun.Tpo $(DEPDIR)/ocserv_worker-tun.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tun.c' object='ocserv_worker-tun.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ocserv_worker-tun.obj `if test -f 'tun.c'; then $(CYGPATH_W) 'tun.c'; else $(CYGPATH_W) '$(srcdir)/tun.c'; fi`
+
+ocserv_worker-valid-hostname.o: valid-hostname.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ocserv_worker-valid-hostname.o -MD -MP -MF $(DEPDIR)/ocserv_worker-valid-hostname.Tpo -c -o ocserv_worker-valid-hostname.o `test -f 'valid-hostname.c' || echo '$(srcdir)/'`valid-hostname.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/ocserv_worker-valid-hostname.Tpo $(DEPDIR)/ocserv_worker-valid-hostname.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='valid-hostname.c' object='ocserv_worker-valid-hostname.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ocserv_worker-valid-hostname.o `test -f 'valid-hostname.c' || echo '$(srcdir)/'`valid-hostname.c
+
+ocserv_worker-valid-hostname.obj: valid-hostname.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ocserv_worker-valid-hostname.obj -MD -MP -MF $(DEPDIR)/ocserv_worker-valid-hostname.Tpo -c -o ocserv_worker-valid-hostname.obj `if test -f 'valid-hostname.c'; then $(CYGPATH_W) 'valid-hostname.c'; else $(CYGPATH_W) '$(srcdir)/valid-hostname.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/ocserv_worker-valid-hostname.Tpo $(DEPDIR)/ocserv_worker-valid-hostname.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='valid-hostname.c' object='ocserv_worker-valid-hostname.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ocserv_worker-valid-hostname.obj `if test -f 'valid-hostname.c'; then $(CYGPATH_W) 'valid-hostname.c'; else $(CYGPATH_W) '$(srcdir)/valid-hostname.c'; fi`
+
+ocserv_worker-vasprintf.o: vasprintf.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ocserv_worker-vasprintf.o -MD -MP -MF $(DEPDIR)/ocserv_worker-vasprintf.Tpo -c -o ocserv_worker-vasprintf.o `test -f 'vasprintf.c' || echo '$(srcdir)/'`vasprintf.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/ocserv_worker-vasprintf.Tpo $(DEPDIR)/ocserv_worker-vasprintf.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='vasprintf.c' object='ocserv_worker-vasprintf.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ocserv_worker-vasprintf.o `test -f 'vasprintf.c' || echo '$(srcdir)/'`vasprintf.c
+
+ocserv_worker-vasprintf.obj: vasprintf.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ocserv_worker-vasprintf.obj -MD -MP -MF $(DEPDIR)/ocserv_worker-vasprintf.Tpo -c -o ocserv_worker-vasprintf.obj `if test -f 'vasprintf.c'; then $(CYGPATH_W) 'vasprintf.c'; else $(CYGPATH_W) '$(srcdir)/vasprintf.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/ocserv_worker-vasprintf.Tpo $(DEPDIR)/ocserv_worker-vasprintf.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='vasprintf.c' object='ocserv_worker-vasprintf.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ocserv_worker-vasprintf.obj `if test -f 'vasprintf.c'; then $(CYGPATH_W) 'vasprintf.c'; else $(CYGPATH_W) '$(srcdir)/vasprintf.c'; fi`
+
+ocserv_worker-lzs.o: lzs.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ocserv_worker-lzs.o -MD -MP -MF $(DEPDIR)/ocserv_worker-lzs.Tpo -c -o ocserv_worker-lzs.o `test -f 'lzs.c' || echo '$(srcdir)/'`lzs.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/ocserv_worker-lzs.Tpo $(DEPDIR)/ocserv_worker-lzs.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='lzs.c' object='ocserv_worker-lzs.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ocserv_worker-lzs.o `test -f 'lzs.c' || echo '$(srcdir)/'`lzs.c
+
+ocserv_worker-lzs.obj: lzs.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ocserv_worker-lzs.obj -MD -MP -MF $(DEPDIR)/ocserv_worker-lzs.Tpo -c -o ocserv_worker-lzs.obj `if test -f 'lzs.c'; then $(CYGPATH_W) 'lzs.c'; else $(CYGPATH_W) '$(srcdir)/lzs.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/ocserv_worker-lzs.Tpo $(DEPDIR)/ocserv_worker-lzs.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='lzs.c' object='ocserv_worker-lzs.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ocserv_worker-lzs.obj `if test -f 'lzs.c'; then $(CYGPATH_W) 'lzs.c'; else $(CYGPATH_W) '$(srcdir)/lzs.c'; fi`
+
+ocserv_worker-kkdcp_asn1_tab.o: kkdcp_asn1_tab.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ocserv_worker-kkdcp_asn1_tab.o -MD -MP -MF $(DEPDIR)/ocserv_worker-kkdcp_asn1_tab.Tpo -c -o ocserv_worker-kkdcp_asn1_tab.o `test -f 'kkdcp_asn1_tab.c' || echo '$(srcdir)/'`kkdcp_asn1_tab.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/ocserv_worker-kkdcp_asn1_tab.Tpo $(DEPDIR)/ocserv_worker-kkdcp_asn1_tab.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='kkdcp_asn1_tab.c' object='ocserv_worker-kkdcp_asn1_tab.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ocserv_worker-kkdcp_asn1_tab.o `test -f 'kkdcp_asn1_tab.c' || echo '$(srcdir)/'`kkdcp_asn1_tab.c
+
+ocserv_worker-kkdcp_asn1_tab.obj: kkdcp_asn1_tab.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ocserv_worker-kkdcp_asn1_tab.obj -MD -MP -MF $(DEPDIR)/ocserv_worker-kkdcp_asn1_tab.Tpo -c -o ocserv_worker-kkdcp_asn1_tab.obj `if test -f 'kkdcp_asn1_tab.c'; then $(CYGPATH_W) 'kkdcp_asn1_tab.c'; else $(CYGPATH_W) '$(srcdir)/kkdcp_asn1_tab.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/ocserv_worker-kkdcp_asn1_tab.Tpo $(DEPDIR)/ocserv_worker-kkdcp_asn1_tab.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='kkdcp_asn1_tab.c' object='ocserv_worker-kkdcp_asn1_tab.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ocserv_worker-kkdcp_asn1_tab.obj `if test -f 'kkdcp_asn1_tab.c'; then $(CYGPATH_W) 'kkdcp_asn1_tab.c'; else $(CYGPATH_W) '$(srcdir)/kkdcp_asn1_tab.c'; fi`
+
+ocserv_worker-html.o: html.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ocserv_worker-html.o -MD -MP -MF $(DEPDIR)/ocserv_worker-html.Tpo -c -o ocserv_worker-html.o `test -f 'html.c' || echo '$(srcdir)/'`html.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/ocserv_worker-html.Tpo $(DEPDIR)/ocserv_worker-html.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='html.c' object='ocserv_worker-html.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ocserv_worker-html.o `test -f 'html.c' || echo '$(srcdir)/'`html.c
+
+ocserv_worker-html.obj: html.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ocserv_worker-html.obj -MD -MP -MF $(DEPDIR)/ocserv_worker-html.Tpo -c -o ocserv_worker-html.obj `if test -f 'html.c'; then $(CYGPATH_W) 'html.c'; else $(CYGPATH_W) '$(srcdir)/html.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/ocserv_worker-html.Tpo $(DEPDIR)/ocserv_worker-html.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='html.c' object='ocserv_worker-html.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ocserv_worker-html.obj `if test -f 'html.c'; then $(CYGPATH_W) 'html.c'; else $(CYGPATH_W) '$(srcdir)/html.c'; fi`
+
+ocserv_worker-worker.o: worker.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ocserv_worker-worker.o -MD -MP -MF $(DEPDIR)/ocserv_worker-worker.Tpo -c -o ocserv_worker-worker.o `test -f 'worker.c' || echo '$(srcdir)/'`worker.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/ocserv_worker-worker.Tpo $(DEPDIR)/ocserv_worker-worker.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='worker.c' object='ocserv_worker-worker.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ocserv_worker-worker.o `test -f 'worker.c' || echo '$(srcdir)/'`worker.c
+
+ocserv_worker-worker.obj: worker.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ocserv_worker-worker.obj -MD -MP -MF $(DEPDIR)/ocserv_worker-worker.Tpo -c -o ocserv_worker-worker.obj `if test -f 'worker.c'; then $(CYGPATH_W) 'worker.c'; else $(CYGPATH_W) '$(srcdir)/worker.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/ocserv_worker-worker.Tpo $(DEPDIR)/ocserv_worker-worker.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='worker.c' object='ocserv_worker-worker.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ocserv_worker-worker.obj `if test -f 'worker.c'; then $(CYGPATH_W) 'worker.c'; else $(CYGPATH_W) '$(srcdir)/worker.c'; fi`
+
+ocserv_worker-worker-auth.o: worker-auth.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ocserv_worker-worker-auth.o -MD -MP -MF $(DEPDIR)/ocserv_worker-worker-auth.Tpo -c -o ocserv_worker-worker-auth.o `test -f 'worker-auth.c' || echo '$(srcdir)/'`worker-auth.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/ocserv_worker-worker-auth.Tpo $(DEPDIR)/ocserv_worker-worker-auth.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='worker-auth.c' object='ocserv_worker-worker-auth.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ocserv_worker-worker-auth.o `test -f 'worker-auth.c' || echo '$(srcdir)/'`worker-auth.c
+
+ocserv_worker-worker-auth.obj: worker-auth.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ocserv_worker-worker-auth.obj -MD -MP -MF $(DEPDIR)/ocserv_worker-worker-auth.Tpo -c -o ocserv_worker-worker-auth.obj `if test -f 'worker-auth.c'; then $(CYGPATH_W) 'worker-auth.c'; else $(CYGPATH_W) '$(srcdir)/worker-auth.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/ocserv_worker-worker-auth.Tpo $(DEPDIR)/ocserv_worker-worker-auth.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='worker-auth.c' object='ocserv_worker-worker-auth.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ocserv_worker-worker-auth.obj `if test -f 'worker-auth.c'; then $(CYGPATH_W) 'worker-auth.c'; else $(CYGPATH_W) '$(srcdir)/worker-auth.c'; fi`
+
+ocserv_worker-worker-bandwidth.o: worker-bandwidth.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ocserv_worker-worker-bandwidth.o -MD -MP -MF $(DEPDIR)/ocserv_worker-worker-bandwidth.Tpo -c -o ocserv_worker-worker-bandwidth.o `test -f 'worker-bandwidth.c' || echo '$(srcdir)/'`worker-bandwidth.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/ocserv_worker-worker-bandwidth.Tpo $(DEPDIR)/ocserv_worker-worker-bandwidth.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='worker-bandwidth.c' object='ocserv_worker-worker-bandwidth.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ocserv_worker-worker-bandwidth.o `test -f 'worker-bandwidth.c' || echo '$(srcdir)/'`worker-bandwidth.c
+
+ocserv_worker-worker-bandwidth.obj: worker-bandwidth.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ocserv_worker-worker-bandwidth.obj -MD -MP -MF $(DEPDIR)/ocserv_worker-worker-bandwidth.Tpo -c -o ocserv_worker-worker-bandwidth.obj `if test -f 'worker-bandwidth.c'; then $(CYGPATH_W) 'worker-bandwidth.c'; else $(CYGPATH_W) '$(srcdir)/worker-bandwidth.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/ocserv_worker-worker-bandwidth.Tpo $(DEPDIR)/ocserv_worker-worker-bandwidth.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='worker-bandwidth.c' object='ocserv_worker-worker-bandwidth.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ocserv_worker-worker-bandwidth.obj `if test -f 'worker-bandwidth.c'; then $(CYGPATH_W) 'worker-bandwidth.c'; else $(CYGPATH_W) '$(srcdir)/worker-bandwidth.c'; fi`
+
+ocserv_worker-worker-http.o: worker-http.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ocserv_worker-worker-http.o -MD -MP -MF $(DEPDIR)/ocserv_worker-worker-http.Tpo -c -o ocserv_worker-worker-http.o `test -f 'worker-http.c' || echo '$(srcdir)/'`worker-http.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/ocserv_worker-worker-http.Tpo $(DEPDIR)/ocserv_worker-worker-http.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='worker-http.c' object='ocserv_worker-worker-http.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ocserv_worker-worker-http.o `test -f 'worker-http.c' || echo '$(srcdir)/'`worker-http.c
+
+ocserv_worker-worker-http.obj: worker-http.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ocserv_worker-worker-http.obj -MD -MP -MF $(DEPDIR)/ocserv_worker-worker-http.Tpo -c -o ocserv_worker-worker-http.obj `if test -f 'worker-http.c'; then $(CYGPATH_W) 'worker-http.c'; else $(CYGPATH_W) '$(srcdir)/worker-http.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/ocserv_worker-worker-http.Tpo $(DEPDIR)/ocserv_worker-worker-http.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='worker-http.c' object='ocserv_worker-worker-http.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ocserv_worker-worker-http.obj `if test -f 'worker-http.c'; then $(CYGPATH_W) 'worker-http.c'; else $(CYGPATH_W) '$(srcdir)/worker-http.c'; fi`
+
+ocserv_worker-worker-http-handlers.o: worker-http-handlers.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ocserv_worker-worker-http-handlers.o -MD -MP -MF $(DEPDIR)/ocserv_worker-worker-http-handlers.Tpo -c -o ocserv_worker-worker-http-handlers.o `test -f 'worker-http-handlers.c' || echo '$(srcdir)/'`worker-http-handlers.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/ocserv_worker-worker-http-handlers.Tpo $(DEPDIR)/ocserv_worker-worker-http-handlers.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='worker-http-handlers.c' object='ocserv_worker-worker-http-handlers.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ocserv_worker-worker-http-handlers.o `test -f 'worker-http-handlers.c' || echo '$(srcdir)/'`worker-http-handlers.c
+
+ocserv_worker-worker-http-handlers.obj: worker-http-handlers.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ocserv_worker-worker-http-handlers.obj -MD -MP -MF $(DEPDIR)/ocserv_worker-worker-http-handlers.Tpo -c -o ocserv_worker-worker-http-handlers.obj `if test -f 'worker-http-handlers.c'; then $(CYGPATH_W) 'worker-http-handlers.c'; else $(CYGPATH_W) '$(srcdir)/worker-http-handlers.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/ocserv_worker-worker-http-handlers.Tpo $(DEPDIR)/ocserv_worker-worker-http-handlers.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='worker-http-handlers.c' object='ocserv_worker-worker-http-handlers.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ocserv_worker-worker-http-handlers.obj `if test -f 'worker-http-handlers.c'; then $(CYGPATH_W) 'worker-http-handlers.c'; else $(CYGPATH_W) '$(srcdir)/worker-http-handlers.c'; fi`
+
+ocserv_worker-worker-kkdcp.o: worker-kkdcp.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ocserv_worker-worker-kkdcp.o -MD -MP -MF $(DEPDIR)/ocserv_worker-worker-kkdcp.Tpo -c -o ocserv_worker-worker-kkdcp.o `test -f 'worker-kkdcp.c' || echo '$(srcdir)/'`worker-kkdcp.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/ocserv_worker-worker-kkdcp.Tpo $(DEPDIR)/ocserv_worker-worker-kkdcp.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='worker-kkdcp.c' object='ocserv_worker-worker-kkdcp.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ocserv_worker-worker-kkdcp.o `test -f 'worker-kkdcp.c' || echo '$(srcdir)/'`worker-kkdcp.c
+
+ocserv_worker-worker-kkdcp.obj: worker-kkdcp.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ocserv_worker-worker-kkdcp.obj -MD -MP -MF $(DEPDIR)/ocserv_worker-worker-kkdcp.Tpo -c -o ocserv_worker-worker-kkdcp.obj `if test -f 'worker-kkdcp.c'; then $(CYGPATH_W) 'worker-kkdcp.c'; else $(CYGPATH_W) '$(srcdir)/worker-kkdcp.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/ocserv_worker-worker-kkdcp.Tpo $(DEPDIR)/ocserv_worker-worker-kkdcp.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='worker-kkdcp.c' object='ocserv_worker-worker-kkdcp.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ocserv_worker-worker-kkdcp.obj `if test -f 'worker-kkdcp.c'; then $(CYGPATH_W) 'worker-kkdcp.c'; else $(CYGPATH_W) '$(srcdir)/worker-kkdcp.c'; fi`
+
+ocserv_worker-worker-misc.o: worker-misc.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ocserv_worker-worker-misc.o -MD -MP -MF $(DEPDIR)/ocserv_worker-worker-misc.Tpo -c -o ocserv_worker-worker-misc.o `test -f 'worker-misc.c' || echo '$(srcdir)/'`worker-misc.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/ocserv_worker-worker-misc.Tpo $(DEPDIR)/ocserv_worker-worker-misc.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='worker-misc.c' object='ocserv_worker-worker-misc.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ocserv_worker-worker-misc.o `test -f 'worker-misc.c' || echo '$(srcdir)/'`worker-misc.c
+
+ocserv_worker-worker-misc.obj: worker-misc.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ocserv_worker-worker-misc.obj -MD -MP -MF $(DEPDIR)/ocserv_worker-worker-misc.Tpo -c -o ocserv_worker-worker-misc.obj `if test -f 'worker-misc.c'; then $(CYGPATH_W) 'worker-misc.c'; else $(CYGPATH_W) '$(srcdir)/worker-misc.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/ocserv_worker-worker-misc.Tpo $(DEPDIR)/ocserv_worker-worker-misc.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='worker-misc.c' object='ocserv_worker-worker-misc.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ocserv_worker-worker-misc.obj `if test -f 'worker-misc.c'; then $(CYGPATH_W) 'worker-misc.c'; else $(CYGPATH_W) '$(srcdir)/worker-misc.c'; fi`
+
+ocserv_worker-worker-privs.o: worker-privs.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ocserv_worker-worker-privs.o -MD -MP -MF $(DEPDIR)/ocserv_worker-worker-privs.Tpo -c -o ocserv_worker-worker-privs.o `test -f 'worker-privs.c' || echo '$(srcdir)/'`worker-privs.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/ocserv_worker-worker-privs.Tpo $(DEPDIR)/ocserv_worker-worker-privs.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='worker-privs.c' object='ocserv_worker-worker-privs.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ocserv_worker-worker-privs.o `test -f 'worker-privs.c' || echo '$(srcdir)/'`worker-privs.c
+
+ocserv_worker-worker-privs.obj: worker-privs.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ocserv_worker-worker-privs.obj -MD -MP -MF $(DEPDIR)/ocserv_worker-worker-privs.Tpo -c -o ocserv_worker-worker-privs.obj `if test -f 'worker-privs.c'; then $(CYGPATH_W) 'worker-privs.c'; else $(CYGPATH_W) '$(srcdir)/worker-privs.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/ocserv_worker-worker-privs.Tpo $(DEPDIR)/ocserv_worker-worker-privs.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='worker-privs.c' object='ocserv_worker-worker-privs.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ocserv_worker-worker-privs.obj `if test -f 'worker-privs.c'; then $(CYGPATH_W) 'worker-privs.c'; else $(CYGPATH_W) '$(srcdir)/worker-privs.c'; fi`
+
+ocserv_worker-worker-proxyproto.o: worker-proxyproto.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ocserv_worker-worker-proxyproto.o -MD -MP -MF $(DEPDIR)/ocserv_worker-worker-proxyproto.Tpo -c -o ocserv_worker-worker-proxyproto.o `test -f 'worker-proxyproto.c' || echo '$(srcdir)/'`worker-proxyproto.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/ocserv_worker-worker-proxyproto.Tpo $(DEPDIR)/ocserv_worker-worker-proxyproto.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='worker-proxyproto.c' object='ocserv_worker-worker-proxyproto.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ocserv_worker-worker-proxyproto.o `test -f 'worker-proxyproto.c' || echo '$(srcdir)/'`worker-proxyproto.c
+
+ocserv_worker-worker-proxyproto.obj: worker-proxyproto.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ocserv_worker-worker-proxyproto.obj -MD -MP -MF $(DEPDIR)/ocserv_worker-worker-proxyproto.Tpo -c -o ocserv_worker-worker-proxyproto.obj `if test -f 'worker-proxyproto.c'; then $(CYGPATH_W) 'worker-proxyproto.c'; else $(CYGPATH_W) '$(srcdir)/worker-proxyproto.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/ocserv_worker-worker-proxyproto.Tpo $(DEPDIR)/ocserv_worker-worker-proxyproto.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='worker-proxyproto.c' object='ocserv_worker-worker-proxyproto.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ocserv_worker-worker-proxyproto.obj `if test -f 'worker-proxyproto.c'; then $(CYGPATH_W) 'worker-proxyproto.c'; else $(CYGPATH_W) '$(srcdir)/worker-proxyproto.c'; fi`
+
+ocserv_worker-worker-resume.o: worker-resume.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ocserv_worker-worker-resume.o -MD -MP -MF $(DEPDIR)/ocserv_worker-worker-resume.Tpo -c -o ocserv_worker-worker-resume.o `test -f 'worker-resume.c' || echo '$(srcdir)/'`worker-resume.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/ocserv_worker-worker-resume.Tpo $(DEPDIR)/ocserv_worker-worker-resume.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='worker-resume.c' object='ocserv_worker-worker-resume.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ocserv_worker-worker-resume.o `test -f 'worker-resume.c' || echo '$(srcdir)/'`worker-resume.c
+
+ocserv_worker-worker-resume.obj: worker-resume.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ocserv_worker-worker-resume.obj -MD -MP -MF $(DEPDIR)/ocserv_worker-worker-resume.Tpo -c -o ocserv_worker-worker-resume.obj `if test -f 'worker-resume.c'; then $(CYGPATH_W) 'worker-resume.c'; else $(CYGPATH_W) '$(srcdir)/worker-resume.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/ocserv_worker-worker-resume.Tpo $(DEPDIR)/ocserv_worker-worker-resume.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='worker-resume.c' object='ocserv_worker-worker-resume.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ocserv_worker-worker-resume.obj `if test -f 'worker-resume.c'; then $(CYGPATH_W) 'worker-resume.c'; else $(CYGPATH_W) '$(srcdir)/worker-resume.c'; fi`
+
+ocserv_worker-worker-vpn.o: worker-vpn.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ocserv_worker-worker-vpn.o -MD -MP -MF $(DEPDIR)/ocserv_worker-worker-vpn.Tpo -c -o ocserv_worker-worker-vpn.o `test -f 'worker-vpn.c' || echo '$(srcdir)/'`worker-vpn.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/ocserv_worker-worker-vpn.Tpo $(DEPDIR)/ocserv_worker-worker-vpn.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='worker-vpn.c' object='ocserv_worker-worker-vpn.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ocserv_worker-worker-vpn.o `test -f 'worker-vpn.c' || echo '$(srcdir)/'`worker-vpn.c
+
+ocserv_worker-worker-vpn.obj: worker-vpn.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ocserv_worker-worker-vpn.obj -MD -MP -MF $(DEPDIR)/ocserv_worker-worker-vpn.Tpo -c -o ocserv_worker-worker-vpn.obj `if test -f 'worker-vpn.c'; then $(CYGPATH_W) 'worker-vpn.c'; else $(CYGPATH_W) '$(srcdir)/worker-vpn.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/ocserv_worker-worker-vpn.Tpo $(DEPDIR)/ocserv_worker-worker-vpn.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='worker-vpn.c' object='ocserv_worker-worker-vpn.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ocserv_worker-worker-vpn.obj `if test -f 'worker-vpn.c'; then $(CYGPATH_W) 'worker-vpn.c'; else $(CYGPATH_W) '$(srcdir)/worker-vpn.c'; fi`
+
+ocserv_worker-worker-latency.o: worker-latency.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ocserv_worker-worker-latency.o -MD -MP -MF $(DEPDIR)/ocserv_worker-worker-latency.Tpo -c -o ocserv_worker-worker-latency.o `test -f 'worker-latency.c' || echo '$(srcdir)/'`worker-latency.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/ocserv_worker-worker-latency.Tpo $(DEPDIR)/ocserv_worker-worker-latency.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='worker-latency.c' object='ocserv_worker-worker-latency.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ocserv_worker-worker-latency.o `test -f 'worker-latency.c' || echo '$(srcdir)/'`worker-latency.c
+
+ocserv_worker-worker-latency.obj: worker-latency.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ocserv_worker-worker-latency.obj -MD -MP -MF $(DEPDIR)/ocserv_worker-worker-latency.Tpo -c -o ocserv_worker-worker-latency.obj `if test -f 'worker-latency.c'; then $(CYGPATH_W) 'worker-latency.c'; else $(CYGPATH_W) '$(srcdir)/worker-latency.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/ocserv_worker-worker-latency.Tpo $(DEPDIR)/ocserv_worker-worker-latency.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='worker-latency.c' object='ocserv_worker-worker-latency.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocserv_worker_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ocserv_worker-worker-latency.obj `if test -f 'worker-latency.c'; then $(CYGPATH_W) 'worker-latency.c'; else $(CYGPATH_W) '$(srcdir)/worker-latency.c'; fi`
+
 ID: $(am__tagged_files)
 	$(am__define_uniq_tagged_files); mkid -fID $$unique
 tags: tags-am
@@ -2267,11 +2934,11 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/config-ports.Po
 	-rm -f ./$(DEPDIR)/config.Po
 	-rm -f ./$(DEPDIR)/ctl.pb-c.Po
-	-rm -f ./$(DEPDIR)/html.Po
 	-rm -f ./$(DEPDIR)/icmp-ping.Po
 	-rm -f ./$(DEPDIR)/ip-lease.Po
 	-rm -f ./$(DEPDIR)/ip-util.Po
 	-rm -f ./$(DEPDIR)/ipc.pb-c.Po
+	-rm -f ./$(DEPDIR)/isolate.Po
 	-rm -f ./$(DEPDIR)/kkdcp_asn1_tab.Po
 	-rm -f ./$(DEPDIR)/log.Po
 	-rm -f ./$(DEPDIR)/lzs.Po
@@ -2283,6 +2950,36 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/main-user.Po
 	-rm -f ./$(DEPDIR)/main-worker-cmd.Po
 	-rm -f ./$(DEPDIR)/main.Po
+	-rm -f ./$(DEPDIR)/ocserv_worker-config-kkdcp.Po
+	-rm -f ./$(DEPDIR)/ocserv_worker-config-ports.Po
+	-rm -f ./$(DEPDIR)/ocserv_worker-config.Po
+	-rm -f ./$(DEPDIR)/ocserv_worker-html.Po
+	-rm -f ./$(DEPDIR)/ocserv_worker-icmp-ping.Po
+	-rm -f ./$(DEPDIR)/ocserv_worker-ip-lease.Po
+	-rm -f ./$(DEPDIR)/ocserv_worker-ip-util.Po
+	-rm -f ./$(DEPDIR)/ocserv_worker-isolate.Po
+	-rm -f ./$(DEPDIR)/ocserv_worker-kkdcp_asn1_tab.Po
+	-rm -f ./$(DEPDIR)/ocserv_worker-log.Po
+	-rm -f ./$(DEPDIR)/ocserv_worker-lzs.Po
+	-rm -f ./$(DEPDIR)/ocserv_worker-setproctitle.Po
+	-rm -f ./$(DEPDIR)/ocserv_worker-str.Po
+	-rm -f ./$(DEPDIR)/ocserv_worker-subconfig.Po
+	-rm -f ./$(DEPDIR)/ocserv_worker-tlslib.Po
+	-rm -f ./$(DEPDIR)/ocserv_worker-tun.Po
+	-rm -f ./$(DEPDIR)/ocserv_worker-valid-hostname.Po
+	-rm -f ./$(DEPDIR)/ocserv_worker-vasprintf.Po
+	-rm -f ./$(DEPDIR)/ocserv_worker-worker-auth.Po
+	-rm -f ./$(DEPDIR)/ocserv_worker-worker-bandwidth.Po
+	-rm -f ./$(DEPDIR)/ocserv_worker-worker-http-handlers.Po
+	-rm -f ./$(DEPDIR)/ocserv_worker-worker-http.Po
+	-rm -f ./$(DEPDIR)/ocserv_worker-worker-kkdcp.Po
+	-rm -f ./$(DEPDIR)/ocserv_worker-worker-latency.Po
+	-rm -f ./$(DEPDIR)/ocserv_worker-worker-misc.Po
+	-rm -f ./$(DEPDIR)/ocserv_worker-worker-privs.Po
+	-rm -f ./$(DEPDIR)/ocserv_worker-worker-proxyproto.Po
+	-rm -f ./$(DEPDIR)/ocserv_worker-worker-resume.Po
+	-rm -f ./$(DEPDIR)/ocserv_worker-worker-vpn.Po
+	-rm -f ./$(DEPDIR)/ocserv_worker-worker.Po
 	-rm -f ./$(DEPDIR)/proc-search.Po
 	-rm -f ./$(DEPDIR)/route-add.Po
 	-rm -f ./$(DEPDIR)/sec-mod-auth.Po
@@ -2298,20 +2995,11 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/tun.Po
 	-rm -f ./$(DEPDIR)/valid-hostname.Po
 	-rm -f ./$(DEPDIR)/vasprintf.Po
-	-rm -f ./$(DEPDIR)/worker-auth.Po
-	-rm -f ./$(DEPDIR)/worker-bandwidth.Po
-	-rm -f ./$(DEPDIR)/worker-http-handlers.Po
-	-rm -f ./$(DEPDIR)/worker-http.Po
-	-rm -f ./$(DEPDIR)/worker-kkdcp.Po
-	-rm -f ./$(DEPDIR)/worker-misc.Po
-	-rm -f ./$(DEPDIR)/worker-privs.Po
-	-rm -f ./$(DEPDIR)/worker-proxyproto.Po
-	-rm -f ./$(DEPDIR)/worker-resume.Po
-	-rm -f ./$(DEPDIR)/worker-vpn.Po
 	-rm -f acct/$(DEPDIR)/pam.Po
 	-rm -f acct/$(DEPDIR)/radius.Po
 	-rm -f auth/$(DEPDIR)/common.Po
 	-rm -f auth/$(DEPDIR)/gssapi.Po
+	-rm -f auth/$(DEPDIR)/openidconnect.Po
 	-rm -f auth/$(DEPDIR)/pam.Po
 	-rm -f auth/$(DEPDIR)/plain.Po
 	-rm -f auth/$(DEPDIR)/radius.Po
@@ -2319,12 +3007,18 @@ distclean: distclean-am
 	-rm -f ccan/htable/$(DEPDIR)/libccan_a-htable.Po
 	-rm -f ccan/list/$(DEPDIR)/libccan_a-list.Po
 	-rm -f ccan/talloc/$(DEPDIR)/libccan_a-talloc.Po
+	-rm -f common/$(DEPDIR)/hmac.Po
 	-rm -f common/$(DEPDIR)/libcommon_a-base64-helper.Po
 	-rm -f common/$(DEPDIR)/libcommon_a-cloexec.Po
 	-rm -f common/$(DEPDIR)/libcommon_a-common.Po
 	-rm -f common/$(DEPDIR)/libcommon_a-system.Po
+	-rm -f common/$(DEPDIR)/ocserv_worker-hmac.Po
+	-rm -f common/$(DEPDIR)/ocserv_worker-snapshot.Po
+	-rm -f common/$(DEPDIR)/snapshot.Po
 	-rm -f http-parser/$(DEPDIR)/http_parser.Po
+	-rm -f http-parser/$(DEPDIR)/ocserv_worker-http_parser.Po
 	-rm -f inih/$(DEPDIR)/ini.Po
+	-rm -f inih/$(DEPDIR)/ocserv_worker-ini.Po
 	-rm -f occtl/$(DEPDIR)/occtl-cache.Po
 	-rm -f occtl/$(DEPDIR)/occtl-geoip.Po
 	-rm -f occtl/$(DEPDIR)/occtl-hex.Po
@@ -2344,6 +3038,8 @@ distclean: distclean-am
 	-rm -f pcl/$(DEPDIR)/libpcl_a-pcl_version.Po
 	-rm -f protobuf/protobuf-c/$(DEPDIR)/libprotobuf_a-protobuf-c.Po
 	-rm -f sup-config/$(DEPDIR)/file.Po
+	-rm -f sup-config/$(DEPDIR)/ocserv_worker-file.Po
+	-rm -f sup-config/$(DEPDIR)/ocserv_worker-radius.Po
 	-rm -f sup-config/$(DEPDIR)/radius.Po
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
@@ -2396,11 +3092,11 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/config-ports.Po
 	-rm -f ./$(DEPDIR)/config.Po
 	-rm -f ./$(DEPDIR)/ctl.pb-c.Po
-	-rm -f ./$(DEPDIR)/html.Po
 	-rm -f ./$(DEPDIR)/icmp-ping.Po
 	-rm -f ./$(DEPDIR)/ip-lease.Po
 	-rm -f ./$(DEPDIR)/ip-util.Po
 	-rm -f ./$(DEPDIR)/ipc.pb-c.Po
+	-rm -f ./$(DEPDIR)/isolate.Po
 	-rm -f ./$(DEPDIR)/kkdcp_asn1_tab.Po
 	-rm -f ./$(DEPDIR)/log.Po
 	-rm -f ./$(DEPDIR)/lzs.Po
@@ -2412,6 +3108,36 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/main-user.Po
 	-rm -f ./$(DEPDIR)/main-worker-cmd.Po
 	-rm -f ./$(DEPDIR)/main.Po
+	-rm -f ./$(DEPDIR)/ocserv_worker-config-kkdcp.Po
+	-rm -f ./$(DEPDIR)/ocserv_worker-config-ports.Po
+	-rm -f ./$(DEPDIR)/ocserv_worker-config.Po
+	-rm -f ./$(DEPDIR)/ocserv_worker-html.Po
+	-rm -f ./$(DEPDIR)/ocserv_worker-icmp-ping.Po
+	-rm -f ./$(DEPDIR)/ocserv_worker-ip-lease.Po
+	-rm -f ./$(DEPDIR)/ocserv_worker-ip-util.Po
+	-rm -f ./$(DEPDIR)/ocserv_worker-isolate.Po
+	-rm -f ./$(DEPDIR)/ocserv_worker-kkdcp_asn1_tab.Po
+	-rm -f ./$(DEPDIR)/ocserv_worker-log.Po
+	-rm -f ./$(DEPDIR)/ocserv_worker-lzs.Po
+	-rm -f ./$(DEPDIR)/ocserv_worker-setproctitle.Po
+	-rm -f ./$(DEPDIR)/ocserv_worker-str.Po
+	-rm -f ./$(DEPDIR)/ocserv_worker-subconfig.Po
+	-rm -f ./$(DEPDIR)/ocserv_worker-tlslib.Po
+	-rm -f ./$(DEPDIR)/ocserv_worker-tun.Po
+	-rm -f ./$(DEPDIR)/ocserv_worker-valid-hostname.Po
+	-rm -f ./$(DEPDIR)/ocserv_worker-vasprintf.Po
+	-rm -f ./$(DEPDIR)/ocserv_worker-worker-auth.Po
+	-rm -f ./$(DEPDIR)/ocserv_worker-worker-bandwidth.Po
+	-rm -f ./$(DEPDIR)/ocserv_worker-worker-http-handlers.Po
+	-rm -f ./$(DEPDIR)/ocserv_worker-worker-http.Po
+	-rm -f ./$(DEPDIR)/ocserv_worker-worker-kkdcp.Po
+	-rm -f ./$(DEPDIR)/ocserv_worker-worker-latency.Po
+	-rm -f ./$(DEPDIR)/ocserv_worker-worker-misc.Po
+	-rm -f ./$(DEPDIR)/ocserv_worker-worker-privs.Po
+	-rm -f ./$(DEPDIR)/ocserv_worker-worker-proxyproto.Po
+	-rm -f ./$(DEPDIR)/ocserv_worker-worker-resume.Po
+	-rm -f ./$(DEPDIR)/ocserv_worker-worker-vpn.Po
+	-rm -f ./$(DEPDIR)/ocserv_worker-worker.Po
 	-rm -f ./$(DEPDIR)/proc-search.Po
 	-rm -f ./$(DEPDIR)/route-add.Po
 	-rm -f ./$(DEPDIR)/sec-mod-auth.Po
@@ -2427,20 +3153,11 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/tun.Po
 	-rm -f ./$(DEPDIR)/valid-hostname.Po
 	-rm -f ./$(DEPDIR)/vasprintf.Po
-	-rm -f ./$(DEPDIR)/worker-auth.Po
-	-rm -f ./$(DEPDIR)/worker-bandwidth.Po
-	-rm -f ./$(DEPDIR)/worker-http-handlers.Po
-	-rm -f ./$(DEPDIR)/worker-http.Po
-	-rm -f ./$(DEPDIR)/worker-kkdcp.Po
-	-rm -f ./$(DEPDIR)/worker-misc.Po
-	-rm -f ./$(DEPDIR)/worker-privs.Po
-	-rm -f ./$(DEPDIR)/worker-proxyproto.Po
-	-rm -f ./$(DEPDIR)/worker-resume.Po
-	-rm -f ./$(DEPDIR)/worker-vpn.Po
 	-rm -f acct/$(DEPDIR)/pam.Po
 	-rm -f acct/$(DEPDIR)/radius.Po
 	-rm -f auth/$(DEPDIR)/common.Po
 	-rm -f auth/$(DEPDIR)/gssapi.Po
+	-rm -f auth/$(DEPDIR)/openidconnect.Po
 	-rm -f auth/$(DEPDIR)/pam.Po
 	-rm -f auth/$(DEPDIR)/plain.Po
 	-rm -f auth/$(DEPDIR)/radius.Po
@@ -2448,12 +3165,18 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ccan/htable/$(DEPDIR)/libccan_a-htable.Po
 	-rm -f ccan/list/$(DEPDIR)/libccan_a-list.Po
 	-rm -f ccan/talloc/$(DEPDIR)/libccan_a-talloc.Po
+	-rm -f common/$(DEPDIR)/hmac.Po
 	-rm -f common/$(DEPDIR)/libcommon_a-base64-helper.Po
 	-rm -f common/$(DEPDIR)/libcommon_a-cloexec.Po
 	-rm -f common/$(DEPDIR)/libcommon_a-common.Po
 	-rm -f common/$(DEPDIR)/libcommon_a-system.Po
+	-rm -f common/$(DEPDIR)/ocserv_worker-hmac.Po
+	-rm -f common/$(DEPDIR)/ocserv_worker-snapshot.Po
+	-rm -f common/$(DEPDIR)/snapshot.Po
 	-rm -f http-parser/$(DEPDIR)/http_parser.Po
+	-rm -f http-parser/$(DEPDIR)/ocserv_worker-http_parser.Po
 	-rm -f inih/$(DEPDIR)/ini.Po
+	-rm -f inih/$(DEPDIR)/ocserv_worker-ini.Po
 	-rm -f occtl/$(DEPDIR)/occtl-cache.Po
 	-rm -f occtl/$(DEPDIR)/occtl-geoip.Po
 	-rm -f occtl/$(DEPDIR)/occtl-hex.Po
@@ -2473,6 +3196,8 @@ maintainer-clean: maintainer-clean-am
 	-rm -f pcl/$(DEPDIR)/libpcl_a-pcl_version.Po
 	-rm -f protobuf/protobuf-c/$(DEPDIR)/libprotobuf_a-protobuf-c.Po
 	-rm -f sup-config/$(DEPDIR)/file.Po
+	-rm -f sup-config/$(DEPDIR)/ocserv_worker-file.Po
+	-rm -f sup-config/$(DEPDIR)/ocserv_worker-radius.Po
 	-rm -f sup-config/$(DEPDIR)/radius.Po
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
