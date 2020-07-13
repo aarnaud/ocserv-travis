@@ -93,41 +93,49 @@ host_triplet = @host@
 @GNUTLS_WITH_NEW_CERTS_TRUE@am__append_4 = server-cert-ed25519 server-cert-rsa-pss
 
 #docker tests
-@ENABLE_DOCKER_TESTS_TRUE@@ENABLE_ROOT_TESTS_TRUE@am__append_5 = unix-test kerberos-test \
+@ENABLE_DOCKER_TESTS_TRUE@@ENABLE_ROOT_TESTS_TRUE@am__append_5 = unix-test \
 @ENABLE_DOCKER_TESTS_TRUE@@ENABLE_ROOT_TESTS_TRUE@	proxyproto-test proxyproto-v1-test proxyproto-unix-test \
 @ENABLE_DOCKER_TESTS_TRUE@@ENABLE_ROOT_TESTS_TRUE@	reload-info-test
 
 
 #other root requiring tests
-@ENABLE_ROOT_TESTS_TRUE@am__append_6 = test-iroute test-multi-cookie test-pass-script \
+@ENABLE_ROOT_TESTS_TRUE@am__append_6 = haproxy-connect test-iroute test-multi-cookie test-pass-script \
 @ENABLE_ROOT_TESTS_TRUE@	test-cookie-timeout test-cookie-timeout-2 test-explicit-ip \
 @ENABLE_ROOT_TESTS_TRUE@	test-cookie-invalidation test-user-config test-append-routes test-ban \
-@ENABLE_ROOT_TESTS_TRUE@	multiple-routes haproxy-connect radius-group radius-otp json test-udp-listen-host
+@ENABLE_ROOT_TESTS_TRUE@	multiple-routes json test-udp-listen-host test-max-same-1 test-script-multi-user \
+@ENABLE_ROOT_TESTS_TRUE@	apple-ios ipv6-iface
 
+@ENABLE_ROOT_TESTS_TRUE@@RADIUS_ENABLED_TRUE@am__append_7 = radius-group radius-otp
 
 #other tests requiring nuttcp for traffic
-@ENABLE_NUTTCP_TESTS_TRUE@@ENABLE_ROOT_TESTS_TRUE@am__append_7 = traffic lz4-compression lzs-compression \
+@ENABLE_NUTTCP_TESTS_TRUE@@ENABLE_ROOT_TESTS_TRUE@am__append_8 = traffic lz4-compression lzs-compression \
 @ENABLE_NUTTCP_TESTS_TRUE@@ENABLE_ROOT_TESTS_TRUE@	aes256-cipher aes128-cipher oc-aes256-gcm-cipher oc-aes128-gcm-cipher \
 @ENABLE_NUTTCP_TESTS_TRUE@@ENABLE_ROOT_TESTS_TRUE@	test-config-per-group ac-aes128-gcm-cipher ac-aes256-gcm-cipher \
-@ENABLE_NUTTCP_TESTS_TRUE@@ENABLE_ROOT_TESTS_TRUE@	no-dtls-cipher radius radius-config
+@ENABLE_NUTTCP_TESTS_TRUE@@ENABLE_ROOT_TESTS_TRUE@	no-dtls-cipher psk-negotiate psk-negotiate-match
 
-@HAVE_CWRAP_ALL_TRUE@@HAVE_CWRAP_TRUE@am__append_8 = test-vhost
-@HAVE_CWRAP_TRUE@am__append_9 = test-pass test-pass-cert test-cert test-group-pass \
+@ENABLE_ROOT_TESTS_TRUE@@RADIUS_ENABLED_TRUE@am__append_9 = radius radius-config
+@HAVE_CWRAP_ALL_TRUE@@HAVE_CWRAP_TRUE@am__append_10 = test-vhost
+@HAVE_CWRAP_TRUE@am__append_11 = test-pass test-pass-cert test-cert test-group-pass \
 @HAVE_CWRAP_TRUE@	test-pass-group-cert test-pass-group-cert-no-pass test-sighup \
 @HAVE_CWRAP_TRUE@	test-enc-key test-sighup-key-change test-get-cert test-san-cert \
 @HAVE_CWRAP_TRUE@	test-gssapi test-pass-opt-cert test-cert-opt-pass test-gssapi-opt-pass \
-@HAVE_CWRAP_TRUE@	test-gssapi-opt-cert haproxy-auth test-maintenance
+@HAVE_CWRAP_TRUE@	test-gssapi-opt-cert haproxy-auth test-maintenance \
+@HAVE_CWRAP_TRUE@	test-group-name no-route-default no-route-group
 
-@HAVE_CWRAP_PAM_TRUE@@HAVE_CWRAP_TRUE@am__append_10 = test-pam test-pam-noauth
-@HAVE_CWRAP_TRUE@@HAVE_LIBOATH_TRUE@am__append_11 = test-otp-cert test-otp
+@HAVE_CWRAP_PAM_TRUE@@HAVE_CWRAP_TRUE@am__append_12 = test-pam test-pam-noauth
+@ENABLE_KERBEROS_TESTS_TRUE@@HAVE_CWRAP_PAM_TRUE@@HAVE_CWRAP_TRUE@am__append_13 = kerberos
+@HAVE_CWRAP_TRUE@@HAVE_LIBOATH_TRUE@am__append_14 = test-otp-cert test-otp
 check_PROGRAMS = str-test$(EXEEXT) str-test2$(EXEEXT) \
 	ipv4-prefix$(EXEEXT) ipv6-prefix$(EXEEXT) \
 	kkdcp-parsing$(EXEEXT) json-escape$(EXEEXT) ban-ips$(EXEEXT) \
 	port-parsing$(EXEEXT) human_addr$(EXEEXT) \
 	valid-hostname$(EXEEXT) url-escape$(EXEEXT) \
-	html-escape$(EXEEXT) cstp-recv$(EXEEXT) proxyproto-v1$(EXEEXT)
-TESTS = $(dist_check_SCRIPTS) $(check_PROGRAMS) $(am__EXEEXT_1)
-XFAIL_TESTS = $(am__EXEEXT_1)
+	html-escape$(EXEEXT) cstp-recv$(EXEEXT) proxyproto-v1$(EXEEXT) \
+	$(am__EXEEXT_1)
+@ENABLE_OIDC_AUTH_TESTS_TRUE@am__append_15 = gen_oidc_test_data
+@ENABLE_OIDC_AUTH_TESTS_TRUE@am__append_16 = test-oidc
+TESTS = $(check_PROGRAMS) $(dist_check_SCRIPTS) $(am__EXEEXT_2)
+XFAIL_TESTS = $(am__EXEEXT_2)
 subdir = tests
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/gl/m4/00gnulib.m4 \
@@ -176,6 +184,8 @@ mkinstalldirs = $(install_sh) -d
 CONFIG_HEADER = $(top_builddir)/config.h
 CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
+@ENABLE_OIDC_AUTH_TESTS_TRUE@am__EXEEXT_1 =  \
+@ENABLE_OIDC_AUTH_TESTS_TRUE@	gen_oidc_test_data$(EXEEXT)
 am_ban_ips_OBJECTS = ban_ips-ban-ips.$(OBJEXT)
 ban_ips_OBJECTS = $(am_ban_ips_OBJECTS)
 am__DEPENDENCIES_1 =
@@ -187,6 +197,11 @@ cstp_recv_OBJECTS = $(am_cstp_recv_OBJECTS)
 cstp_recv_DEPENDENCIES = $(am__DEPENDENCIES_2) $(am__DEPENDENCIES_1)
 cstp_recv_LINK = $(CCLD) $(cstp_recv_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
+am_gen_oidc_test_data_OBJECTS =  \
+	gen_oidc_test_data-generate_oidc_test_data.$(OBJEXT)
+gen_oidc_test_data_OBJECTS = $(am_gen_oidc_test_data_OBJECTS)
+gen_oidc_test_data_DEPENDENCIES = $(am__DEPENDENCIES_2) \
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
 am_html_escape_OBJECTS = html-escape.$(OBJEXT)
 html_escape_OBJECTS = $(am_html_escape_OBJECTS)
 html_escape_DEPENDENCIES = $(am__DEPENDENCIES_2)
@@ -226,24 +241,26 @@ valid_hostname_SOURCES = valid-hostname.c
 valid_hostname_OBJECTS = valid-hostname.$(OBJEXT)
 valid_hostname_DEPENDENCIES = $(am__DEPENDENCIES_2)
 am__dist_check_SCRIPTS_DIST = ocpasswd-test server-cert-ed25519 \
-	server-cert-rsa-pss unix-test kerberos-test proxyproto-test \
+	server-cert-rsa-pss unix-test proxyproto-test \
 	proxyproto-v1-test proxyproto-unix-test reload-info-test \
-	test-iroute test-multi-cookie test-pass-script \
+	haproxy-connect test-iroute test-multi-cookie test-pass-script \
 	test-cookie-timeout test-cookie-timeout-2 test-explicit-ip \
 	test-cookie-invalidation test-user-config test-append-routes \
-	test-ban multiple-routes haproxy-connect radius-group \
-	radius-otp json test-udp-listen-host traffic lz4-compression \
+	test-ban multiple-routes json test-udp-listen-host \
+	test-max-same-1 test-script-multi-user apple-ios ipv6-iface \
+	radius-group radius-otp traffic lz4-compression \
 	lzs-compression aes256-cipher aes128-cipher \
 	oc-aes256-gcm-cipher oc-aes128-gcm-cipher \
 	test-config-per-group ac-aes128-gcm-cipher \
-	ac-aes256-gcm-cipher no-dtls-cipher radius radius-config \
-	test-vhost test-pass test-pass-cert test-cert test-group-pass \
-	test-pass-group-cert test-pass-group-cert-no-pass test-sighup \
-	test-enc-key test-sighup-key-change test-get-cert \
-	test-san-cert test-gssapi test-pass-opt-cert \
-	test-cert-opt-pass test-gssapi-opt-pass test-gssapi-opt-cert \
-	haproxy-auth test-maintenance test-pam test-pam-noauth \
-	test-otp-cert test-otp
+	ac-aes256-gcm-cipher no-dtls-cipher psk-negotiate \
+	psk-negotiate-match radius radius-config test-vhost test-pass \
+	test-pass-cert test-cert test-group-pass test-pass-group-cert \
+	test-pass-group-cert-no-pass test-sighup test-enc-key \
+	test-sighup-key-change test-get-cert test-san-cert test-gssapi \
+	test-pass-opt-cert test-cert-opt-pass test-gssapi-opt-pass \
+	test-gssapi-opt-cert haproxy-auth test-maintenance \
+	test-group-name no-route-default no-route-group test-pam \
+	test-pam-noauth kerberos test-otp-cert test-otp test-oidc
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -260,7 +277,9 @@ DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)
 depcomp = $(SHELL) $(top_srcdir)/build-aux/depcomp
 am__maybe_remake_depfiles = depfiles
 am__depfiles_remade = ./$(DEPDIR)/ban_ips-ban-ips.Po \
-	./$(DEPDIR)/cstp_recv-cstp-recv.Po ./$(DEPDIR)/html-escape.Po \
+	./$(DEPDIR)/cstp_recv-cstp-recv.Po \
+	./$(DEPDIR)/gen_oidc_test_data-generate_oidc_test_data.Po \
+	./$(DEPDIR)/html-escape.Po \
 	./$(DEPDIR)/human_addr-human_addr.Po \
 	./$(DEPDIR)/ipv4-prefix.Po ./$(DEPDIR)/ipv6-prefix.Po \
 	./$(DEPDIR)/json-escape.Po ./$(DEPDIR)/kkdcp-parsing.Po \
@@ -285,17 +304,19 @@ am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
 SOURCES = $(ban_ips_SOURCES) $(cstp_recv_SOURCES) \
-	$(html_escape_SOURCES) $(human_addr_SOURCES) \
-	$(ipv4_prefix_SOURCES) $(ipv6_prefix_SOURCES) \
-	$(json_escape_SOURCES) $(kkdcp_parsing_SOURCES) port-parsing.c \
-	proxyproto-v1.c $(str_test_SOURCES) $(str_test2_SOURCES) \
-	$(url_escape_SOURCES) valid-hostname.c
+	$(gen_oidc_test_data_SOURCES) $(html_escape_SOURCES) \
+	$(human_addr_SOURCES) $(ipv4_prefix_SOURCES) \
+	$(ipv6_prefix_SOURCES) $(json_escape_SOURCES) \
+	$(kkdcp_parsing_SOURCES) port-parsing.c proxyproto-v1.c \
+	$(str_test_SOURCES) $(str_test2_SOURCES) $(url_escape_SOURCES) \
+	valid-hostname.c
 DIST_SOURCES = $(ban_ips_SOURCES) $(cstp_recv_SOURCES) \
-	$(html_escape_SOURCES) $(human_addr_SOURCES) \
-	$(ipv4_prefix_SOURCES) $(ipv6_prefix_SOURCES) \
-	$(json_escape_SOURCES) $(kkdcp_parsing_SOURCES) port-parsing.c \
-	proxyproto-v1.c $(str_test_SOURCES) $(str_test2_SOURCES) \
-	$(url_escape_SOURCES) valid-hostname.c
+	$(gen_oidc_test_data_SOURCES) $(html_escape_SOURCES) \
+	$(human_addr_SOURCES) $(ipv4_prefix_SOURCES) \
+	$(ipv6_prefix_SOURCES) $(json_escape_SOURCES) \
+	$(kkdcp_parsing_SOURCES) port-parsing.c proxyproto-v1.c \
+	$(str_test_SOURCES) $(str_test2_SOURCES) $(url_escape_SOURCES) \
+	valid-hostname.c
 RECURSIVE_TARGETS = all-recursive check-recursive cscopelist-recursive \
 	ctags-recursive dvi-recursive html-recursive info-recursive \
 	install-data-recursive install-dvi-recursive \
@@ -518,7 +539,7 @@ am__set_TESTS_bases = \
   bases=`for i in $$bases; do echo $$i; done | sed 's/\.log$$//'`; \
   bases=`echo $$bases`
 RECHECK_LOGS = $(TEST_LOGS)
-am__EXEEXT_1 =
+am__EXEEXT_2 =
 TEST_SUITE_LOG = test-suite.log
 TEST_EXTENSIONS = @EXEEXT@ .test
 LOG_DRIVER = $(SHELL) $(top_srcdir)/build-aux/test-driver
@@ -587,6 +608,8 @@ BITSIZEOF_WINT_T = @BITSIZEOF_WINT_T@
 CC = @CC@
 CCDEPMODE = @CCDEPMODE@
 CFLAGS = @CFLAGS@
+CJOSE_CFLAGS = @CJOSE_CFLAGS@
+CJOSE_LIBS = @CJOSE_LIBS@
 CODE_COVERAGE_CFLAGS = @CODE_COVERAGE_CFLAGS@
 CODE_COVERAGE_CPPFLAGS = @CODE_COVERAGE_CPPFLAGS@
 CODE_COVERAGE_CXXFLAGS = @CODE_COVERAGE_CXXFLAGS@
@@ -882,6 +905,7 @@ HAVE_LCHOWN = @HAVE_LCHOWN@
 HAVE_LIBC = @HAVE_LIBC@
 HAVE_LIBCRYPT = @HAVE_LIBCRYPT@
 HAVE_LIBEV = @HAVE_LIBEV@
+HAVE_LIBM = @HAVE_LIBM@
 HAVE_LIBPROTOBUF_C = @HAVE_LIBPROTOBUF_C@
 HAVE_LIBREADLINE = @HAVE_LIBREADLINE@
 HAVE_LIBSECCOMP = @HAVE_LIBSECCOMP@
@@ -983,11 +1007,15 @@ INSTALL_DATA = @INSTALL_DATA@
 INSTALL_PROGRAM = @INSTALL_PROGRAM@
 INSTALL_SCRIPT = @INSTALL_SCRIPT@
 INSTALL_STRIP_PROGRAM = @INSTALL_STRIP_PROGRAM@
+JANSSON_CFLAGS = @JANSSON_CFLAGS@
+JANSSON_LIBS = @JANSSON_LIBS@
 LCOV = @LCOV@
 LDFLAGS = @LDFLAGS@
 LIBC = @LIBC@
 LIBCRYPT = @LIBCRYPT@
 LIBCRYPT_PREFIX = @LIBCRYPT_PREFIX@
+LIBCURL_CFLAGS = @LIBCURL_CFLAGS@
+LIBCURL_LIBS = @LIBCURL_LIBS@
 LIBC_PREFIX = @LIBC_PREFIX@
 LIBEV = @LIBEV@
 LIBEV_LIBS = @LIBEV_LIBS@
@@ -1000,6 +1028,8 @@ LIBKRB5_CFLAGS = @LIBKRB5_CFLAGS@
 LIBKRB5_LIBS = @LIBKRB5_LIBS@
 LIBLZ4_CFLAGS = @LIBLZ4_CFLAGS@
 LIBLZ4_LIBS = @LIBLZ4_LIBS@
+LIBM = @LIBM@
+LIBM_PREFIX = @LIBM_PREFIX@
 LIBNETTLE_CFLAGS = @LIBNETTLE_CFLAGS@
 LIBNETTLE_LIBS = @LIBNETTLE_LIBS@
 LIBNL3_CFLAGS = @LIBNL3_CFLAGS@
@@ -1033,6 +1063,7 @@ LIBWRAP_PREFIX = @LIBWRAP_PREFIX@
 LTLIBC = @LTLIBC@
 LTLIBCRYPT = @LTLIBCRYPT@
 LTLIBEV = @LTLIBEV@
+LTLIBM = @LTLIBM@
 LTLIBOBJS = @LTLIBOBJS@
 LTLIBPROTOBUF_C = @LTLIBPROTOBUF_C@
 LTLIBREADLINE = @LTLIBREADLINE@
@@ -1330,13 +1361,21 @@ EXTRA_DIST = certs/ca-key.pem certs/ca.pem ns.sh common.sh certs/server-cert.pem
 	data/raddb/clients.conf data/raddb/radiusd.conf data/raddb/users \
 	data/radiusclient/dictionary data/radiusclient/radiusclient.conf \
 	data/radiusclient/servers data/radius.config data/radius-group.config data/radius-otp.config \
-	data/test-udp-listen-host.config
+	data/test-udp-listen-host.config data/pam-kerberos/passdb.templ \
+	data/test-max-same-1.config data/test-script-multi-user.config \
+	sleep-connect-script data/test-psk-negotiate.config data/test-group-name.config \
+	connect-ios-script data/apple-ios.config certs/kerberos-cert.pem \
+	data/kdc.conf data/krb5.conf data/k5.KERBEROS.TEST data/kadm5.acl \
+	data/ipv6-iface.config data/no-route-default.config data/no-route-group.config \
+	data/group-config/group1
 
-SUBDIRS = docker-ocserv docker-kerberos
+SUBDIRS = docker-ocserv
 xfail_scripts = 
 dist_check_SCRIPTS = ocpasswd-test $(am__append_4) $(am__append_5) \
 	$(am__append_6) $(am__append_7) $(am__append_8) \
-	$(am__append_9) $(am__append_10) $(am__append_11)
+	$(am__append_9) $(am__append_10) $(am__append_11) \
+	$(am__append_12) $(am__append_13) $(am__append_14) \
+	$(am__append_16)
 LDADD = ../gl/libgnu.a $(LIBTALLOC_LIBS) ../src/libccan.a $(CODE_COVERAGE_LDFLAGS)
 kkdcp_parsing_SOURCES = kkdcp-parsing.c
 kkdcp_parsing_LDADD = $(LDADD)
@@ -1360,11 +1399,14 @@ str_test2_SOURCES = str-test2.c
 str_test2_LDADD = $(LDADD)
 ipv6_prefix_SOURCES = ipv6-prefix.c
 ipv6_prefix_LDADD = $(LDADD)
-human_addr_CPPFLAGS = $(AM_CPPFLAGS) 
+human_addr_CPPFLAGS = $(AM_CPPFLAGS)
 human_addr_SOURCES = human_addr.c
 human_addr_LDADD = $(LDADD)
 valid_hostname_LDADD = $(LDADD)
 port_parsing_LDADD = $(LDADD)
+gen_oidc_test_data_CPPFLAGS = $(AM_CPPFLAGS) 
+gen_oidc_test_data_SOURCES = generate_oidc_test_data.c
+gen_oidc_test_data_LDADD = $(LDADD) $(CJOSE_LIBS) $(JANSSON_LIBS)
 TESTS_ENVIRONMENT = srcdir="$(srcdir)" \
 	top_builddir="$(top_builddir)"
 
@@ -1413,6 +1455,10 @@ ban-ips$(EXEEXT): $(ban_ips_OBJECTS) $(ban_ips_DEPENDENCIES) $(EXTRA_ban_ips_DEP
 cstp-recv$(EXEEXT): $(cstp_recv_OBJECTS) $(cstp_recv_DEPENDENCIES) $(EXTRA_cstp_recv_DEPENDENCIES) 
 	@rm -f cstp-recv$(EXEEXT)
 	$(AM_V_CCLD)$(cstp_recv_LINK) $(cstp_recv_OBJECTS) $(cstp_recv_LDADD) $(LIBS)
+
+gen_oidc_test_data$(EXEEXT): $(gen_oidc_test_data_OBJECTS) $(gen_oidc_test_data_DEPENDENCIES) $(EXTRA_gen_oidc_test_data_DEPENDENCIES) 
+	@rm -f gen_oidc_test_data$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(gen_oidc_test_data_OBJECTS) $(gen_oidc_test_data_LDADD) $(LIBS)
 
 html-escape$(EXEEXT): $(html_escape_OBJECTS) $(html_escape_DEPENDENCIES) $(EXTRA_html_escape_DEPENDENCIES) 
 	@rm -f html-escape$(EXEEXT)
@@ -1470,6 +1516,7 @@ distclean-compile:
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ban_ips-ban-ips.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cstp_recv-cstp-recv.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gen_oidc_test_data-generate_oidc_test_data.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/html-escape.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/human_addr-human_addr.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ipv4-prefix.Po@am__quote@ # am--include-marker
@@ -1532,6 +1579,20 @@ cstp_recv-cstp-recv.obj: cstp-recv.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='cstp-recv.c' object='cstp_recv-cstp-recv.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(cstp_recv_CFLAGS) $(CFLAGS) -c -o cstp_recv-cstp-recv.obj `if test -f 'cstp-recv.c'; then $(CYGPATH_W) 'cstp-recv.c'; else $(CYGPATH_W) '$(srcdir)/cstp-recv.c'; fi`
+
+gen_oidc_test_data-generate_oidc_test_data.o: generate_oidc_test_data.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(gen_oidc_test_data_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT gen_oidc_test_data-generate_oidc_test_data.o -MD -MP -MF $(DEPDIR)/gen_oidc_test_data-generate_oidc_test_data.Tpo -c -o gen_oidc_test_data-generate_oidc_test_data.o `test -f 'generate_oidc_test_data.c' || echo '$(srcdir)/'`generate_oidc_test_data.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/gen_oidc_test_data-generate_oidc_test_data.Tpo $(DEPDIR)/gen_oidc_test_data-generate_oidc_test_data.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='generate_oidc_test_data.c' object='gen_oidc_test_data-generate_oidc_test_data.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(gen_oidc_test_data_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o gen_oidc_test_data-generate_oidc_test_data.o `test -f 'generate_oidc_test_data.c' || echo '$(srcdir)/'`generate_oidc_test_data.c
+
+gen_oidc_test_data-generate_oidc_test_data.obj: generate_oidc_test_data.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(gen_oidc_test_data_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT gen_oidc_test_data-generate_oidc_test_data.obj -MD -MP -MF $(DEPDIR)/gen_oidc_test_data-generate_oidc_test_data.Tpo -c -o gen_oidc_test_data-generate_oidc_test_data.obj `if test -f 'generate_oidc_test_data.c'; then $(CYGPATH_W) 'generate_oidc_test_data.c'; else $(CYGPATH_W) '$(srcdir)/generate_oidc_test_data.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/gen_oidc_test_data-generate_oidc_test_data.Tpo $(DEPDIR)/gen_oidc_test_data-generate_oidc_test_data.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='generate_oidc_test_data.c' object='gen_oidc_test_data-generate_oidc_test_data.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(gen_oidc_test_data_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o gen_oidc_test_data-generate_oidc_test_data.obj `if test -f 'generate_oidc_test_data.c'; then $(CYGPATH_W) 'generate_oidc_test_data.c'; else $(CYGPATH_W) '$(srcdir)/generate_oidc_test_data.c'; fi`
 
 human_addr-human_addr.o: human_addr.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(human_addr_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT human_addr-human_addr.o -MD -MP -MF $(DEPDIR)/human_addr-human_addr.Tpo -c -o human_addr-human_addr.o `test -f 'human_addr.c' || echo '$(srcdir)/'`human_addr.c
@@ -1787,6 +1848,111 @@ recheck: all $(check_PROGRAMS) $(dist_check_SCRIPTS)
 	        am__force_recheck=am--force-recheck \
 	        TEST_LOGS="$$log_list"; \
 	exit $$?
+str-test.log: str-test$(EXEEXT)
+	@p='str-test$(EXEEXT)'; \
+	b='str-test'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+str-test2.log: str-test2$(EXEEXT)
+	@p='str-test2$(EXEEXT)'; \
+	b='str-test2'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+ipv4-prefix.log: ipv4-prefix$(EXEEXT)
+	@p='ipv4-prefix$(EXEEXT)'; \
+	b='ipv4-prefix'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+ipv6-prefix.log: ipv6-prefix$(EXEEXT)
+	@p='ipv6-prefix$(EXEEXT)'; \
+	b='ipv6-prefix'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+kkdcp-parsing.log: kkdcp-parsing$(EXEEXT)
+	@p='kkdcp-parsing$(EXEEXT)'; \
+	b='kkdcp-parsing'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+json-escape.log: json-escape$(EXEEXT)
+	@p='json-escape$(EXEEXT)'; \
+	b='json-escape'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+ban-ips.log: ban-ips$(EXEEXT)
+	@p='ban-ips$(EXEEXT)'; \
+	b='ban-ips'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+port-parsing.log: port-parsing$(EXEEXT)
+	@p='port-parsing$(EXEEXT)'; \
+	b='port-parsing'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+human_addr.log: human_addr$(EXEEXT)
+	@p='human_addr$(EXEEXT)'; \
+	b='human_addr'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+valid-hostname.log: valid-hostname$(EXEEXT)
+	@p='valid-hostname$(EXEEXT)'; \
+	b='valid-hostname'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+url-escape.log: url-escape$(EXEEXT)
+	@p='url-escape$(EXEEXT)'; \
+	b='url-escape'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+html-escape.log: html-escape$(EXEEXT)
+	@p='html-escape$(EXEEXT)'; \
+	b='html-escape'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+cstp-recv.log: cstp-recv$(EXEEXT)
+	@p='cstp-recv$(EXEEXT)'; \
+	b='cstp-recv'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+proxyproto-v1.log: proxyproto-v1$(EXEEXT)
+	@p='proxyproto-v1$(EXEEXT)'; \
+	b='proxyproto-v1'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+gen_oidc_test_data.log: gen_oidc_test_data$(EXEEXT)
+	@p='gen_oidc_test_data$(EXEEXT)'; \
+	b='gen_oidc_test_data'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
 ocpasswd-test.log: ocpasswd-test
 	@p='ocpasswd-test'; \
 	b='ocpasswd-test'; \
@@ -1815,13 +1981,6 @@ unix-test.log: unix-test
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
-kerberos-test.log: kerberos-test
-	@p='kerberos-test'; \
-	b='kerberos-test'; \
-	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
-	--log-file $$b.log --trs-file $$b.trs \
-	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
-	"$$tst" $(AM_TESTS_FD_REDIRECT)
 proxyproto-test.log: proxyproto-test
 	@p='proxyproto-test'; \
 	b='proxyproto-test'; \
@@ -1846,6 +2005,13 @@ proxyproto-unix-test.log: proxyproto-unix-test
 reload-info-test.log: reload-info-test
 	@p='reload-info-test'; \
 	b='reload-info-test'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+haproxy-connect.log: haproxy-connect
+	@p='haproxy-connect'; \
+	b='haproxy-connect'; \
 	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
@@ -1927,9 +2093,44 @@ multiple-routes.log: multiple-routes
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
-haproxy-connect.log: haproxy-connect
-	@p='haproxy-connect'; \
-	b='haproxy-connect'; \
+json.log: json
+	@p='json'; \
+	b='json'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+test-udp-listen-host.log: test-udp-listen-host
+	@p='test-udp-listen-host'; \
+	b='test-udp-listen-host'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+test-max-same-1.log: test-max-same-1
+	@p='test-max-same-1'; \
+	b='test-max-same-1'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+test-script-multi-user.log: test-script-multi-user
+	@p='test-script-multi-user'; \
+	b='test-script-multi-user'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+apple-ios.log: apple-ios
+	@p='apple-ios'; \
+	b='apple-ios'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+ipv6-iface.log: ipv6-iface
+	@p='ipv6-iface'; \
+	b='ipv6-iface'; \
 	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
@@ -1944,20 +2145,6 @@ radius-group.log: radius-group
 radius-otp.log: radius-otp
 	@p='radius-otp'; \
 	b='radius-otp'; \
-	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
-	--log-file $$b.log --trs-file $$b.trs \
-	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
-	"$$tst" $(AM_TESTS_FD_REDIRECT)
-json.log: json
-	@p='json'; \
-	b='json'; \
-	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
-	--log-file $$b.log --trs-file $$b.trs \
-	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
-	"$$tst" $(AM_TESTS_FD_REDIRECT)
-test-udp-listen-host.log: test-udp-listen-host
-	@p='test-udp-listen-host'; \
-	b='test-udp-listen-host'; \
 	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
@@ -2035,6 +2222,20 @@ ac-aes256-gcm-cipher.log: ac-aes256-gcm-cipher
 no-dtls-cipher.log: no-dtls-cipher
 	@p='no-dtls-cipher'; \
 	b='no-dtls-cipher'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+psk-negotiate.log: psk-negotiate
+	@p='psk-negotiate'; \
+	b='psk-negotiate'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+psk-negotiate-match.log: psk-negotiate-match
+	@p='psk-negotiate-match'; \
+	b='psk-negotiate-match'; \
 	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
@@ -2186,6 +2387,27 @@ test-maintenance.log: test-maintenance
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
+test-group-name.log: test-group-name
+	@p='test-group-name'; \
+	b='test-group-name'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+no-route-default.log: no-route-default
+	@p='no-route-default'; \
+	b='no-route-default'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+no-route-group.log: no-route-group
+	@p='no-route-group'; \
+	b='no-route-group'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
 test-pam.log: test-pam
 	@p='test-pam'; \
 	b='test-pam'; \
@@ -2196,6 +2418,13 @@ test-pam.log: test-pam
 test-pam-noauth.log: test-pam-noauth
 	@p='test-pam-noauth'; \
 	b='test-pam-noauth'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+kerberos.log: kerberos
+	@p='kerberos'; \
+	b='kerberos'; \
 	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
@@ -2214,100 +2443,9 @@ test-otp.log: test-otp
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
-str-test.log: str-test$(EXEEXT)
-	@p='str-test$(EXEEXT)'; \
-	b='str-test'; \
-	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
-	--log-file $$b.log --trs-file $$b.trs \
-	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
-	"$$tst" $(AM_TESTS_FD_REDIRECT)
-str-test2.log: str-test2$(EXEEXT)
-	@p='str-test2$(EXEEXT)'; \
-	b='str-test2'; \
-	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
-	--log-file $$b.log --trs-file $$b.trs \
-	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
-	"$$tst" $(AM_TESTS_FD_REDIRECT)
-ipv4-prefix.log: ipv4-prefix$(EXEEXT)
-	@p='ipv4-prefix$(EXEEXT)'; \
-	b='ipv4-prefix'; \
-	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
-	--log-file $$b.log --trs-file $$b.trs \
-	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
-	"$$tst" $(AM_TESTS_FD_REDIRECT)
-ipv6-prefix.log: ipv6-prefix$(EXEEXT)
-	@p='ipv6-prefix$(EXEEXT)'; \
-	b='ipv6-prefix'; \
-	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
-	--log-file $$b.log --trs-file $$b.trs \
-	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
-	"$$tst" $(AM_TESTS_FD_REDIRECT)
-kkdcp-parsing.log: kkdcp-parsing$(EXEEXT)
-	@p='kkdcp-parsing$(EXEEXT)'; \
-	b='kkdcp-parsing'; \
-	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
-	--log-file $$b.log --trs-file $$b.trs \
-	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
-	"$$tst" $(AM_TESTS_FD_REDIRECT)
-json-escape.log: json-escape$(EXEEXT)
-	@p='json-escape$(EXEEXT)'; \
-	b='json-escape'; \
-	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
-	--log-file $$b.log --trs-file $$b.trs \
-	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
-	"$$tst" $(AM_TESTS_FD_REDIRECT)
-ban-ips.log: ban-ips$(EXEEXT)
-	@p='ban-ips$(EXEEXT)'; \
-	b='ban-ips'; \
-	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
-	--log-file $$b.log --trs-file $$b.trs \
-	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
-	"$$tst" $(AM_TESTS_FD_REDIRECT)
-port-parsing.log: port-parsing$(EXEEXT)
-	@p='port-parsing$(EXEEXT)'; \
-	b='port-parsing'; \
-	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
-	--log-file $$b.log --trs-file $$b.trs \
-	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
-	"$$tst" $(AM_TESTS_FD_REDIRECT)
-human_addr.log: human_addr$(EXEEXT)
-	@p='human_addr$(EXEEXT)'; \
-	b='human_addr'; \
-	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
-	--log-file $$b.log --trs-file $$b.trs \
-	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
-	"$$tst" $(AM_TESTS_FD_REDIRECT)
-valid-hostname.log: valid-hostname$(EXEEXT)
-	@p='valid-hostname$(EXEEXT)'; \
-	b='valid-hostname'; \
-	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
-	--log-file $$b.log --trs-file $$b.trs \
-	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
-	"$$tst" $(AM_TESTS_FD_REDIRECT)
-url-escape.log: url-escape$(EXEEXT)
-	@p='url-escape$(EXEEXT)'; \
-	b='url-escape'; \
-	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
-	--log-file $$b.log --trs-file $$b.trs \
-	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
-	"$$tst" $(AM_TESTS_FD_REDIRECT)
-html-escape.log: html-escape$(EXEEXT)
-	@p='html-escape$(EXEEXT)'; \
-	b='html-escape'; \
-	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
-	--log-file $$b.log --trs-file $$b.trs \
-	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
-	"$$tst" $(AM_TESTS_FD_REDIRECT)
-cstp-recv.log: cstp-recv$(EXEEXT)
-	@p='cstp-recv$(EXEEXT)'; \
-	b='cstp-recv'; \
-	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
-	--log-file $$b.log --trs-file $$b.trs \
-	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
-	"$$tst" $(AM_TESTS_FD_REDIRECT)
-proxyproto-v1.log: proxyproto-v1$(EXEEXT)
-	@p='proxyproto-v1$(EXEEXT)'; \
-	b='proxyproto-v1'; \
+test-oidc.log: test-oidc
+	@p='test-oidc'; \
+	b='test-oidc'; \
 	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
@@ -2433,6 +2571,7 @@ clean-am: clean-checkPROGRAMS clean-generic mostlyclean-am
 distclean: distclean-recursive
 		-rm -f ./$(DEPDIR)/ban_ips-ban-ips.Po
 	-rm -f ./$(DEPDIR)/cstp_recv-cstp-recv.Po
+	-rm -f ./$(DEPDIR)/gen_oidc_test_data-generate_oidc_test_data.Po
 	-rm -f ./$(DEPDIR)/html-escape.Po
 	-rm -f ./$(DEPDIR)/human_addr-human_addr.Po
 	-rm -f ./$(DEPDIR)/ipv4-prefix.Po
@@ -2492,6 +2631,7 @@ installcheck-am:
 maintainer-clean: maintainer-clean-recursive
 		-rm -f ./$(DEPDIR)/ban_ips-ban-ips.Po
 	-rm -f ./$(DEPDIR)/cstp_recv-cstp-recv.Po
+	-rm -f ./$(DEPDIR)/gen_oidc_test_data-generate_oidc_test_data.Po
 	-rm -f ./$(DEPDIR)/html-escape.Po
 	-rm -f ./$(DEPDIR)/human_addr-human_addr.Po
 	-rm -f ./$(DEPDIR)/ipv4-prefix.Po

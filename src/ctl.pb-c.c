@@ -457,7 +457,7 @@ void   unban_req__free_unpacked
   assert(message->base.descriptor == &unban_req__descriptor);
   protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
 }
-static const ProtobufCFieldDescriptor status_rep__field_descriptors[24] =
+static const ProtobufCFieldDescriptor status_rep__field_descriptors[27] =
 {
   {
     "status",
@@ -747,6 +747,42 @@ static const ProtobufCFieldDescriptor status_rep__field_descriptors[24] =
     0,             /* flags */
     0,NULL,NULL    /* reserved1,reserved2, etc */
   },
+  {
+    "latency_median_total",
+    26,
+    PROTOBUF_C_LABEL_OPTIONAL,
+    PROTOBUF_C_TYPE_UINT64,
+    offsetof(StatusRep, has_latency_median_total),
+    offsetof(StatusRep, latency_median_total),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "latency_rms_total",
+    27,
+    PROTOBUF_C_LABEL_OPTIONAL,
+    PROTOBUF_C_TYPE_UINT64,
+    offsetof(StatusRep, has_latency_rms_total),
+    offsetof(StatusRep, latency_rms_total),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "latency_sample_count",
+    28,
+    PROTOBUF_C_LABEL_OPTIONAL,
+    PROTOBUF_C_TYPE_UINT64,
+    offsetof(StatusRep, has_latency_sample_count),
+    offsetof(StatusRep, latency_sample_count),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
 };
 static const unsigned status_rep__field_indices_by_name[] = {
   3,   /* field[3] = active_clients */
@@ -757,6 +793,9 @@ static const unsigned status_rep__field_indices_by_name[] = {
   12,   /* field[12] = kbytes_in */
   13,   /* field[13] = kbytes_out */
   16,   /* field[16] = last_reset */
+  24,   /* field[24] = latency_median_total */
+  25,   /* field[25] = latency_rms_total */
+  26,   /* field[26] = latency_sample_count */
   19,   /* field[19] = max_auth_time */
   15,   /* field[15] = max_mtu */
   20,   /* field[20] = max_session_mins */
@@ -778,7 +817,7 @@ static const ProtobufCIntRange status_rep__number_ranges[2 + 1] =
 {
   { 1, 0 },
   { 7, 5 },
-  { 0, 24 }
+  { 0, 27 }
 };
 const ProtobufCMessageDescriptor status_rep__descriptor =
 {
@@ -788,7 +827,7 @@ const ProtobufCMessageDescriptor status_rep__descriptor =
   "StatusRep",
   "",
   sizeof(StatusRep),
-  24,
+  27,
   status_rep__field_descriptors,
   status_rep__field_indices_by_name,
   2,  status_rep__number_ranges,

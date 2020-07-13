@@ -60,8 +60,8 @@ static const struct known_urls_st known_urls[] = {
 	LL("/cert.cer", get_cert_der_handler, NULL),
 	LL("/ca.pem", get_ca_handler, NULL),
 	LL("/ca.cer", get_ca_der_handler, NULL),
-	LL_DIR("/profiles", get_config_handler, NULL),
 #ifdef ANYCONNECT_CLIENT_COMPAT
+	LL_DIR("/profiles", get_config_handler, NULL),
 	LL("/1/index.html", get_empty_handler, NULL),
 	LL("/1/Linux", get_empty_handler, NULL),
 	LL("/1/Linux_64", get_empty_handler, NULL),
@@ -207,7 +207,6 @@ struct compression_method_st comp_methods[] = {
 		.server_prio = 80,
 	}
 };
-#endif
 
 unsigned switch_comp_priority(void *pool, const char *modstring)
 {
@@ -249,6 +248,7 @@ unsigned switch_comp_priority(void *pool, const char *modstring)
 	talloc_free(str);
 	return ret;
 }
+#endif
 
 static
 void header_value_check(struct worker_st *ws, struct http_req_st *req)
@@ -331,8 +331,18 @@ void header_value_check(struct worker_st *ws, struct http_req_st *req)
 		      "Device-type: '%s'", value);
 		break;
 	case HEADER_PLATFORM:
+		if (value_length + 1 > sizeof(req->devplatform)) {
+			req->devplatform[0] = 0;
+			goto cleanup;
+		}
+		memcpy(req->devplatform, value, value_length);
+		req->devplatform[value_length] = 0;
+
 		if (strncasecmp(value, "apple-ios", 9) == 0 ||
 		    strncasecmp(value, "android", 7) == 0) {
+
+			if (strncasecmp(value, "apple-ios", 9) == 0)
+				req->is_ios = 1;
 
 			oclog(ws, LOG_DEBUG,
 			      "Platform: '%s' (mobile)", value);
@@ -371,19 +381,32 @@ void header_value_check(struct worker_st *ws, struct http_req_st *req)
 
 		if (strncasecmp(req->user_agent, "Open AnyConnect VPN Agent v", 27) == 0) {
 			unsigned version = atoi(&req->user_agent[27]);
-			if (version <= 3)
+			if (version <= 3) {
+				oclog(ws, LOG_DEBUG, "Detected OpenConnect v3 or older");
 				req->user_agent_type = AGENT_OPENCONNECT_V3;
-			else
+			} else {
+				oclog(ws, LOG_DEBUG, "Detected OpenConnect v4 or newer");
 				req->user_agent_type = AGENT_OPENCONNECT;
+			}
+		} else if (strncasecmp(req->user_agent, "Cisco AnyConnect VPN Agent for Apple", 36) == 0) {
+			oclog(ws, LOG_DEBUG, "Detected Cisco AnyConnect on iOS");
+			req->user_agent_type = AGENT_ANYCONNECT;
+			req->is_ios = 1;
 		} else if (strncasecmp(req->user_agent, "OpenConnect VPN Agent", 21) == 0) {
+			oclog(ws, LOG_DEBUG, "Detected OpenConnect v4 or newer");
 			req->user_agent_type = AGENT_OPENCONNECT;
+		} else if (strncasecmp(req->user_agent, "Cisco AnyConnect", 16) == 0) {
+			oclog(ws, LOG_DEBUG, "Detected Cisco AnyConnect");
+			req->user_agent_type = AGENT_ANYCONNECT;
+		} else if (strncasecmp(req->user_agent, "AnyConnect", 10) == 0) {
+			oclog(ws, LOG_DEBUG, "Detected Cisco AnyConnect");
+			req->user_agent_type = AGENT_ANYCONNECT;
+		} else {
+			oclog(ws, LOG_DEBUG, "Unknown client (%s)", req->user_agent);
 		}
 		break;
 
 	case HEADER_DTLS_CIPHERSUITE:
-		if (req->use_psk || !WSCONFIG(ws)->dtls_legacy)
-			break;
-
 		str = (char *)value;
 
 		p = strstr(str, DTLS_PROTO_INDICATOR);
@@ -396,6 +419,9 @@ void header_value_check(struct worker_st *ws, struct http_req_st *req)
 				break;
 			}
 		}
+
+		if (req->use_psk || !WSCONFIG(ws)->dtls_legacy)
+			break;
 
 		if (req->selected_ciphersuite) /* if set via HEADER_DTLS12_CIPHERSUITE */
 			break;
@@ -444,7 +470,7 @@ void header_value_check(struct worker_st *ws, struct http_req_st *req)
 		 * anyconnect's openssl fail: https://gitlab.com/gnutls/gnutls/merge_requests/868
 		 */
 #ifdef gnutls_check_version_numeric
-		if (req->user_agent_type != AGENT_OPENCONNECT &&
+		if (req->user_agent_type == AGENT_ANYCONNECT &&
 		    (!gnutls_check_version_numeric(3,6,6) &&
 		    (!gnutls_check_version_numeric(3,3,0) || gnutls_check_version_numeric(3,6,0)))) {
 			break;

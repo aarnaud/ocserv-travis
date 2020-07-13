@@ -1,5 +1,5 @@
 AC_PREREQ(2.61)
-AC_INIT([ocserv], [0.12.5], [openconnect-devel@lists.infradead.org])
+AC_INIT([ocserv], [1.1.0], [openconnect-devel@lists.infradead.org])
 PKG_PROG_PKG_CONFIG
 AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_MACRO_DIR([m4])
@@ -68,6 +68,18 @@ fi
 
 AM_CONDITIONAL(GNUTLS_WITH_NEW_CERTS, $PKG_CONFIG --atleast-version=3.6.0 gnutls)
 
+dnl We want to detect failed syscalls when testing, but not necessarily when
+dnl running in production. This option is provided to enable during CI.
+AC_ARG_WITH(seccomp-trap,
+  AS_HELP_STRING([--with-seccomp-trap], [filtered syscalls will fail with a signal]),
+  use_seccomp_trap=$withval,
+  use_seccomp_trap=no)
+
+if test "$use_seccomp_trap" != no;then
+AC_DEFINE(USE_SECCOMP_TRAP, 1, [use signal on filtered calls])
+fi
+
+
 AC_ARG_WITH(protobuf,
   AS_HELP_STRING([--without-protobuf], [use the included protobuf library]),
   test_for_protobuf=$withval,
@@ -115,6 +127,13 @@ AC_ARG_WITH(docker-tests,
   docker_tests=yes)
 
 AM_CONDITIONAL(ENABLE_DOCKER_TESTS, test "x$docker_tests" = xyes)
+
+AC_ARG_WITH(kerberos-tests,
+  AS_HELP_STRING([--with-kerberos-tests], [enable any tests requiring kerberos setup]),
+  kerberos_tests=$withval,
+  kerberos_tests=no)
+
+AM_CONDITIONAL(ENABLE_KERBEROS_TESTS, test "x$kerberos_tests" = xyes)
 
 AC_ARG_WITH(nuttcp-tests,
   AS_HELP_STRING([--without-nuttcp-tests], [disable any tests requiring nuttcp]),
@@ -314,10 +333,20 @@ if test "$test_for_radius" = yes;then
 	fi
 fi
 
+AM_CONDITIONAL(RADIUS_ENABLED, test "$radius_enabled" != no)
+
 gl_INIT
 
+AC_CHECK_HEADERS([net/if_tun.h linux/if_tun.h netinet/in_systm.h crypt.h], [], [], [])
+
+if test "$ac_cv_header_crypt_h" = yes;then
+	crypt_header="crypt.h"
+else
+	crypt_header="unistd.h"
+fi
+
 AC_LIB_HAVE_LINKFLAGS(crypt,, [#define _XOPEN_SOURCE
-#include <unistd.h>], [crypt(0,0);])
+#include <${crypt_header}>], [crypt(0,0);])
 
 AC_ARG_WITH(utmp,
   AS_HELP_STRING([--without-utmp], [do not use libutil for utmp support]),
@@ -350,8 +379,6 @@ AC_CHECK_MEMBER([struct sockaddr.sa_len],
 #include <sys/types.h>
 #include <sys/socket.h>
 ])
-
-AC_CHECK_HEADERS([net/if_tun.h linux/if_tun.h netinet/in_systm.h crypt.h], [], [], [])
 
 AC_CHECK_FUNCS([setproctitle vasprintf clock_gettime isatty pselect ppoll getpeereid sigaltstack])
 AC_CHECK_FUNCS([strlcpy posix_memalign malloc_trim strsep])
@@ -498,6 +525,12 @@ fi
 
 AM_CONDITIONAL(HAVE_GSSAPI, test "$enable_gssapi" = yes)
 
+if test "x$kerberos_tests" = xyes && test "$enable_gssapi" != yes;then
+	AC_MSG_ERROR([[***
+*** libkrb5 was not found and enable-kerberos-tests was specified.
+***]])
+fi
+
 dnl needed in the included PCL
 AC_C_VOLATILE
 AC_C_CONST
@@ -506,6 +539,28 @@ AC_CHECK_FUNCS(makecontext getcontext swapcontext)
 AC_CHECK_FUNCS(sigaction)
 AC_CHECK_FUNCS(longjmp setjmp)
 AC_CHECK_FUNCS(sigaltstack)
+
+AC_CHECK_HEADERS([linux/net_tstamp.h], [net_tstamp_header=yes], [net_tstamp_header=no])
+AC_CHECK_TYPES([struct scm_timestamping],[scm_timestamping_defined=yes],[scm_timestamping_defined=no],
+[#include <time.h>
+#include <linux/errqueue.h>])
+
+AC_ARG_ENABLE([latency-stats],
+  [AS_HELP_STRING([--enable-latency-stats],
+                  [enable capturing latency stats (default is no)])],
+  [enable_latency_stats=$enableval],
+  [enable_latency_stats=no]
+)
+
+have_latency_stats=no
+
+if test "x$enable_latency_stats" = xyes && test "x$net_tstamp_header" = xyes && test "x$scm_timestamping_defined" = xyes; then
+  AC_DEFINE([CAPTURE_LATENCY_SUPPORT], [1], [Enable capturing latency stats])
+  AC_LIB_HAVE_LINKFLAGS([m])
+  have_latency_stats=yes
+fi
+
+AM_CONDITIONAL(ENABLE_LATENCY_SUPPORT,  test "x$have_latency_stats" = xyes)
 
 AC_ARG_WITH(pcl-lib,
   AS_HELP_STRING([--without-pcl-lib], [use the included PCL library]),
@@ -570,6 +625,23 @@ if test "$have_cwrap_pam" = yes; then
 	fi
 fi
 
+AC_ARG_ENABLE([oidc-auth],
+  [AS_HELP_STRING([--enable-oidc-auth],
+                  [whether to support OpenID Connect auth (default is no)])],
+  [enable_oidc_auth=$enableval],
+  [enable_oidc_auth=no]
+)
+
+if test "x$enable_oidc_auth" = xyes; then
+  AC_DEFINE([SUPPORT_OIDC_AUTH], 1, [Enable support for OpenID Connect auth])
+  PKG_CHECK_MODULES([LIBCURL], [libcurl])
+  PKG_CHECK_MODULES([CJOSE], [cjose])
+  PKG_CHECK_MODULES([JANSSON], [jansson])
+fi
+
+AM_CONDITIONAL(ENABLE_OIDC_AUTH,  test "x$enable_oidc_auth" = xyes)
+AM_CONDITIONAL(ENABLE_OIDC_AUTH_TESTS, test "x$enable_oidc_auth" = xyes)
+
 uid=$(id -u)
 gid=$(id -g)
 AC_SUBST([ROOTUID], [$uid])
@@ -582,9 +654,7 @@ AC_CONFIG_FILES([
 	doc/Makefile
 	gl/Makefile
 	tests/docker-ocserv/Makefile
-	tests/docker-kerberos/Makefile
 	tests/data/pam/ocserv
-	tests/data/pam-single/ocserv
 	tests/data/pam/nss-passwd
 	tests/data/pam/nss-group
 	tests/Makefile
@@ -605,6 +675,7 @@ Summary of build options:
   PAM auth backend:     ${pam_enabled}
   Radius auth backend:  ${radius_enabled}
   GSSAPI auth backend:  ${enable_gssapi}
+  OIDC Auth backend:    ${enable_oidc_auth}
   Anyconnect compat:    ${anyconnect_enabled}
   TCP wrappers:         ${libwrap_enabled}
   systemd:              ${systemd_enabled}
@@ -622,6 +693,8 @@ Summary of build options:
   local protobuf-c:     ${with_local_protobuf_c}
   local PCL library:    ${with_local_pcl}
   local http-parser:    ${with_local_http_parser}
+  seccomp trap:		${use_seccomp_trap}
+  capture latency stats ${have_latency_stats}
 ])
 
 if test "${warn_leak}" = "yes";then

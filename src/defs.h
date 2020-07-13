@@ -5,7 +5,7 @@
  *
  * This file is part of ocserv.
  *
- * The GnuTLS is free software; you can redistribute it and/or
+ * ocserv is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public License
  * as published by the Free Software Foundation; either version 2.1 of
  * the License, or (at your option) any later version.
@@ -37,6 +37,7 @@
 #define REASON_DPD_TIMEOUT 5
 #define REASON_ERROR 6
 #define REASON_SESSION_TIMEOUT 7
+#define REASON_TEMP_DISCONNECT 8
 
 /* Timeout (secs) for communication between main and sec-mod */
 #define MAIN_SEC_MOD_TIMEOUT 120
@@ -73,6 +74,7 @@ typedef enum {
 	CMD_SESSION_INFO = 13,
 	CMD_BAN_IP = 16,
 	CMD_BAN_IP_REPLY = 17,
+	CMD_LATENCY_STATS_DELTA = 18,	
 
 	/* from worker to sec-mod */
 	CMD_SEC_AUTH_INIT = 120,

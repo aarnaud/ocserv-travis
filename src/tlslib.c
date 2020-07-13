@@ -115,17 +115,25 @@ ssize_t cstp_send(worker_st *ws, const void *data,
 
 ssize_t cstp_send_file(worker_st *ws, const char *file)
 {
-int fd;
-char buf[512];
-ssize_t len, total = 0;
-int ret;
+	int fd;
+	char buf[1024];
+	int counter = 100; /* allow 10 seconds for a full packet */
+	ssize_t len, total = 0;
+	int ret;
 
 	fd = open(file, O_RDONLY);
 	if (fd == -1)
 		return GNUTLS_E_FILE_ERROR;
 
 	while (	(len = read( fd, buf, sizeof(buf))) > 0 ||
-		(len == -1 && (errno == EINTR || errno == EAGAIN))) {
+		(len == -1 && counter > 0 && (errno == EINTR || errno == EAGAIN))) {
+
+		if (len == -1) {
+			counter--;
+			ms_sleep(100);
+			continue;
+		}
+
 		ret = cstp_send(ws, buf, len);
 		CSTP_FATAL_ERR(ws, ret);
 
@@ -430,6 +438,8 @@ static void tls_audit_log_func(gnutls_session_t session, const char *str)
 {
 	worker_st * ws;
 
+	(void)(ws);
+
 	if (session == NULL)
 		syslog(LOG_AUTH, "warning: %s", str);
 	else {
@@ -567,6 +577,8 @@ static void certificate_check(main_server_st *s, const char *vhostname, gnutls_p
 	gnutls_datum_t dn = {NULL, 0};
 	const char *cert_name = "unnamed";
 	time_t t;
+
+	(void)cert_name;
 
 	ret = gnutls_x509_crt_init(&crt);
 	GNUTLS_FATAL_ERR(ret);

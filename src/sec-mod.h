@@ -5,7 +5,7 @@
  *
  * This file is part of ocserv.
  *
- * The GnuTLS is free software; you can redistribute it and/or
+ * ocserv is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public License
  * as published by the Free Software Foundation; either version 2.1 of
  * the License, or (at your option) any later version.
@@ -25,6 +25,7 @@
 #include <ccan/htable/htable.h>
 #include <nettle/base64.h>
 #include <tlslib.h>
+#include <hmac.h>
 #include "common/common.h"
 
 #include "vhost.h"
@@ -47,6 +48,7 @@ typedef struct sec_mod_st {
 	uint32_t avg_auth_time; /* the average time spent in (sucessful) authentication */
 	uint32_t total_authentications; /* successful authentications: to calculate the average above */
 	time_t last_stats_reset;
+	const uint8_t hmac_key[HMAC_DIGEST_SIZE];
 } sec_mod_st;
 
 typedef struct stats_st {
@@ -69,6 +71,8 @@ typedef struct common_acct_info_st {
 	char safe_id[SAFE_ID_SIZE]; /* an ID to be sent to external apps - printable */
 	char remote_ip[MAX_IP_STR];
 	char user_agent[MAX_AGENT_NAME];
+	char device_type[MAX_DEVICE_TYPE];
+	char device_platform[MAX_DEVICE_PLATFORM];
 	char our_ip[MAX_IP_STR];
 	char ipv4[MAX_IP_STR];
 	char ipv6[MAX_IP_STR];
@@ -164,6 +168,7 @@ void sec_auth_user_deinit(sec_mod_st *sec, client_entry_st *e);
 
 void sec_mod_server(void *main_pool, void *config_pool, struct list_head *vconfig,
 		    const char *socket_file,
-		    int cmd_fd, int cmd_fd_sync);
+		    int cmd_fd, int cmd_fd_sync,
+			size_t  hmac_key_length, const uint8_t * hmac_key);
 
 #endif

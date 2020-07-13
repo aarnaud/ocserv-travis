@@ -102,11 +102,19 @@ static const char login_msg_user[] =
 #define OCV3_LOGIN_MSG_START _OCV3_LOGIN_MSG_START("main")
 #define OCV3_PASSWD_MSG_START _OCV3_LOGIN_MSG_START("passwd")
 
+#ifdef SUPPORT_OIDC_AUTH
+#define HTTP_AUTH_OIDC_PREFIX "Bearer"
+#endif
+
 static const char ocv3_login_msg_end[] =
     "</form></auth>\n";
 
 static int get_cert_info(worker_st * ws);
 static int basic_auth_handler(worker_st * ws, unsigned http_ver, const char *msg);
+
+#ifdef SUPPORT_OIDC_AUTH
+static int oidc_auth_handler(worker_st * ws, unsigned http_ver);
+#endif
 
 int ws_switch_auth_to(struct worker_st *ws, unsigned auth)
 {
@@ -447,6 +455,7 @@ int get_cert_names(worker_st * ws, const gnutls_datum_t * raw)
 	int ret;
 	unsigned i;
 	size_t size;
+	char cert_username[MAX_USERNAME_SIZE];
 
 	if (ws->cert_username[0] != 0 || ws->cert_groups_size > 0)
 		return 0; /* already read, nothing to do */
@@ -470,29 +479,37 @@ int get_cert_names(worker_st * ws, const gnutls_datum_t * raw)
 			size = sizeof(ws->cert_username);
 			ret =
 			    gnutls_x509_crt_get_subject_alt_name(crt, i,
-								 ws->
 								 cert_username,
 								 &size, NULL);
-			if (ret < 0)
+			if (ret < 0) {
+				if (ret == GNUTLS_E_REQUESTED_DATA_NOT_AVAILABLE)
+					ret = 1;
 				break;
+			}
+
 			if (ret == GNUTLS_SAN_RFC822NAME) {
+				strlcpy(ws->cert_username, cert_username, sizeof(ws->cert_username));
 				oclog(ws, LOG_INFO,
 				      "RFC822NAME (%s) retrieved",
-				      ws->cert_username);
+				      cert_username);
 				break;
 			}
 		}
-		if (ret != 0) {
-			ret = 1;
-		}
-	} else if (WSCONFIG(ws)->cert_user_oid) {	/* otherwise certificate username is ignored */
+
+	} else if (WSCONFIG(ws)->cert_user_oid) { /* otherwise we check at the DN */
 		size = sizeof(ws->cert_username);
 		ret =
 		    gnutls_x509_crt_get_dn_by_oid(crt,
 					  WSCONFIG(ws)->cert_user_oid, 0,
-					  0, ws->cert_username, &size);
+					  0, cert_username, &size);
+		if (ret >= 0)
+			strlcpy(ws->cert_username, cert_username, sizeof(ws->cert_username));
+
 	} else {
-		ret = gnutls_x509_crt_get_dn(crt, ws->cert_username, &size);
+		size = sizeof(ws->cert_username);
+		ret = gnutls_x509_crt_get_dn(crt, cert_username, &size);
+		if (ret >= 0)
+			strlcpy(ws->cert_username, cert_username, sizeof(ws->cert_username));
 	}
 
 	if (ret < 0) {
@@ -831,7 +848,7 @@ int get_cert_info(worker_st * ws)
 			return -1;
 	}
 
-	/* this is superflous. Verification has already been performed 
+	/* this is superflous. Verification has already been performed
 	 * during handshake. */
 	cert = gnutls_certificate_get_peers(ws->session, &ncerts);
 
@@ -953,10 +970,15 @@ int post_common_handler(worker_st * ws, unsigned http_ver, const char *imsg)
 		success_msg_foot_size = strlen(success_msg_foot);
 	} else {
 		success_msg_head = oc_success_msg_head;
+		success_msg_foot = NULL;
+#ifdef ANYCONNECT_CLIENT_COMPAT
 		if (WSCONFIG(ws)->xml_config_file) {
 			success_msg_foot = talloc_asprintf(ws, OC_SUCCESS_MSG_FOOT_PROFILE,
 				WSCONFIG(ws)->xml_config_file, WSCONFIG(ws)->xml_config_hash);
-		} else {
+		} 
+#endif
+
+		if (success_msg_foot == NULL) {
 			success_msg_foot = talloc_strdup(ws, OC_SUCCESS_MSG_FOOT);
 		}
 
@@ -1045,6 +1067,7 @@ int post_common_handler(worker_st * ws, unsigned http_ver, const char *imsg)
 	if (ret < 0)
 		goto fail;
 
+#ifdef ANYCONNECT_CLIENT_COMPAT	
 	if (WSCONFIG(ws)->xml_config_file) {
 		ret =
 		    cstp_printf(ws,
@@ -1058,6 +1081,7 @@ int post_common_handler(worker_st * ws, unsigned http_ver, const char *imsg)
 			       "Set-Cookie: webvpnc=bu:/&p:t&iu:1/&sh:%s; path=/; Secure\r\n",
 			       WSPCONFIG(ws)->cert_hash);
 	}
+#endif
 
 	if (ret < 0)
 		goto fail;
@@ -1330,26 +1354,48 @@ int basic_auth_handler(worker_st * ws, unsigned http_ver, const char *msg)
 	return ret;
 }
 
-static char *get_our_ip(worker_st * ws, char str[MAX_IP_STR])
+#ifdef SUPPORT_OIDC_AUTH
+static
+int oidc_auth_handler(worker_st * ws, unsigned http_ver)
 {
 	int ret;
-	struct sockaddr_storage sockaddr;
-	socklen_t socklen;
 
-	if (ws->our_addr_len > 0) {
-		return human_addr2((struct sockaddr*)&ws->our_addr, ws->our_addr_len, str, MAX_IP_STR, 0);
+	oclog(ws, LOG_HTTP_DEBUG, "HTTP sending: 401 Unauthorized");
+	cstp_cork(ws);
+	ret = cstp_printf(ws, "HTTP/1.%u 401 Unauthorized\r\n", http_ver);
+	if (ret < 0)
+		return -1;
+
+	oclog(ws, LOG_HTTP_DEBUG, "HTTP sending: WWW-Authenticate: %s", HTTP_AUTH_OIDC_PREFIX);
+	ret = cstp_printf(ws, "WWW-Authenticate: %s\r\n", HTTP_AUTH_OIDC_PREFIX);
+
+	if (ret < 0)
+		return -1;
+
+	ret = cstp_puts(ws, "Content-Length: 0\r\n");
+	if (ret < 0) {
+		ret = -1;
+		goto cleanup;
 	}
 
-	if (ws->udp_state != UP_ACTIVE)
-		return NULL;
+	ret = cstp_puts(ws, "\r\n");
+	if (ret < 0) {
+		ret = -1;
+		goto cleanup;
+	}
 
-	socklen = sizeof(sockaddr);
-	ret = getsockname(ws->dtls_tptr.fd, (struct sockaddr*)&sockaddr, &socklen);
-	if (ret == -1)
-		return NULL;
+	ret = cstp_uncork(ws);
+	if (ret < 0) {
+		ret = -1;
+		goto cleanup;
+	}
 
-	return human_addr2((struct sockaddr*)&sockaddr, socklen, str, MAX_IP_STR, 0);
+	ret = 0;
+
+ cleanup:
+	return ret;
 }
+#endif
 
 #define USERNAME_FIELD "username"
 #define GROUPNAME_FIELD "group%5flist"
@@ -1369,7 +1415,6 @@ int post_auth_handler(worker_st * ws, unsigned http_ver)
 	char *username = NULL;
 	char *password = NULL;
 	char *groupname = NULL;
-	char our_ip_str[MAX_IP_STR];
 	char *msg = NULL;
 	unsigned def_group = 0;
 	unsigned pcounter = 0;
@@ -1403,11 +1448,49 @@ int post_auth_handler(worker_st * ws, unsigned http_ver)
 				   strcmp(groupname, WSCONFIG(ws)->default_select_group) == 0) {
 				def_group = 1;
 			} else {
-				strlcpy(ws->groupname, groupname, sizeof(ws->groupname));
+				/* Some anyconnect clients send the group friendly name instead of
+				 * the actual value; see #267 */
+				ws->groupname[0] = 0;
+				if (WSCONFIG(ws)->friendly_group_list != NULL) {
+					unsigned found = 0, i;
+
+					for (i=0;i<WSCONFIG(ws)->group_list_size;i++) {
+						if (strcmp(WSCONFIG(ws)->group_list[i], groupname) == 0) {
+							found = 1;
+							break;
+						}
+					}
+
+					if (!found)
+						for (i=0;i<WSCONFIG(ws)->group_list_size;i++) {
+							if (WSCONFIG(ws)->friendly_group_list[i] != NULL && strcmp(WSCONFIG(ws)->friendly_group_list[i], groupname) == 0) {
+								strlcpy(ws->groupname, WSCONFIG(ws)->group_list[i], sizeof(ws->groupname));
+								break;
+							}
+						}
+				}
+
+				if (ws->groupname[0] == 0)
+					strlcpy(ws->groupname, groupname, sizeof(ws->groupname));
 				ireq.group_name = ws->groupname;
 			}
 		}
 		talloc_free(groupname);
+
+#ifdef SUPPORT_OIDC_AUTH
+		if (ws->selected_auth->type & AUTH_TYPE_OIDC) {
+			if (req->authorization == NULL || req->authorization_size == 0)
+				return oidc_auth_handler(ws, http_ver);
+
+			if ((req->authorization_size > (sizeof(HTTP_AUTH_OIDC_PREFIX) - 1)) && strncasecmp(req->authorization, HTTP_AUTH_OIDC_PREFIX, sizeof(HTTP_AUTH_OIDC_PREFIX) - 1) == 0) {
+				ireq.auth_type |= AUTH_TYPE_OIDC;
+				ireq.user_name = req->authorization + sizeof(HTTP_AUTH_OIDC_PREFIX);
+			} else {
+				oclog(ws, LOG_HTTP_DEBUG, "Invalid authorization data: %.*s", req->authorization_size, req->authorization);
+				goto auth_fail;
+			}
+		}
+#endif
 
 		if (ws->selected_auth->type & AUTH_TYPE_GSSAPI) {
 			if (req->authorization == NULL || req->authorization_size == 0)
@@ -1475,9 +1558,18 @@ int post_auth_handler(worker_st * ws, unsigned http_ver)
 
 		ireq.vhost = ws->vhost->name;
 		ireq.ip = ws->remote_ip_str;
-		ireq.our_ip = get_our_ip(ws, our_ip_str);
+		ireq.our_ip = ws->our_ip_str;
+		ireq.session_start_time = ws->session_start_time;
+		ireq.hmac.data = (uint8_t*)ws->sec_auth_init_hmac;
+		ireq.hmac.len = sizeof(ws->sec_auth_init_hmac);
 		if (req->user_agent[0] != 0)
 			ireq.user_agent = req->user_agent;
+
+		if (req->devtype[0] != 0)
+			ireq.device_type = req->devtype;
+
+		if (req->devplatform[0] != 0)
+			ireq.device_platform = req->devplatform;
 
 		sd = connect_to_secmod(ws);
 		if (sd == -1) {
@@ -1503,7 +1595,6 @@ int post_auth_handler(worker_st * ws, unsigned http_ver)
 		SecAuthContMsg areq = SEC_AUTH_CONT_MSG__INIT;
 
 		areq.ip = ws->remote_ip_str;
-
 		if (ws->selected_auth->type & AUTH_TYPE_GSSAPI) {
 			if (req->authorization == NULL || req->authorization_size <= 10) {
 				if (req->authorization != NULL)
@@ -1574,6 +1665,7 @@ int post_auth_handler(worker_st * ws, unsigned http_ver)
 	}
 
 	if (ret == ERR_AUTH_CONTINUE) {
+		
 		oclog(ws, LOG_DEBUG, "continuing authentication for '%s'",
 		      ws->username);
 		ws->auth_state = S_AUTH_REQ;
@@ -1626,3 +1718,4 @@ int post_auth_handler(worker_st * ws, unsigned http_ver)
  	talloc_free(msg);
  	return ret;
 }
+

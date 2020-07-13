@@ -6,7 +6,7 @@
  *
  * This file is part of ocserv.
  *
- * The GnuTLS is free software; you can redistribute it and/or
+ * ocserv is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public License
  * as published by the Free Software Foundation; either version 2.1 of
  * the License, or (at your option) any later version.
@@ -32,8 +32,9 @@
 #include <common.h>
 #include <sys/un.h>
 #include <sys/uio.h>
+#include <signal.h>
 #include <ev.h>
-
+#include <hmac.h>
 #include "vhost.h"
 
 #if defined(__FreeBSD__) || defined(__OpenBSD__)
@@ -51,7 +52,11 @@ extern ev_timer maintainance_watcher;
 
 #define MAIN_MAINTENANCE_TIME (900)
 
-int cmd_parser (void *pool, int argc, char **argv, struct list_head *head);
+int cmd_parser (void *pool, int argc, char **argv, struct list_head *head, bool worker);
+
+#if defined(CAPTURE_LATENCY_SUPPORT)
+#define LATENCY_AGGREGATION_TIME (60)
+#endif
 
 struct listener_st {
 	ev_io io;
@@ -90,6 +95,8 @@ typedef struct proc_st {
 	struct list_node list;
 	int fd; /* the command file descriptor */
 	pid_t pid;
+	unsigned pid_killed; /* if explicitly disconnected */
+
 	time_t udp_fd_receive_time; /* when the corresponding process has received a UDP fd */
 	
 	time_t conn_time; /* the time the user connected */
@@ -130,6 +137,8 @@ typedef struct proc_st {
 	/* the following are copied here from the worker process for reporting
 	 * purposes (from main-ctl-handler). */
 	char user_agent[MAX_AGENT_NAME];
+	char device_type[MAX_DEVICE_TYPE];
+	char device_platform[MAX_DEVICE_PLATFORM];
 	char tls_ciphersuite[MAX_CIPHERSUITE_NAME];
 	char dtls_ciphersuite[MAX_CIPHERSUITE_NAME];
 	char cstp_compr[8];
@@ -160,6 +169,12 @@ typedef struct proc_st {
 	vhost_cfg_st *vhost;
 } proc_st;
 
+inline static void kill_proc(proc_st *proc)
+{
+	kill(proc->pid, SIGTERM);
+	proc->pid_killed = 1;
+}
+
 struct ip_lease_db_st {
 	struct htable ht;
 };
@@ -180,6 +195,14 @@ struct proc_hash_db_st {
 	struct htable *db_sid;
 	unsigned total;
 };
+
+#if defined(CAPTURE_LATENCY_SUPPORT)
+struct latency_stats_st {
+	uint64_t median_total;
+	uint64_t rms_total;
+	uint64_t sample_count;
+};
+#endif
 
 struct main_stats_st {
 	uint64_t session_timeouts; /* sessions with timeout */
@@ -208,6 +231,11 @@ struct main_stats_st {
 	/* These are counted since start time */
 	uint64_t total_auth_failures; /* authentication failures since start_time */
 	uint64_t total_sessions_closed; /* sessions closed since start_time */
+
+#if defined(CAPTURE_LATENCY_SUPPORT)
+	struct latency_stats_st current_latency_stats;
+	struct latency_stats_st delta_latency_stats;
+#endif
 };
 
 typedef struct main_server_st {
@@ -246,8 +274,14 @@ typedef struct main_server_st {
 	void *main_pool; /* talloc main pool */
 	void *config_pool; /* talloc config pool */
 
+	const uint8_t hmac_key[HMAC_DIGEST_SIZE];
+
 	/* used as temporary buffer (currently by forward_udp_to_owner) */
 	uint8_t msg_buffer[MAX_MSG_SIZE];
+
+#ifdef RLIMIT_NOFILE
+	struct rlimit fd_limits_default_set;
+#endif
 } main_server_st;
 
 void clear_lists(main_server_st *s);
@@ -349,6 +383,7 @@ int send_socket_msg_to_worker(main_server_st* s, struct proc_st* proc, uint8_t c
 int secmod_reload(main_server_st * s);
 
 const char *secmod_socket_file_name(struct perm_cfg_st *perm_config);
+void restore_secmod_socket_file_name(const char * save_path);
 void clear_vhosts(struct list_head *head);
 
 void request_reload(int signo);

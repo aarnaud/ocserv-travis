@@ -5,7 +5,7 @@
  *
  * This file is part of ocserv.
  *
- * The GnuTLS is free software; you can redistribute it and/or
+ * ocserv is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public License
  * as published by the Free Software Foundation; either version 2.1 of
  * the License, or (at your option) any later version.
@@ -67,6 +67,7 @@ void *gssapi_get_brackets_string(void *pool, struct perm_cfg_st *config, const c
 void *radius_get_brackets_string(void *pool, struct perm_cfg_st *config, const char *str);
 void *pam_get_brackets_string(void *pool, struct perm_cfg_st *config, const char *str);
 void *plain_get_brackets_string(void *pool, struct perm_cfg_st *config, const char *str);
+void *oidc_get_brackets_string(void * pool, struct perm_cfg_st *config, const char *str);
 
 void parse_kkdcp_string(char *str, int *socktype, char **_port, char **_server, char **_path, char **_realm);
 

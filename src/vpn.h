@@ -5,7 +5,7 @@
  *
  * This file is part of ocserv.
  *
- * The GnuTLS is free software; you can redistribute it and/or
+ * ocserv is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public License
  * as published by the Free Software Foundation; either version 2.1 of
  * the License, or (at your option) any later version.
@@ -135,9 +135,11 @@ extern int syslog_open;
 #define AUTH_TYPE_CERTIFICATE (1<<3)
 #define AUTH_TYPE_RADIUS (1<<5 | AUTH_TYPE_USERNAME_PASS)
 #define AUTH_TYPE_GSSAPI (1<<6)
+#define AUTH_TYPE_OIDC (1<<7)
 
-#define ALL_AUTH_TYPES ((AUTH_TYPE_PAM|AUTH_TYPE_PLAIN|AUTH_TYPE_CERTIFICATE|AUTH_TYPE_RADIUS|AUTH_TYPE_GSSAPI) & (~AUTH_TYPE_USERNAME_PASS))
+#define ALL_AUTH_TYPES ((AUTH_TYPE_PAM|AUTH_TYPE_PLAIN|AUTH_TYPE_CERTIFICATE|AUTH_TYPE_RADIUS|AUTH_TYPE_GSSAPI|AUTH_TYPE_OIDC) & (~AUTH_TYPE_USERNAME_PASS))
 #define VIRTUAL_AUTH_TYPES (AUTH_TYPE_USERNAME_PASS)
+#define CONFIDENTIAL_USER_NAME_AUTH_TYPES (AUTH_TYPE_GSSAPI | AUTH_TYPE_OIDC)
 
 #define ACCT_TYPE_PAM (1<<1)
 #define ACCT_TYPE_RADIUS (1<<2)
@@ -193,6 +195,7 @@ typedef struct auth_struct_st {
 	unsigned type;
 	const struct auth_mod_st *amod;
 	void *auth_ctx;
+	void *dl_ctx;
 
 	bool enabled;
 } auth_struct_st;
@@ -234,9 +237,10 @@ struct cfg_st {
 
 	gnutls_certificate_request_t cert_req;
 	char *priorities;
+#ifdef ENABLE_COMPRESSION
 	unsigned enable_compression;
 	unsigned no_compress_limit;	/* under this size (in bytes) of data there will be no compression */
-
+#endif
 	char *banner;
 	char *ocsp_response; /* file with the OCSP response */
 	char *default_domain; /* domain to be advertised */
@@ -265,7 +269,7 @@ struct cfg_st {
 	unsigned rekey_method; /* REKEY_METHOD_ */
 
 	time_t min_reauth_time;	/* after a failed auth, how soon one can reauthenticate -> in seconds */
-	int max_ban_score;	/* the score allowed before a user is banned (see vpn.h) */
+	unsigned max_ban_score;	/* the score allowed before a user is banned (see vpn.h) */
 	int ban_reset_time;
 
 	unsigned ban_points_wrong_password;
@@ -320,8 +324,10 @@ struct cfg_st {
 	char *cgroup;
 	char *proxy_url;
 
+#ifdef ANYCONNECT_CLIENT_COMPAT
 	char *xml_config_file;
 	char *xml_config_hash;
+#endif
 
 	/* additional configuration files */
 	char *per_group_dir;
@@ -407,11 +413,18 @@ struct main_server_st;
 #define MAX_BANNER_SIZE 256
 #define MAX_USERNAME_SIZE 64
 #define MAX_AGENT_NAME 64
+#define MAX_DEVICE_TYPE 64
+#define MAX_DEVICE_PLATFORM 64
 #define MAX_PASSWORD_SIZE 64
 #define TLS_MASTER_SIZE 48
 #define MAX_HOSTNAME_SIZE MAX_USERNAME_SIZE
 #define MAX_GROUPNAME_SIZE MAX_USERNAME_SIZE
 #define MAX_SESSION_DATA_SIZE (4*1024)
+
+#if defined(CAPTURE_LATENCY_SUPPORT)
+#define LATENCY_SAMPLE_SIZE 1024
+#define LATENCY_WORKER_AGGREGATION_TIME 60
+#endif
 
 #define DEFAULT_CONFIG_ENTRIES 96
 
