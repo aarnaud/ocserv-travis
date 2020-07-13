@@ -24,3 +24,7 @@ override_dh_auto_clean:
 override_dh_clean:
 	# The *-args.[ch].bak files are included in the source distribution
 	dh_clean -X args.c.bak -X args.h.bak
+
+override_dh_auto_test:
+	# Most of them need root, actually test them in debci instead
+	-dh_auto_test
