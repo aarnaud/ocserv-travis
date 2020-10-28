@@ -1,3 +1,0 @@
-Tests: upstream
-Depends: @builddeps@, openconnect, haproxy, iputils-ping, freeradius
-Restrictions: needs-root, build-needed
