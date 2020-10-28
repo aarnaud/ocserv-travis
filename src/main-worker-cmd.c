@@ -383,17 +383,7 @@ int handle_worker_commands(main_server_st * s, struct proc_st *proc)
 				strlcpy(proc->dtls_compr, tmsg->dtls_compr,
 					 sizeof(proc->dtls_compr));
 
-			if (tmsg->user_agent && tmsg->device_type == NULL)
-				strlcpy(proc->user_agent, tmsg->user_agent,
-					 sizeof(proc->user_agent));
-			else if (tmsg->user_agent && tmsg->device_type)
-				snprintf(proc->user_agent, sizeof(proc->user_agent), "%s / %s",
-					 tmsg->user_agent, tmsg->device_type);
-
-			if (tmsg->hostname) {
-				strlcpy(proc->hostname, tmsg->hostname,
-					 sizeof(proc->hostname));
-				mslog(s, proc, LOG_DEBUG, "setting worker hostname to '%s'", proc->hostname);
+			if (proc->hostname[0] != 0) {
 				user_hostname_update(s, proc);
 			}
 
@@ -437,7 +427,9 @@ int handle_worker_commands(main_server_st * s, struct proc_st *proc)
 			goto cleanup;
 		}
 
-		ret = handle_auth_cookie_req(s, proc, auth_cookie_req);
+		proc->sec_mod_instance_index = auth_cookie_req->cookie.data[0] % s->sec_mod_instance_count;
+
+		ret = handle_auth_cookie_req(&s->sec_mod_instances[proc->sec_mod_instance_index], proc, auth_cookie_req);
 
 		safe_memset(raw, 0, raw_len);
 		safe_memset(auth_cookie_req->cookie.data, 0, auth_cookie_req->cookie.len);

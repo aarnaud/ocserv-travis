@@ -92,39 +92,36 @@ host_triplet = @host@
 @LOCAL_PROTOBUF_C_TRUE@am__append_3 = -I$(top_builddir)/src/protobuf/
 @GNUTLS_WITH_NEW_CERTS_TRUE@am__append_4 = server-cert-ed25519 server-cert-rsa-pss
 
-#docker tests
-@ENABLE_DOCKER_TESTS_TRUE@@ENABLE_ROOT_TESTS_TRUE@am__append_5 = unix-test \
-@ENABLE_DOCKER_TESTS_TRUE@@ENABLE_ROOT_TESTS_TRUE@	proxyproto-test proxyproto-v1-test proxyproto-unix-test \
-@ENABLE_DOCKER_TESTS_TRUE@@ENABLE_ROOT_TESTS_TRUE@	reload-info-test
-
-
 #other root requiring tests
-@ENABLE_ROOT_TESTS_TRUE@am__append_6 = haproxy-connect test-iroute test-multi-cookie test-pass-script \
+@ENABLE_ROOT_TESTS_TRUE@am__append_5 = haproxy-connect test-iroute test-multi-cookie test-pass-script \
 @ENABLE_ROOT_TESTS_TRUE@	test-cookie-timeout test-cookie-timeout-2 test-explicit-ip \
 @ENABLE_ROOT_TESTS_TRUE@	test-cookie-invalidation test-user-config test-append-routes test-ban \
 @ENABLE_ROOT_TESTS_TRUE@	multiple-routes json test-udp-listen-host test-max-same-1 test-script-multi-user \
-@ENABLE_ROOT_TESTS_TRUE@	apple-ios ipv6-iface
+@ENABLE_ROOT_TESTS_TRUE@	apple-ios ipv6-iface test-namespace-listen disconnect-user disconnect-user2 \
+@ENABLE_ROOT_TESTS_TRUE@	ping-leases
 
-@ENABLE_ROOT_TESTS_TRUE@@RADIUS_ENABLED_TRUE@am__append_7 = radius-group radius-otp
+@ENABLE_ROOT_TESTS_TRUE@@RADIUS_ENABLED_TRUE@am__append_6 = radius-group radius-otp
 
 #other tests requiring nuttcp for traffic
-@ENABLE_NUTTCP_TESTS_TRUE@@ENABLE_ROOT_TESTS_TRUE@am__append_8 = traffic lz4-compression lzs-compression \
+@ENABLE_NUTTCP_TESTS_TRUE@@ENABLE_ROOT_TESTS_TRUE@am__append_7 = traffic lz4-compression lzs-compression \
 @ENABLE_NUTTCP_TESTS_TRUE@@ENABLE_ROOT_TESTS_TRUE@	aes256-cipher aes128-cipher oc-aes256-gcm-cipher oc-aes128-gcm-cipher \
 @ENABLE_NUTTCP_TESTS_TRUE@@ENABLE_ROOT_TESTS_TRUE@	test-config-per-group ac-aes128-gcm-cipher ac-aes256-gcm-cipher \
-@ENABLE_NUTTCP_TESTS_TRUE@@ENABLE_ROOT_TESTS_TRUE@	no-dtls-cipher psk-negotiate psk-negotiate-match
+@ENABLE_NUTTCP_TESTS_TRUE@@ENABLE_ROOT_TESTS_TRUE@	no-dtls-cipher psk-negotiate psk-negotiate-match test-multiple-client-ip
 
-@ENABLE_ROOT_TESTS_TRUE@@RADIUS_ENABLED_TRUE@am__append_9 = radius radius-config
-@HAVE_CWRAP_ALL_TRUE@@HAVE_CWRAP_TRUE@am__append_10 = test-vhost
-@HAVE_CWRAP_TRUE@am__append_11 = test-pass test-pass-cert test-cert test-group-pass \
+@ENABLE_ROOT_TESTS_TRUE@@RADIUS_ENABLED_TRUE@am__append_8 = radius radius-config
+@HAVE_CWRAP_ALL_TRUE@@HAVE_CWRAP_TRUE@am__append_9 = test-vhost
+@HAVE_CWRAP_TRUE@am__append_10 = test-pass test-pass-cert test-cert test-group-pass \
 @HAVE_CWRAP_TRUE@	test-pass-group-cert test-pass-group-cert-no-pass test-sighup \
 @HAVE_CWRAP_TRUE@	test-enc-key test-sighup-key-change test-get-cert test-san-cert \
 @HAVE_CWRAP_TRUE@	test-gssapi test-pass-opt-cert test-cert-opt-pass test-gssapi-opt-pass \
-@HAVE_CWRAP_TRUE@	test-gssapi-opt-cert haproxy-auth test-maintenance \
-@HAVE_CWRAP_TRUE@	test-group-name no-route-default no-route-group
+@HAVE_CWRAP_TRUE@	test-gssapi-opt-cert haproxy-auth test-maintenance resumption \
+@HAVE_CWRAP_TRUE@	test-group-name flowcontrol banner invalid-configs haproxy-proxyproto \
+@HAVE_CWRAP_TRUE@	haproxy-proxyproto-v1 test-drain-server
 
-@HAVE_CWRAP_PAM_TRUE@@HAVE_CWRAP_TRUE@am__append_12 = test-pam test-pam-noauth
-@ENABLE_KERBEROS_TESTS_TRUE@@HAVE_CWRAP_PAM_TRUE@@HAVE_CWRAP_TRUE@am__append_13 = kerberos
-@HAVE_CWRAP_TRUE@@HAVE_LIBOATH_TRUE@am__append_14 = test-otp-cert test-otp
+@HAVE_CWRAP_PAM_TRUE@@HAVE_CWRAP_TRUE@am__append_11 = test-pam test-pam-noauth
+@ENABLE_KERBEROS_TESTS_TRUE@@HAVE_CWRAP_PAM_TRUE@@HAVE_CWRAP_TRUE@am__append_12 = kerberos
+@HAVE_CWRAP_TRUE@@HAVE_LIBOATH_TRUE@am__append_13 = test-otp-cert test-otp
+@ENABLE_TUN_TESTS_TRUE@am__append_14 = no-route-default no-route-group
 check_PROGRAMS = str-test$(EXEEXT) str-test2$(EXEEXT) \
 	ipv4-prefix$(EXEEXT) ipv6-prefix$(EXEEXT) \
 	kkdcp-parsing$(EXEEXT) json-escape$(EXEEXT) ban-ips$(EXEEXT) \
@@ -136,6 +133,8 @@ check_PROGRAMS = str-test$(EXEEXT) str-test2$(EXEEXT) \
 @ENABLE_OIDC_AUTH_TESTS_TRUE@am__append_16 = test-oidc
 TESTS = $(check_PROGRAMS) $(dist_check_SCRIPTS) $(am__EXEEXT_2)
 XFAIL_TESTS = $(am__EXEEXT_2)
+@DISABLE_ASAN_BROKEN_TESTS_TRUE@am__append_17 = DISABLE_ASAN_BROKEN_TESTS=1
+@DISABLE_ASAN_BROKEN_TESTS_FALSE@am__append_18 = DISABLE_ASAN_BROKEN_TESTS=0
 subdir = tests
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/gl/m4/00gnulib.m4 \
@@ -241,26 +240,29 @@ valid_hostname_SOURCES = valid-hostname.c
 valid_hostname_OBJECTS = valid-hostname.$(OBJEXT)
 valid_hostname_DEPENDENCIES = $(am__DEPENDENCIES_2)
 am__dist_check_SCRIPTS_DIST = ocpasswd-test server-cert-ed25519 \
-	server-cert-rsa-pss unix-test proxyproto-test \
-	proxyproto-v1-test proxyproto-unix-test reload-info-test \
-	haproxy-connect test-iroute test-multi-cookie test-pass-script \
-	test-cookie-timeout test-cookie-timeout-2 test-explicit-ip \
+	server-cert-rsa-pss haproxy-connect test-iroute \
+	test-multi-cookie test-pass-script test-cookie-timeout \
+	test-cookie-timeout-2 test-explicit-ip \
 	test-cookie-invalidation test-user-config test-append-routes \
 	test-ban multiple-routes json test-udp-listen-host \
 	test-max-same-1 test-script-multi-user apple-ios ipv6-iface \
-	radius-group radius-otp traffic lz4-compression \
+	test-namespace-listen disconnect-user disconnect-user2 \
+	ping-leases radius-group radius-otp traffic lz4-compression \
 	lzs-compression aes256-cipher aes128-cipher \
 	oc-aes256-gcm-cipher oc-aes128-gcm-cipher \
 	test-config-per-group ac-aes128-gcm-cipher \
 	ac-aes256-gcm-cipher no-dtls-cipher psk-negotiate \
-	psk-negotiate-match radius radius-config test-vhost test-pass \
-	test-pass-cert test-cert test-group-pass test-pass-group-cert \
+	psk-negotiate-match test-multiple-client-ip radius \
+	radius-config test-vhost test-pass test-pass-cert test-cert \
+	test-group-pass test-pass-group-cert \
 	test-pass-group-cert-no-pass test-sighup test-enc-key \
 	test-sighup-key-change test-get-cert test-san-cert test-gssapi \
 	test-pass-opt-cert test-cert-opt-pass test-gssapi-opt-pass \
-	test-gssapi-opt-cert haproxy-auth test-maintenance \
-	test-group-name no-route-default no-route-group test-pam \
-	test-pam-noauth kerberos test-otp-cert test-otp test-oidc
+	test-gssapi-opt-cert haproxy-auth test-maintenance resumption \
+	test-group-name flowcontrol banner invalid-configs \
+	haproxy-proxyproto haproxy-proxyproto-v1 test-drain-server \
+	test-pam test-pam-noauth kerberos test-otp-cert test-otp \
+	no-route-default no-route-group test-oidc
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -317,27 +319,11 @@ DIST_SOURCES = $(ban_ips_SOURCES) $(cstp_recv_SOURCES) \
 	$(kkdcp_parsing_SOURCES) port-parsing.c proxyproto-v1.c \
 	$(str_test_SOURCES) $(str_test2_SOURCES) $(url_escape_SOURCES) \
 	valid-hostname.c
-RECURSIVE_TARGETS = all-recursive check-recursive cscopelist-recursive \
-	ctags-recursive dvi-recursive html-recursive info-recursive \
-	install-data-recursive install-dvi-recursive \
-	install-exec-recursive install-html-recursive \
-	install-info-recursive install-pdf-recursive \
-	install-ps-recursive install-recursive installcheck-recursive \
-	installdirs-recursive pdf-recursive ps-recursive \
-	tags-recursive uninstall-recursive
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
     *) (install-info --version) >/dev/null 2>&1;; \
   esac
-RECURSIVE_CLEAN_TARGETS = mostlyclean-recursive clean-recursive	\
-  distclean-recursive maintainer-clean-recursive
-am__recursive_targets = \
-  $(RECURSIVE_TARGETS) \
-  $(RECURSIVE_CLEAN_TARGETS) \
-  $(am__extra_recursive_targets)
-AM_RECURSIVE_TARGETS = $(am__recursive_targets:-recursive=) TAGS CTAGS \
-	check recheck distdir distdir-am
 am__tagged_files = $(HEADERS) $(SOURCES) $(TAGS_FILES) $(LISP)
 # Read a list of newline-separated strings from the standard input,
 # and print each of them once, without duplicates.  Input order is
@@ -539,6 +525,7 @@ am__set_TESTS_bases = \
   bases=`for i in $$bases; do echo $$i; done | sed 's/\.log$$//'`; \
   bases=`echo $$bases`
 RECHECK_LOGS = $(TEST_LOGS)
+AM_RECURSIVE_TARGETS = check recheck
 am__EXEEXT_2 =
 TEST_SUITE_LOG = test-suite.log
 TEST_EXTENSIONS = @EXEEXT@ .test
@@ -560,36 +547,10 @@ TEST_LOGS = $(am__test_logs2:.test.log=.log)
 TEST_LOG_DRIVER = $(SHELL) $(top_srcdir)/build-aux/test-driver
 TEST_LOG_COMPILE = $(TEST_LOG_COMPILER) $(AM_TEST_LOG_FLAGS) \
 	$(TEST_LOG_FLAGS)
-DIST_SUBDIRS = $(SUBDIRS)
 am__DIST_COMMON = $(srcdir)/../src/common.mk $(srcdir)/Makefile.in \
 	$(top_srcdir)/build-aux/depcomp \
 	$(top_srcdir)/build-aux/test-driver
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
-am__relativize = \
-  dir0=`pwd`; \
-  sed_first='s,^\([^/]*\)/.*$$,\1,'; \
-  sed_rest='s,^[^/]*/*,,'; \
-  sed_last='s,^.*/\([^/]*\)$$,\1,'; \
-  sed_butlast='s,/*[^/]*$$,,'; \
-  while test -n "$$dir1"; do \
-    first=`echo "$$dir1" | sed -e "$$sed_first"`; \
-    if test "$$first" != "."; then \
-      if test "$$first" = ".."; then \
-        dir2=`echo "$$dir0" | sed -e "$$sed_last"`/"$$dir2"; \
-        dir0=`echo "$$dir0" | sed -e "$$sed_butlast"`; \
-      else \
-        first2=`echo "$$dir2" | sed -e "$$sed_first"`; \
-        if test "$$first2" = "$$first"; then \
-          dir2=`echo "$$dir2" | sed -e "$$sed_rest"`; \
-        else \
-          dir2="../$$dir2"; \
-        fi; \
-        dir0="$$dir0"/"$$first"; \
-      fi; \
-    fi; \
-    dir1=`echo "$$dir1" | sed -e "$$sed_rest"`; \
-  done; \
-  reldir="$$dir2"
 ACLOCAL = @ACLOCAL@
 AMTAR = @AMTAR@
 AM_DEFAULT_VERBOSITY = @AM_DEFAULT_VERBOSITY@
@@ -1336,13 +1297,13 @@ EXTRA_DIST = certs/ca-key.pem certs/ca.pem ns.sh common.sh certs/server-cert.pem
 	data/test-stress.config certs/user-cert-wrong.pem connect-script data/test-group.passwd \
 	data/test-group-pass.config certs/user-group-cert.pem certs/user-group-key.pem \
 	data/test-user-group-cert.config data/pam/ocserv.in data/pam/passdb.templ data/pam-single/passdb.templ \
-	data/test-user-group-cert-no-pass.config docker-common.sh data/test-cookie-timeout.config \
+	data/test-user-group-cert-no-pass.config data/test-cookie-timeout.config \
 	data/test-cookie-timeout-2.config user-config-explicit/test data/test-explicit-ip.config \
 	test-explicit-ip user-config-explicit/test2 user-config-explicit/test3 \
 	user-config-explicit/test4 data/test-pass-opt-cert.config data/test-gssapi.config \
 	data/test-ban.config data/test-sighup.config data/test-gssapi-local-map.config \
 	data/test-cookie-invalidation.config data/test-enc-key2.config data/test-enc-key.config \
-	certs/server-key-ossl.pem certs/server-key-p8.pem proxyproto-unix-test certs/user-cn.pem \
+	certs/server-key-ossl.pem certs/server-key-p8.pem certs/user-cn.pem \
 	certs/user-cert-testuser.pem test-stress data/test-user-config.config user-config/testuser \
 	data/test-sighup-key-change.config data/test-sighup-key-change.config user-config/testipnet \
 	certs/user-cert-testipnet.pem certs/user-cert-invalid.pem certs/server-cert-ca.pem \
@@ -1367,9 +1328,11 @@ EXTRA_DIST = certs/ca-key.pem certs/ca.pem ns.sh common.sh certs/server-cert.pem
 	connect-ios-script data/apple-ios.config certs/kerberos-cert.pem \
 	data/kdc.conf data/krb5.conf data/k5.KERBEROS.TEST data/kadm5.acl \
 	data/ipv6-iface.config data/no-route-default.config data/no-route-group.config \
-	data/group-config/group1
+	data/group-config/group1 data/test-namespace-listen.config data/disconnect-user.config \
+	data/disconnect-user2.config data/ping-leases.config data/haproxy-proxyproto.config \
+	data/haproxy-proxyproto.cfg scripts/proxy-connectscript data/haproxy-proxyproto-v1.config \
+	data/haproxy-proxyproto-v1.cfg scripts/proxy-connectscript-v1 data/test-multiple-client-ip.config
 
-SUBDIRS = docker-ocserv
 xfail_scripts = 
 dist_check_SCRIPTS = ocpasswd-test $(am__append_4) $(am__append_5) \
 	$(am__append_6) $(am__append_7) $(am__append_8) \
@@ -1407,10 +1370,9 @@ port_parsing_LDADD = $(LDADD)
 gen_oidc_test_data_CPPFLAGS = $(AM_CPPFLAGS) 
 gen_oidc_test_data_SOURCES = generate_oidc_test_data.c
 gen_oidc_test_data_LDADD = $(LDADD) $(CJOSE_LIBS) $(JANSSON_LIBS)
-TESTS_ENVIRONMENT = srcdir="$(srcdir)" \
-	top_builddir="$(top_builddir)"
-
-all: all-recursive
+TESTS_ENVIRONMENT = srcdir="$(srcdir)" top_builddir="$(top_builddir)" \
+	$(am__append_17) $(am__append_18)
+all: all-am
 
 .SUFFIXES:
 .SUFFIXES: .c .log .o .obj .test .test$(EXEEXT) .trs
@@ -1608,61 +1570,14 @@ human_addr-human_addr.obj: human_addr.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(human_addr_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o human_addr-human_addr.obj `if test -f 'human_addr.c'; then $(CYGPATH_W) 'human_addr.c'; else $(CYGPATH_W) '$(srcdir)/human_addr.c'; fi`
 
-# This directory's subdirectories are mostly independent; you can cd
-# into them and run 'make' without going through this Makefile.
-# To change the values of 'make' variables: instead of editing Makefiles,
-# (1) if the variable is set in 'config.status', edit 'config.status'
-#     (which will cause the Makefiles to be regenerated when you run 'make');
-# (2) otherwise, pass the desired values on the 'make' command line.
-$(am__recursive_targets):
-	@fail=; \
-	if $(am__make_keepgoing); then \
-	  failcom='fail=yes'; \
-	else \
-	  failcom='exit 1'; \
-	fi; \
-	dot_seen=no; \
-	target=`echo $@ | sed s/-recursive//`; \
-	case "$@" in \
-	  distclean-* | maintainer-clean-*) list='$(DIST_SUBDIRS)' ;; \
-	  *) list='$(SUBDIRS)' ;; \
-	esac; \
-	for subdir in $$list; do \
-	  echo "Making $$target in $$subdir"; \
-	  if test "$$subdir" = "."; then \
-	    dot_seen=yes; \
-	    local_target="$$target-am"; \
-	  else \
-	    local_target="$$target"; \
-	  fi; \
-	  ($(am__cd) $$subdir && $(MAKE) $(AM_MAKEFLAGS) $$local_target) \
-	  || eval $$failcom; \
-	done; \
-	if test "$$dot_seen" = "no"; then \
-	  $(MAKE) $(AM_MAKEFLAGS) "$$target-am" || exit 1; \
-	fi; test -z "$$fail"
-
 ID: $(am__tagged_files)
 	$(am__define_uniq_tagged_files); mkid -fID $$unique
-tags: tags-recursive
+tags: tags-am
 TAGS: tags
 
 tags-am: $(TAGS_DEPENDENCIES) $(am__tagged_files)
 	set x; \
 	here=`pwd`; \
-	if ($(ETAGS) --etags-include --version) >/dev/null 2>&1; then \
-	  include_option=--etags-include; \
-	  empty_fix=.; \
-	else \
-	  include_option=--include; \
-	  empty_fix=; \
-	fi; \
-	list='$(SUBDIRS)'; for subdir in $$list; do \
-	  if test "$$subdir" = .; then :; else \
-	    test ! -f $$subdir/TAGS || \
-	      set "$$@" "$$include_option=$$here/$$subdir/TAGS"; \
-	  fi; \
-	done; \
 	$(am__define_uniq_tagged_files); \
 	shift; \
 	if test -z "$(ETAGS_ARGS)$$*$$unique"; then :; else \
@@ -1675,7 +1590,7 @@ tags-am: $(TAGS_DEPENDENCIES) $(am__tagged_files)
 	      $$unique; \
 	  fi; \
 	fi
-ctags: ctags-recursive
+ctags: ctags-am
 
 CTAGS: ctags
 ctags-am: $(TAGS_DEPENDENCIES) $(am__tagged_files)
@@ -1688,7 +1603,7 @@ GTAGS:
 	here=`$(am__cd) $(top_builddir) && pwd` \
 	  && $(am__cd) $(top_srcdir) \
 	  && gtags -i $(GTAGS_ARGS) "$$here"
-cscopelist: cscopelist-recursive
+cscopelist: cscopelist-am
 
 cscopelist-am: $(am__tagged_files)
 	list='$(am__tagged_files)'; \
@@ -1974,41 +1889,6 @@ server-cert-rsa-pss.log: server-cert-rsa-pss
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
-unix-test.log: unix-test
-	@p='unix-test'; \
-	b='unix-test'; \
-	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
-	--log-file $$b.log --trs-file $$b.trs \
-	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
-	"$$tst" $(AM_TESTS_FD_REDIRECT)
-proxyproto-test.log: proxyproto-test
-	@p='proxyproto-test'; \
-	b='proxyproto-test'; \
-	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
-	--log-file $$b.log --trs-file $$b.trs \
-	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
-	"$$tst" $(AM_TESTS_FD_REDIRECT)
-proxyproto-v1-test.log: proxyproto-v1-test
-	@p='proxyproto-v1-test'; \
-	b='proxyproto-v1-test'; \
-	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
-	--log-file $$b.log --trs-file $$b.trs \
-	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
-	"$$tst" $(AM_TESTS_FD_REDIRECT)
-proxyproto-unix-test.log: proxyproto-unix-test
-	@p='proxyproto-unix-test'; \
-	b='proxyproto-unix-test'; \
-	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
-	--log-file $$b.log --trs-file $$b.trs \
-	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
-	"$$tst" $(AM_TESTS_FD_REDIRECT)
-reload-info-test.log: reload-info-test
-	@p='reload-info-test'; \
-	b='reload-info-test'; \
-	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
-	--log-file $$b.log --trs-file $$b.trs \
-	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
-	"$$tst" $(AM_TESTS_FD_REDIRECT)
 haproxy-connect.log: haproxy-connect
 	@p='haproxy-connect'; \
 	b='haproxy-connect'; \
@@ -2135,6 +2015,34 @@ ipv6-iface.log: ipv6-iface
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
+test-namespace-listen.log: test-namespace-listen
+	@p='test-namespace-listen'; \
+	b='test-namespace-listen'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+disconnect-user.log: disconnect-user
+	@p='disconnect-user'; \
+	b='disconnect-user'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+disconnect-user2.log: disconnect-user2
+	@p='disconnect-user2'; \
+	b='disconnect-user2'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+ping-leases.log: ping-leases
+	@p='ping-leases'; \
+	b='ping-leases'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
 radius-group.log: radius-group
 	@p='radius-group'; \
 	b='radius-group'; \
@@ -2236,6 +2144,13 @@ psk-negotiate.log: psk-negotiate
 psk-negotiate-match.log: psk-negotiate-match
 	@p='psk-negotiate-match'; \
 	b='psk-negotiate-match'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+test-multiple-client-ip.log: test-multiple-client-ip
+	@p='test-multiple-client-ip'; \
+	b='test-multiple-client-ip'; \
 	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
@@ -2387,6 +2302,13 @@ test-maintenance.log: test-maintenance
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
+resumption.log: resumption
+	@p='resumption'; \
+	b='resumption'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
 test-group-name.log: test-group-name
 	@p='test-group-name'; \
 	b='test-group-name'; \
@@ -2394,16 +2316,44 @@ test-group-name.log: test-group-name
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
-no-route-default.log: no-route-default
-	@p='no-route-default'; \
-	b='no-route-default'; \
+flowcontrol.log: flowcontrol
+	@p='flowcontrol'; \
+	b='flowcontrol'; \
 	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
-no-route-group.log: no-route-group
-	@p='no-route-group'; \
-	b='no-route-group'; \
+banner.log: banner
+	@p='banner'; \
+	b='banner'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+invalid-configs.log: invalid-configs
+	@p='invalid-configs'; \
+	b='invalid-configs'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+haproxy-proxyproto.log: haproxy-proxyproto
+	@p='haproxy-proxyproto'; \
+	b='haproxy-proxyproto'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+haproxy-proxyproto-v1.log: haproxy-proxyproto-v1
+	@p='haproxy-proxyproto-v1'; \
+	b='haproxy-proxyproto-v1'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+test-drain-server.log: test-drain-server
+	@p='test-drain-server'; \
+	b='test-drain-server'; \
 	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
@@ -2439,6 +2389,20 @@ test-otp-cert.log: test-otp-cert
 test-otp.log: test-otp
 	@p='test-otp'; \
 	b='test-otp'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+no-route-default.log: no-route-default
+	@p='no-route-default'; \
+	b='no-route-default'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+no-route-group.log: no-route-group
+	@p='no-route-group'; \
+	b='no-route-group'; \
 	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
@@ -2498,48 +2462,22 @@ distdir-am: $(DISTFILES)
 	    || exit 1; \
 	  fi; \
 	done
-	@list='$(DIST_SUBDIRS)'; for subdir in $$list; do \
-	  if test "$$subdir" = .; then :; else \
-	    $(am__make_dryrun) \
-	      || test -d "$(distdir)/$$subdir" \
-	      || $(MKDIR_P) "$(distdir)/$$subdir" \
-	      || exit 1; \
-	    dir1=$$subdir; dir2="$(distdir)/$$subdir"; \
-	    $(am__relativize); \
-	    new_distdir=$$reldir; \
-	    dir1=$$subdir; dir2="$(top_distdir)"; \
-	    $(am__relativize); \
-	    new_top_distdir=$$reldir; \
-	    echo " (cd $$subdir && $(MAKE) $(AM_MAKEFLAGS) top_distdir="$$new_top_distdir" distdir="$$new_distdir" \\"; \
-	    echo "     am__remove_distdir=: am__skip_length_check=: am__skip_mode_fix=: distdir)"; \
-	    ($(am__cd) $$subdir && \
-	      $(MAKE) $(AM_MAKEFLAGS) \
-	        top_distdir="$$new_top_distdir" \
-	        distdir="$$new_distdir" \
-		am__remove_distdir=: \
-		am__skip_length_check=: \
-		am__skip_mode_fix=: \
-	        distdir) \
-	      || exit 1; \
-	  fi; \
-	done
 check-am: all-am
 	$(MAKE) $(AM_MAKEFLAGS) $(check_PROGRAMS) \
 	  $(dist_check_SCRIPTS)
 	$(MAKE) $(AM_MAKEFLAGS) check-TESTS
-check: check-recursive
+check: check-am
 all-am: Makefile
-installdirs: installdirs-recursive
-installdirs-am:
-install: install-recursive
-install-exec: install-exec-recursive
-install-data: install-data-recursive
-uninstall: uninstall-recursive
+installdirs:
+install: install-am
+install-exec: install-exec-am
+install-data: install-data-am
+uninstall: uninstall-am
 
 install-am: all-am
 	@$(MAKE) $(AM_MAKEFLAGS) install-exec-am install-data-am
 
-installcheck: installcheck-recursive
+installcheck: installcheck-am
 install-strip:
 	if test -z '$(STRIP)'; then \
 	  $(MAKE) $(AM_MAKEFLAGS) INSTALL_PROGRAM="$(INSTALL_STRIP_PROGRAM)" \
@@ -2564,11 +2502,11 @@ distclean-generic:
 maintainer-clean-generic:
 	@echo "This command is intended for maintainers to use"
 	@echo "it deletes files that may require special tools to rebuild."
-clean: clean-recursive
+clean: clean-am
 
 clean-am: clean-checkPROGRAMS clean-generic mostlyclean-am
 
-distclean: distclean-recursive
+distclean: distclean-am
 		-rm -f ./$(DEPDIR)/ban_ips-ban-ips.Po
 	-rm -f ./$(DEPDIR)/cstp_recv-cstp-recv.Po
 	-rm -f ./$(DEPDIR)/gen_oidc_test_data-generate_oidc_test_data.Po
@@ -2588,47 +2526,47 @@ distclean: distclean-recursive
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-tags
 
-dvi: dvi-recursive
+dvi: dvi-am
 
 dvi-am:
 
-html: html-recursive
+html: html-am
 
 html-am:
 
-info: info-recursive
+info: info-am
 
 info-am:
 
 install-data-am:
 
-install-dvi: install-dvi-recursive
+install-dvi: install-dvi-am
 
 install-dvi-am:
 
 install-exec-am:
 
-install-html: install-html-recursive
+install-html: install-html-am
 
 install-html-am:
 
-install-info: install-info-recursive
+install-info: install-info-am
 
 install-info-am:
 
 install-man:
 
-install-pdf: install-pdf-recursive
+install-pdf: install-pdf-am
 
 install-pdf-am:
 
-install-ps: install-ps-recursive
+install-ps: install-ps-am
 
 install-ps-am:
 
 installcheck-am:
 
-maintainer-clean: maintainer-clean-recursive
+maintainer-clean: maintainer-clean-am
 		-rm -f ./$(DEPDIR)/ban_ips-ban-ips.Po
 	-rm -f ./$(DEPDIR)/cstp_recv-cstp-recv.Po
 	-rm -f ./$(DEPDIR)/gen_oidc_test_data-generate_oidc_test_data.Po
@@ -2647,35 +2585,34 @@ maintainer-clean: maintainer-clean-recursive
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 
-mostlyclean: mostlyclean-recursive
+mostlyclean: mostlyclean-am
 
 mostlyclean-am: mostlyclean-compile mostlyclean-generic
 
-pdf: pdf-recursive
+pdf: pdf-am
 
 pdf-am:
 
-ps: ps-recursive
+ps: ps-am
 
 ps-am:
 
 uninstall-am:
 
-.MAKE: $(am__recursive_targets) check-am install-am install-strip
+.MAKE: check-am install-am install-strip
 
-.PHONY: $(am__recursive_targets) CTAGS GTAGS TAGS all all-am \
-	am--depfiles check check-TESTS check-am clean \
-	clean-checkPROGRAMS clean-generic cscopelist-am ctags ctags-am \
-	distclean distclean-compile distclean-generic distclean-tags \
-	distdir dvi dvi-am html html-am info info-am install \
-	install-am install-data install-data-am install-dvi \
+.PHONY: CTAGS GTAGS TAGS all all-am am--depfiles check check-TESTS \
+	check-am clean clean-checkPROGRAMS clean-generic cscopelist-am \
+	ctags ctags-am distclean distclean-compile distclean-generic \
+	distclean-tags distdir dvi dvi-am html html-am info info-am \
+	install install-am install-data install-data-am install-dvi \
 	install-dvi-am install-exec install-exec-am install-html \
 	install-html-am install-info install-info-am install-man \
 	install-pdf install-pdf-am install-ps install-ps-am \
 	install-strip installcheck installcheck-am installdirs \
-	installdirs-am maintainer-clean maintainer-clean-generic \
-	mostlyclean mostlyclean-compile mostlyclean-generic pdf pdf-am \
-	ps ps-am recheck tags tags-am uninstall uninstall-am
+	maintainer-clean maintainer-clean-generic mostlyclean \
+	mostlyclean-compile mostlyclean-generic pdf pdf-am ps ps-am \
+	recheck tags tags-am uninstall uninstall-am
 
 .PRECIOUS: Makefile
 

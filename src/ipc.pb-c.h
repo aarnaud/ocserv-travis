@@ -74,10 +74,11 @@ struct  _AuthCookieRequestMsg
 {
   ProtobufCMessage base;
   ProtobufCBinaryData cookie;
+  char *hostname;
 };
 #define AUTH_COOKIE_REQUEST_MSG__INIT \
  { PROTOBUF_C_MESSAGE_INIT (&auth_cookie_request_msg__descriptor) \
-    , {0,NULL} }
+    , {0,NULL}, NULL }
 
 
 struct  _FwPortSt
@@ -363,7 +364,6 @@ struct  _SessionInfoMsg
   ProtobufCMessage base;
   char *tls_ciphersuite;
   char *dtls_ciphersuite;
-  char *user_agent;
   char *cstp_compr;
   char *dtls_compr;
   /*
@@ -375,12 +375,10 @@ struct  _SessionInfoMsg
   ProtobufCBinaryData our_addr;
   protobuf_c_boolean has_remote_addr;
   ProtobufCBinaryData remote_addr;
-  char *hostname;
-  char *device_type;
 };
 #define SESSION_INFO_MSG__INIT \
  { PROTOBUF_C_MESSAGE_INIT (&session_info_msg__descriptor) \
-    , NULL, NULL, NULL, NULL, NULL, 0, {0,NULL}, 0, {0,NULL}, NULL, NULL }
+    , NULL, NULL, NULL, NULL, 0, {0,NULL}, 0, {0,NULL} }
 
 
 /*
@@ -577,10 +575,11 @@ struct  _SecmSessionCloseMsg
   uint64_t bytes_out;
   char *ipv4;
   char *ipv6;
+  protobuf_c_boolean server_disconnected;
 };
 #define SECM_SESSION_CLOSE_MSG__INIT \
  { PROTOBUF_C_MESSAGE_INIT (&secm_session_close_msg__descriptor) \
-    , {0,NULL}, 0, 0, 0, 0, 0, 0, NULL, NULL }
+    , {0,NULL}, 0, 0, 0, 0, 0, 0, NULL, NULL, 0 }
 
 
 /*

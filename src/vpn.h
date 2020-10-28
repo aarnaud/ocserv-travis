@@ -242,6 +242,7 @@ struct cfg_st {
 	unsigned no_compress_limit;	/* under this size (in bytes) of data there will be no compression */
 #endif
 	char *banner;
+	char *pre_login_banner;
 	char *ocsp_response; /* file with the OCSP response */
 	char *default_domain; /* domain to be advertised */
 
@@ -301,8 +302,9 @@ struct cfg_st {
 	unsigned cisco_client_compat; /* do not require client certificate, 
 	                               * and allow auth to complete in different
 	                               * TCP sessions. */
-	unsigned rate_limit_ms; /* if non zero force a connection every rate_limit milliseconds */
+	unsigned rate_limit_ms; /* if non zero force a connection every rate_limit milliseconds if ocserv-sm is heavily loaded */
 	unsigned ping_leases; /* non zero if we need to ping prior to leasing */
+	unsigned server_drain_ms; /* how long to wait after we stop accepting new connections before closing old connections */ 
 
 	size_t rx_per_sec;
 	size_t tx_per_sec;
@@ -381,7 +383,6 @@ struct perm_cfg_st {
 #ifdef ANYCONNECT_CLIENT_COMPAT
 	char *cert_hash;
 #endif
-
 	unsigned int stats_reset_time;
 	unsigned foreground;
 	unsigned no_chdir;
@@ -393,8 +394,14 @@ struct perm_cfg_st {
 	char *listen_host;
 	char *udp_listen_host;
 	char* unix_conn_file;
+	char *listen_netns_name;
 	unsigned int port;
 	unsigned int udp_port;
+
+	unsigned int sec_mod_scale;
+
+	/* for testing ocserv only */
+	unsigned debug_no_secmod_stats;
 
 	/* attic, where old config allocated values are stored */
 	struct list_head attic;

@@ -194,6 +194,21 @@ static auth_types_st avail_auth_types[] =
 #endif
 };
 
+static void check_for_duplicate_password_auth(struct perm_cfg_st *config, const char *vhostname, unsigned type)
+{
+	unsigned i;
+
+	if (type & AUTH_TYPE_USERNAME_PASS) {
+		for (i=0;i<MAX_AUTH_METHODS;i++) {
+			if (config->auth[i].enabled == 0)
+				break;
+			if (config->auth[i].type & AUTH_TYPE_USERNAME_PASS) {
+				fprintf(stderr, ERRSTR"%s: you cannot mix multiple password authentication methods\n", vhostname);
+				exit(1);
+			}
+		}
+	}
+}
 
 static void figure_auth_funcs(void *pool, const char *vhostname,
 			      struct perm_cfg_st *config, char **auth, unsigned auth_size,
@@ -204,6 +219,9 @@ static void figure_auth_funcs(void *pool, const char *vhostname,
 
 	if (auth == NULL)
 		return;
+
+	if (vhostname[0] == 0)
+		vhostname = "vhost:default";
 
 	if (primary != 0) {
 		/* Set the primary authentication methods */
@@ -243,7 +261,7 @@ static void figure_auth_funcs(void *pool, const char *vhostname,
 			}
 			talloc_free(auth[j]);
 		}
-		fprintf(stderr, NOTESTR"%ssetting '%s' as primary authentication method\n", vhostname, config->auth[0].name);
+		fprintf(stderr, NOTESTR"%s: setting '%s' as primary authentication method\n", vhostname, config->auth[0].name);
 	} else {
 		unsigned x = config->auth_methods;
 		/* Append authentication methods (alternative options) */
@@ -257,6 +275,7 @@ static void figure_auth_funcs(void *pool, const char *vhostname,
 					config->auth[x].name = talloc_strdup(pool, avail_auth_types[i].name);
 					fprintf(stderr, NOTESTR"%s: enabling '%s' as authentication method\n", vhostname, avail_auth_types[i].name);
 
+					check_for_duplicate_password_auth(config, vhostname, avail_auth_types[i].type);
 					config->auth[x].amod = avail_auth_types[i].mod;
 					config->auth[x].type |= avail_auth_types[i].type;
 					config->auth[x].enabled = 1;
@@ -743,6 +762,8 @@ static int cfg_ini_handler(void *_ctx, const char *section, const char *name, co
 		} else if (strcmp(name, "listen-clear-file") == 0) {
 			if (!PWARN_ON_VHOST_STRDUP(vhost->name, "listen-clear-file", unix_conn_file))
 				PREAD_STRING(pool, vhost->perm_config.unix_conn_file);
+		} else if (strcmp(name, "listen-netns") == 0) {
+			vhost->perm_config.listen_netns_name = talloc_strdup(pool, value);
 		} else if (strcmp(name, "tcp-port") == 0) {
 			if (!PWARN_ON_VHOST(vhost->name, "tcp-port", port))
 				READ_NUMERIC(vhost->perm_config.port);
@@ -771,6 +792,8 @@ static int cfg_ini_handler(void *_ctx, const char *section, const char *name, co
 			READ_MULTI_LINE(vhost->perm_config.cert, vhost->perm_config.cert_size);
 		} else if (strcmp(name, "server-key") == 0) {
 			READ_MULTI_LINE(vhost->perm_config.key, vhost->perm_config.key_size);
+		} else if (strcmp(name, "debug-no-secmod-stats") == 0) {
+			READ_TF(vhost->perm_config.debug_no_secmod_stats);
 		} else if (strcmp(name, "dh-params") == 0) {
 			READ_STRING(vhost->perm_config.dh_params_file);
 		} else if (strcmp(name, "pin-file") == 0) {
@@ -804,6 +827,9 @@ static int cfg_ini_handler(void *_ctx, const char *section, const char *name, co
 				READ_STATIC_STRING(pid_file);
 			} else if (reload == 0)
 				fprintf(stderr, NOTESTR"skipping 'pid-file' config option\n");
+		} else if (strcmp(name, "sec-mod-scale") == 0) {
+			if (!PWARN_ON_VHOST(vhost->name, "sec-mod-scale", sec_mod_scale))
+				READ_NUMERIC(vhost->perm_config.sec_mod_scale);
 		} else {
 			stage1_found = 0;
 		}
@@ -843,6 +869,9 @@ static int cfg_ini_handler(void *_ctx, const char *section, const char *name, co
 	} else if (strcmp(name, "rate-limit-ms") == 0) {
 		if (!WARN_ON_VHOST(vhost->name, "rate-limit-ms", rate_limit_ms))
 			READ_NUMERIC(config->rate_limit_ms);
+	} else if (strcmp(name, "server-drain-ms") == 0) {
+		if (!WARN_ON_VHOST(vhost->name, "server-drain-ms", server_drain_ms))
+			READ_NUMERIC(config->server_drain_ms);
 	} else if (strcmp(name, "ocsp-response") == 0) {
 		READ_STRING(config->ocsp_response);
 #ifdef ANYCONNECT_CLIENT_COMPAT
@@ -870,6 +899,8 @@ static int cfg_ini_handler(void *_ctx, const char *section, const char *name, co
 		fprintf(stderr, WARNSTR"the option 'session-control' is deprecated\n");
 	} else if (strcmp(name, "banner") == 0) {
 		READ_STRING(config->banner);
+	} else if (strcmp(name, "pre-login-banner") == 0) {
+		READ_STRING(config->pre_login_banner);
 	} else if (strcmp(name, "dtls-legacy") == 0) {
 		READ_TF(config->dtls_legacy);
 	} else if (strcmp(name, "cisco-client-compat") == 0) {
@@ -1130,6 +1161,7 @@ static void parse_cfg_file(void *pool, const char *file, struct list_head *head,
 	ctx.reload = (flags&CFG_FLAG_RELOAD)?1:0;
 	ctx.head = head;
 
+#if defined(PROC_FS_SUPPORTED)
 	// Worker always reads from snapshot
 	if ((flags & CFG_FLAG_WORKER) == CFG_FLAG_WORKER) {
 		char * snapshot_file = NULL;
@@ -1167,7 +1199,7 @@ static void parse_cfg_file(void *pool, const char *file, struct list_head *head,
 		/* parse configuration
 		*/
 		ret = ini_parse(cfg_file, cfg_ini_handler, &ctx);
-		if (ret < 0 && file != NULL && strcmp(file, DEFAULT_CFG_FILE) == 0) {
+		if (ret < 0 && strcmp(file, DEFAULT_CFG_FILE) == 0) {
 			cfg_file = OLD_DEFAULT_CFG_FILE;
 			ret = ini_parse(cfg_file, cfg_ini_handler, &ctx);
 		}
@@ -1192,6 +1224,27 @@ static void parse_cfg_file(void *pool, const char *file, struct list_head *head,
 		}
 
 	}
+#else
+	const char * cfg_file = file;
+
+	if (cfg_file == NULL) {
+		fprintf(stderr, ERRSTR"no config file!\n");
+		exit(1);
+	}
+
+	/* parse configuration
+	*/
+	ret = ini_parse(cfg_file, cfg_ini_handler, &ctx);
+	if (ret < 0 && file != NULL && strcmp(file, DEFAULT_CFG_FILE) == 0) {
+		cfg_file = OLD_DEFAULT_CFG_FILE;
+		ret = ini_parse(cfg_file, cfg_ini_handler, &ctx);
+	}
+
+	if (ret < 0) {
+		fprintf(stderr, ERRSTR"cannot load config file %s\n", cfg_file);
+		exit(1);
+	}
+#endif
 
 	/* apply configuration not yet applied.
 	 * We start from the last, which is the default server (firstly
@@ -1291,9 +1344,9 @@ static void check_cfg(vhost_cfg_st *vhost, vhost_cfg_st *defvhost, unsigned sile
 	if (vhost->perm_config.port == 0 && vhost->perm_config.unix_conn_file == NULL) {
 		if (defvhost) {
 			if (vhost->perm_config.port)
-				vhost->perm_config.port = vhost->perm_config.port;
+				vhost->perm_config.port = defvhost->perm_config.port;
 			else if (vhost->perm_config.unix_conn_file)
-				vhost->perm_config.unix_conn_file = talloc_strdup(vhost, vhost->perm_config.unix_conn_file);
+				vhost->perm_config.unix_conn_file = talloc_strdup(vhost, defvhost->perm_config.unix_conn_file);
 		} else {
 			fprintf(stderr, ERRSTR"%sthe tcp-port option is mandatory!\n", PREFIX_VHOST(vhost));
 			exit(1);
@@ -1390,11 +1443,18 @@ static void check_cfg(vhost_cfg_st *vhost, vhost_cfg_st *defvhost, unsigned sile
 #endif
 
 	if (config->priorities == NULL) {
-		/* on vhosts assign the main host priorities */
+		char *tmp = "";
+		/* on vhosts assign the main host priorities. We furthermore disable TLS1.3 on Cisco clients
+		 * due to issue #318. */
+
+		if (config->cisco_client_compat) {
+			tmp = ":-VERS-TLS1.3";
+		}
+
 		if (defvhost) {
-			config->priorities = talloc_strdup(config, defvhost->perm_config.config->priorities);
+			config->priorities = talloc_asprintf(config, "%s%s", defvhost->perm_config.config->priorities, tmp);
 		} else {
-			config->priorities = talloc_strdup(config, "NORMAL:%SERVER_PRECEDENCE:%COMPAT");
+			config->priorities = talloc_asprintf(config, "%s%s", "NORMAL:%SERVER_PRECEDENCE:%COMPAT", tmp);
 		}
 	}
 
@@ -1753,7 +1813,7 @@ void remove_pid_file(void)
 	if (pid_file[0]==0)
 		return;
 
-	remove(pid_file);
+	(void)remove(pid_file);
 }
 
 int _add_multi_line_val(void *pool, char ***varname, size_t *num,

@@ -111,7 +111,7 @@ static int radius_auth_init(void **ctx, void *pool, void *_vctx, const common_au
 	struct radius_vhost_ctx *vctx = _vctx;
 
 	if (info->username == NULL || info->username[0] == 0) {
-		syslog(LOG_AUTH,
+		syslog(LOG_NOTICE,
 		       "radius-auth: no username present");
 		return ERR_AUTH_FAIL;
 	}
@@ -162,7 +162,7 @@ static int radius_auth_group(void *ctx, const char *suggested, char *groupname, 
 			}
 		}
 
-		syslog(LOG_AUTH,
+		syslog(LOG_NOTICE,
 		       "radius-auth: user '%s' requested group '%s' but is not a member",
 		       pctx->username, suggested);
 		return -1;
@@ -216,10 +216,8 @@ static void parse_groupnames(struct radius_ctx_st *pctx, const char *full)
 	char *p, *p2;
 	unsigned i;
 
-	pctx->groupnames_size = 0;
-
-	syslog(LOG_DEBUG, "radius-auth: found group string %s", full);
-	if (strncmp(full, "OU=", 3) == 0) {
+	if (pctx->groupnames_size == 0 && strncmp(full, "OU=", 3) == 0) {
+		syslog(LOG_DEBUG, "radius-auth: found group string %s", full);
 		full += 3;
 
 		p = talloc_strdup(pctx, full);
@@ -241,10 +239,16 @@ static void parse_groupnames(struct radius_ctx_st *pctx, const char *full)
 				break;
 		}
 	} else {
-		pctx->groupnames[0] = talloc_strdup(pctx, full);
-		if (pctx->groupnames[0] == NULL)
-			return;
-		pctx->groupnames_size = 1;
+		if (pctx->groupnames_size == 0) {
+			syslog(LOG_DEBUG, "radius-auth: found group string %s", full);
+
+			pctx->groupnames[0] = talloc_strdup(pctx, full);
+			if (pctx->groupnames[0] == NULL)
+				return;
+			pctx->groupnames_size = 1;
+		} else {
+			syslog(LOG_DEBUG, "radius-auth: ignoring redundant group string");
+		}
 	}
 }
 
@@ -471,7 +475,7 @@ static int radius_auth_pass(void *ctx, const char *pass, unsigned pass_len)
 			goto cleanup;
 		}
 
-		syslog(LOG_AUTH,
+		syslog(LOG_NOTICE,
 		       "radius-auth: error authenticating user '%s' (code %d)",
 		       pctx->username, ret);
 		ret = ERR_AUTH_FAIL;

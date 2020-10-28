@@ -234,7 +234,8 @@ int handle_status_cmd(struct unix_ctx *ctx, const char *arg, cmd_params_st *para
 
 		print_single_value(stdout, params, "Status", rep->status != 0 ? "online" : "error", 1);
 		print_single_value_int(stdout, params, "Server PID", rep->pid, 1);
-		print_single_value_int(stdout, params, "Sec-mod PID", rep->sec_mod_pid, 1);
+		print_single_value_int(stdout, params, "Sec-mod PID", rep->sec_mod_pids[0], 1);
+		print_single_value_int(stdout, params, "Sec-mod instance count", rep->n_sec_mod_pids, 1);
 
 		t = rep->start_time;
 		tm = localtime(&t);
@@ -483,11 +484,12 @@ int handle_unban_ip_cmd(struct unix_ctx *ctx, const char *arg, cmd_params_st *pa
 
 	if (status != 0) {
 		printf("IP '%s' was unbanned\n", arg);
+		ret = 0;
 	} else {
 		printf("could not unban IP '%s'\n", arg);
+		ret = 1;
 	}
 
-	ret = 0;
 	goto cleanup;
 
  error:
@@ -533,11 +535,12 @@ int handle_disconnect_user_cmd(struct unix_ctx *ctx, const char *arg, cmd_params
 
 	if (status != 0) {
 		printf("user '%s' was disconnected\n", arg);
+		ret = 0;
 	} else {
 		printf("could not disconnect user '%s'\n", arg);
+		ret = 1;
 	}
 
-	ret = 0;
 	goto cleanup;
 
  error:
@@ -1210,7 +1213,7 @@ int common_info_cmd(UserListRep * args, FILE *out, cmd_params_st *params)
 			print_single_value(out, params, "Routes", "defaultroute", 1);
 		}
 
-		if ((r = print_list_entries(out, params, "No-routes", args->user[i]->no_routes, args->user[i]->n_no_routes, 1)) < 0)
+		if (print_list_entries(out, params, "No-routes", args->user[i]->no_routes, args->user[i]->n_no_routes, 1) < 0)
 			goto error_parse;
 
 		if (print_list_entries(out, params, "iRoutes", args->user[i]->iroutes, args->user[i]->n_iroutes, 1) < 0)

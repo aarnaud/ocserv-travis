@@ -23,7 +23,6 @@
 OCCTL="${OCCTL:-../src/occtl/occtl}"
 SERV="${SERV:-../src/ocserv}"
 srcdir=${srcdir:-.}
-PORT=4569
 PIDFILE=ocserv-pid.$$.tmp
 CLIPID=oc-pid.$$.tmp
 PATH=${PATH}:/usr/sbin
@@ -37,6 +36,8 @@ if test -z "${RADIUSD}";then
 fi 
 
 . `dirname $0`/common.sh
+
+eval "${GETPORT}"
 
 if test -z "${IP}";then
 	echo "no IP tool is present"
@@ -105,7 +106,7 @@ if test $? != 0;then
 	exit 1
 fi
 
-sleep 3
+sleep 6
 
 ${CMDNS1} ${IP} addr show|grep $(echo ${VPNADDR}|cut -d '.' -f 1-3)
 if test $? != 0;then
@@ -124,7 +125,7 @@ MATCH="Groupname: group2"
 ${OCCTL} -s ${OCCTL_SOCKET} show user ${USERNAME} >${OUTFILE} 2>&1
 grep "${MATCH}" ${OUTFILE}
 if test $? != 0;then
-	${OCCTL} -s ${OCCTL_SOCKET} show user ${USERNAME}
+	cat ${OUTFILE}
 	echo "could not find group information"
 	exit 1
 fi
@@ -142,7 +143,7 @@ if test $? != 0;then
 	exit 1
 fi
 
-sleep 3
+sleep 6
 
 ${CMDNS1} ${IP} addr show|grep $(echo ${VPNADDR}|cut -d '.' -f 1-3)
 if test $? != 0;then
@@ -155,7 +156,7 @@ MATCH="Groupname: group1"
 ${OCCTL} -s ${OCCTL_SOCKET} show user ${USERNAME} >${OUTFILE} 2>&1
 grep "${MATCH}" ${OUTFILE}
 if test $? != 0;then
-	${OCCTL} -s ${OCCTL_SOCKET} show user ${USERNAME}
+	cat ${OUTFILE}
 	echo "could not find group information"
 	exit 1
 fi

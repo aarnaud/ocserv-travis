@@ -29,7 +29,7 @@
 #include <sys/syscall.h>
 #include <seccomp.h>
 #include <sys/ioctl.h>
-#include <sys/signal.h>
+#include <signal.h>
 #include <errno.h>
 
 /* libseccomp 2.4.2 broke accidentally the API. Work around it. */
@@ -117,6 +117,7 @@ int disable_system_calls(struct worker_st *ws)
 #if defined(HAVE_CLOCK_GETTIME)
 	ADD_SYSCALL(clock_gettime, 0);
 #endif
+	ADD_SYSCALL(clock_nanosleep, 0);
 	ADD_SYSCALL(nanosleep, 0);
 	ADD_SYSCALL(getrusage, 0);
 	ADD_SYSCALL(alarm, 0);

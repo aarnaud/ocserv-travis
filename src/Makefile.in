@@ -250,9 +250,9 @@ am__ocserv_SOURCES_DIST = http-parser/http_parser.c \
 	str.h subconfig.c sup-config/file.c sup-config/file.h \
 	sup-config/radius.c sup-config/radius.h tlslib.c tlslib.h \
 	tun.c tun.h valid-hostname.c vasprintf.c vasprintf.h vhost.h \
-	vpn.h lzs.c lzs.h kkdcp_asn1_tab.c kkdcp.asn auth/common.c \
-	auth/common.h auth/gssapi.c auth/gssapi.h auth/pam.c \
-	auth/pam.h auth/plain.c auth/plain.h auth/radius.c \
+	vpn.h namespace.h lzs.c lzs.h kkdcp_asn1_tab.c kkdcp.asn \
+	auth/common.c auth/common.h auth/gssapi.c auth/gssapi.h \
+	auth/pam.c auth/pam.h auth/plain.c auth/plain.h auth/radius.c \
 	auth/radius.h auth-unix.c auth-unix.h auth/openidconnect.c \
 	auth/openidconnect.h acct/radius.c acct/radius.h acct/pam.c \
 	acct/pam.h main.c main-auth.c main-ban.c main-ban.h \
@@ -260,7 +260,8 @@ am__ocserv_SOURCES_DIST = http-parser/http_parser.c \
 	main-worker-cmd.c proc-search.c proc-search.h route-add.c \
 	route-add.h sec-mod.c sec-mod.h sec-mod-acct.h sec-mod-auth.c \
 	sec-mod-auth.h sec-mod-cookies.c sec-mod-db.c sec-mod-resume.c \
-	sec-mod-resume.h sec-mod-sup-config.c sec-mod-sup-config.h
+	sec-mod-resume.h sec-mod-sup-config.c sec-mod-sup-config.h \
+	common/sockdiag.h common/sockdiag.c namespace.c
 @LOCAL_HTTP_PARSER_TRUE@am__objects_4 =  \
 @LOCAL_HTTP_PARSER_TRUE@	http-parser/http_parser.$(OBJEXT)
 @ENABLE_COMPRESSION_TRUE@am__objects_5 = lzs.$(OBJEXT)
@@ -286,7 +287,8 @@ am_ocserv_OBJECTS = $(am__objects_7) $(am__objects_9) \
 	main-worker-cmd.$(OBJEXT) proc-search.$(OBJEXT) \
 	route-add.$(OBJEXT) sec-mod.$(OBJEXT) sec-mod-auth.$(OBJEXT) \
 	sec-mod-cookies.$(OBJEXT) sec-mod-db.$(OBJEXT) \
-	sec-mod-resume.$(OBJEXT) sec-mod-sup-config.$(OBJEXT)
+	sec-mod-resume.$(OBJEXT) sec-mod-sup-config.$(OBJEXT) \
+	common/sockdiag.$(OBJEXT) namespace.$(OBJEXT)
 ocserv_OBJECTS = $(am_ocserv_OBJECTS)
 @LOCAL_HTTP_PARSER_FALSE@am__DEPENDENCIES_3 = $(am__DEPENDENCIES_1)
 @ENABLE_OIDC_AUTH_TRUE@am__DEPENDENCIES_4 = $(am__DEPENDENCIES_1) \
@@ -316,8 +318,8 @@ am__ocserv_worker_SOURCES_DIST = http-parser/http_parser.c \
 	str.h subconfig.c sup-config/file.c sup-config/file.h \
 	sup-config/radius.c sup-config/radius.h tlslib.c tlslib.h \
 	tun.c tun.h valid-hostname.c vasprintf.c vasprintf.h vhost.h \
-	vpn.h lzs.c lzs.h kkdcp_asn1_tab.c kkdcp.asn html.c html.h \
-	http-heads.h worker.c worker.h worker-auth.c \
+	vpn.h namespace.h lzs.c lzs.h kkdcp_asn1_tab.c kkdcp.asn \
+	html.c html.h http-heads.h worker.c worker.h worker-auth.c \
 	worker-bandwidth.c worker-bandwidth.h worker-http.c \
 	worker-http-handlers.c worker-kkdcp.c worker-misc.c \
 	worker-privs.c worker-proxyproto.c worker-resume.c \
@@ -415,7 +417,8 @@ am__depfiles_remade = ./$(DEPDIR)/auth-unix.Po \
 	./$(DEPDIR)/main-ban.Po ./$(DEPDIR)/main-ctl-unix.Po \
 	./$(DEPDIR)/main-proc.Po ./$(DEPDIR)/main-sec-mod-cmd.Po \
 	./$(DEPDIR)/main-user.Po ./$(DEPDIR)/main-worker-cmd.Po \
-	./$(DEPDIR)/main.Po ./$(DEPDIR)/ocserv_worker-config-kkdcp.Po \
+	./$(DEPDIR)/main.Po ./$(DEPDIR)/namespace.Po \
+	./$(DEPDIR)/ocserv_worker-config-kkdcp.Po \
 	./$(DEPDIR)/ocserv_worker-config-ports.Po \
 	./$(DEPDIR)/ocserv_worker-config.Po \
 	./$(DEPDIR)/ocserv_worker-html.Po \
@@ -467,7 +470,7 @@ am__depfiles_remade = ./$(DEPDIR)/auth-unix.Po \
 	common/$(DEPDIR)/libcommon_a-system.Po \
 	common/$(DEPDIR)/ocserv_worker-hmac.Po \
 	common/$(DEPDIR)/ocserv_worker-snapshot.Po \
-	common/$(DEPDIR)/snapshot.Po \
+	common/$(DEPDIR)/snapshot.Po common/$(DEPDIR)/sockdiag.Po \
 	http-parser/$(DEPDIR)/http_parser.Po \
 	http-parser/$(DEPDIR)/ocserv_worker-http_parser.Po \
 	inih/$(DEPDIR)/ini.Po inih/$(DEPDIR)/ocserv_worker-ini.Po \
@@ -1294,7 +1297,8 @@ ocserv_SOURCES = $(CORE_SOURCES) $(AUTH_SOURCES) $(ACCT_SOURCES) \
 	main-sec-mod-cmd.c main-user.c main-worker-cmd.c proc-search.c \
 	proc-search.h route-add.c route-add.h sec-mod.c sec-mod.h sec-mod-acct.h \
 	sec-mod-auth.c sec-mod-auth.h sec-mod-cookies.c sec-mod-db.c \
-	sec-mod-resume.c sec-mod-resume.h sec-mod-sup-config.c sec-mod-sup-config.h
+	sec-mod-resume.c sec-mod-resume.h sec-mod-sup-config.c sec-mod-sup-config.h \
+	common/sockdiag.h common/sockdiag.c namespace.c
 
 ocserv_LDADD = $(CORE_LDADD)
 ocserv_worker_CPPFLAGS = $(AM_CPPFLAGS) -DOCSERV_WORKER_PROCESS
@@ -1322,7 +1326,8 @@ CORE_SOURCES = $(CCAN_SOURCES) $(HTTP_PARSER_SOURCES) common/hmac.c \
 	setproctitle.h str.c str.h subconfig.c sup-config/file.c \
 	sup-config/file.h sup-config/radius.c sup-config/radius.h \
 	tlslib.c tlslib.h tun.c tun.h valid-hostname.c vasprintf.c \
-	vasprintf.h vhost.h vpn.h $(am__append_7) $(am__append_8)
+	vasprintf.h vhost.h vpn.h namespace.h $(am__append_7) \
+	$(am__append_8)
 @LOCAL_HTTP_PARSER_TRUE@HTTP_PARSER_SOURCES = http-parser/http_parser.c http-parser/http_parser.h
 CORE_LDADD = ../gl/libgnu.a libccan.a libcommon.a $(LIBGNUTLS_LIBS) \
 	$(PAM_LIBS) $(LIBUTIL) $(LIBSECCOMP) $(LIBWRAP) $(LIBCRYPT) \
@@ -1690,6 +1695,8 @@ acct/radius.$(OBJEXT): acct/$(am__dirstamp) \
 	acct/$(DEPDIR)/$(am__dirstamp)
 acct/pam.$(OBJEXT): acct/$(am__dirstamp) \
 	acct/$(DEPDIR)/$(am__dirstamp)
+common/sockdiag.$(OBJEXT): common/$(am__dirstamp) \
+	common/$(DEPDIR)/$(am__dirstamp)
 
 ocserv$(EXEEXT): $(ocserv_OBJECTS) $(ocserv_DEPENDENCIES) $(EXTRA_ocserv_DEPENDENCIES) 
 	@rm -f ocserv$(EXEEXT)
@@ -1788,6 +1795,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/main-user.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/main-worker-cmd.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/main.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/namespace.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ocserv_worker-config-kkdcp.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ocserv_worker-config-ports.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ocserv_worker-config.Po@am__quote@ # am--include-marker
@@ -1853,6 +1861,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@common/$(DEPDIR)/ocserv_worker-hmac.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@common/$(DEPDIR)/ocserv_worker-snapshot.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@common/$(DEPDIR)/snapshot.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@common/$(DEPDIR)/sockdiag.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@http-parser/$(DEPDIR)/http_parser.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@http-parser/$(DEPDIR)/ocserv_worker-http_parser.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@inih/$(DEPDIR)/ini.Po@am__quote@ # am--include-marker
@@ -2950,6 +2959,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/main-user.Po
 	-rm -f ./$(DEPDIR)/main-worker-cmd.Po
 	-rm -f ./$(DEPDIR)/main.Po
+	-rm -f ./$(DEPDIR)/namespace.Po
 	-rm -f ./$(DEPDIR)/ocserv_worker-config-kkdcp.Po
 	-rm -f ./$(DEPDIR)/ocserv_worker-config-ports.Po
 	-rm -f ./$(DEPDIR)/ocserv_worker-config.Po
@@ -3015,6 +3025,7 @@ distclean: distclean-am
 	-rm -f common/$(DEPDIR)/ocserv_worker-hmac.Po
 	-rm -f common/$(DEPDIR)/ocserv_worker-snapshot.Po
 	-rm -f common/$(DEPDIR)/snapshot.Po
+	-rm -f common/$(DEPDIR)/sockdiag.Po
 	-rm -f http-parser/$(DEPDIR)/http_parser.Po
 	-rm -f http-parser/$(DEPDIR)/ocserv_worker-http_parser.Po
 	-rm -f inih/$(DEPDIR)/ini.Po
@@ -3108,6 +3119,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/main-user.Po
 	-rm -f ./$(DEPDIR)/main-worker-cmd.Po
 	-rm -f ./$(DEPDIR)/main.Po
+	-rm -f ./$(DEPDIR)/namespace.Po
 	-rm -f ./$(DEPDIR)/ocserv_worker-config-kkdcp.Po
 	-rm -f ./$(DEPDIR)/ocserv_worker-config-ports.Po
 	-rm -f ./$(DEPDIR)/ocserv_worker-config.Po
@@ -3173,6 +3185,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f common/$(DEPDIR)/ocserv_worker-hmac.Po
 	-rm -f common/$(DEPDIR)/ocserv_worker-snapshot.Po
 	-rm -f common/$(DEPDIR)/snapshot.Po
+	-rm -f common/$(DEPDIR)/sockdiag.Po
 	-rm -f http-parser/$(DEPDIR)/http_parser.Po
 	-rm -f http-parser/$(DEPDIR)/ocserv_worker-http_parser.Po
 	-rm -f inih/$(DEPDIR)/ini.Po

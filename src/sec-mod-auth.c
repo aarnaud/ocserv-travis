@@ -302,7 +302,7 @@ int check_group(sec_mod_st * sec, client_entry_st * e)
 			}
 
 			if (found == 0) {
-				seclog(sec, LOG_AUTH, "user '%s' requested group '%s' but is not included on his certificate groups",
+				seclog(sec, LOG_NOTICE, "user '%s' requested group '%s' but is not included on his certificate groups",
 					e->acct_info.username, req_group);
 				return -1;
 			}
@@ -562,7 +562,7 @@ int handle_secm_session_close_cmd(sec_mod_st *sec, int fd, const SecmSessionClos
 	e = find_client_entry(sec, req->sid.data);
 	if (e == NULL) {
 		seclog(sec, LOG_INFO, "session close but with non-existing SID");
-		return send_msg(e, fd, CMD_SECM_CLI_STATS, &rep,
+		return send_msg(sec, fd, CMD_SECM_CLI_STATS, &rep,
 		                (pack_size_func) cli_stats_msg__get_packed_size,
 		                (pack_func) cli_stats_msg__pack);
 	}
@@ -583,6 +583,10 @@ int handle_secm_session_close_cmd(sec_mod_st *sec, int fd, const SecmSessionClos
 	}
 	if (req->has_bytes_out && req->bytes_out > e->stats.bytes_out) {
 			e->stats.bytes_out = req->bytes_out;
+	}
+
+	if (req->server_disconnected) {
+		e->discon_reason = REASON_SERVER_DISCONNECT;
 	}
 
 	/* send reply */
@@ -606,7 +610,6 @@ int handle_secm_session_close_cmd(sec_mod_st *sec, int fd, const SecmSessionClos
 
 	return 0;
 }
-
 
 void handle_sec_auth_ban_ip_reply(sec_mod_st *sec, const BanIpReplyMsg *msg)
 {
@@ -778,7 +781,7 @@ int handle_sec_auth_init(int cfd, sec_mod_st *sec, const SecAuthInitMsg *req, pi
 	time_t session_start_time;
 
 	if (req->hmac.len != HMAC_DIGEST_SIZE || !req->hmac.data) {
-		seclog(sec, LOG_AUTH, "hmac is the wrong size");
+		seclog(sec, LOG_NOTICE, "hmac is the wrong size");
 		return -1;
 	}
 
@@ -796,14 +799,14 @@ int handle_sec_auth_init(int cfd, sec_mod_st *sec, const SecAuthInitMsg *req, pi
 	generate_hmac(sizeof(sec->hmac_key), sec->hmac_key, sizeof(hmac_components) / sizeof(hmac_components[0]), hmac_components, computed_hmac);
 
 	if (memcmp(computed_hmac, req->hmac.data, req->hmac.len) != 0) {
-		seclog(sec, LOG_AUTH, "hmac presented by client doesn't match parameters provided - possible replay");
+		seclog(sec, LOG_NOTICE, "hmac presented by client doesn't match parameters provided - possible replay");
 		return -1;
 	}
 
 	vhost = find_vhost(sec->vconfig, req->vhost);
 
 	if ((now - session_start_time) > vhost->perm_config.config->auth_timeout) {
-		seclog(sec, LOG_AUTH, "hmac presented by client expired - possible replay");
+		seclog(sec, LOG_NOTICE, "hmac presented by client expired - possible replay");
 		return -1;
 	}
 

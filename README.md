@@ -1,6 +1,3 @@
-[![Build status](https://gitlab.com/openconnect/ocserv/badges/master/pipeline.svg)](https://gitlab.com/openconnect/ocserv/commits/master)
-[![coverage report](https://gitlab.com/openconnect/ocserv/badges/master/coverage.svg)](https://openconnect.gitlab.io/ocserv/coverage/)
-
 # About
 
 This program is openconnect VPN server (ocserv), a server for the
@@ -15,6 +12,18 @@ The program consists of:
  3. ocpasswd, a tool to administer simple password files.
 
 
+# Supported platforms
+
+The OpenConnect VPN server is designed and tested to work, with both IPv6
+and IPv4, on Linux systems. It is, however, known to work on FreeBSD,
+OpenBSD and other BSD derived systems.
+
+Known limitation is that on platforms, which do not support procfs(5),
+changes to the configuration must only be made while ocserv(8) is stopped.
+Not doing so will cause new worker processes picking up the new
+configuration while ocserv-main will use the previous configuration.
+
+
 # Build dependencies
 
 Required dependencies (Debian pkg/Fedora pkg):
@@ -25,14 +34,17 @@ libev-dev            / libev-devel
 
 Optional dependencies that enable specific functionality:
 ```
-TCP wrappers: libwrap0-dev       / tcp_wrappers-devel
-PAM:          libpam0g-dev       / pam-devel
-LZ4:          liblz4-dev         / lz4-devel
-seccomp:      libseccomp-dev     / libseccomp-devel
-occtl:        libreadline-dev    / readline-devel
-              libnl-route-3-dev  / libnl3-devel
-GSSAPI:       libkrb5-dev        / krb5-devel
-Radius:       libradcli-dev      / radcli-devel
+TCP wrappers: libwrap0-dev        / tcp_wrappers-devel
+PAM:          libpam0g-dev        / pam-devel
+LZ4:          liblz4-dev          / lz4-devel
+seccomp:      libseccomp-dev      / libseccomp-devel
+occtl:        libreadline-dev     / readline-devel
+              libnl-route-3-dev   / libnl3-devel
+GSSAPI:       libkrb5-dev         / krb5-devel
+Radius:       libradcli-dev       / radcli-devel
+OIDC:	      libcurl4-gnutls-dev / libcurl-devel
+	      libcjose-dev        / cjose-devel
+	      libjansson-dev	  / jansson-devel
 ```
 
 Dependencies for development, testing, or dependencies that can be skipped
@@ -45,7 +57,6 @@ libhttp-parser-dev / http-parser-devel
 libpcl1-dev        / pcllib-devel
 protobuf-c-compiler/ protobuf-c
 gperf              / gperf
-liblockfile-bin    / lockfile-progs
 nuttcp             / nuttcp
 lcov               / lcov
 libuid-wrapper     / uid_wrapper
@@ -57,7 +68,10 @@ haproxy            / haproxy
 iputils-ping       / iputils
 freeradius	   / freeradius
 gawk		   / gawk
+gnutls-bin	   / gnutls-utils
+iproute2	   / iproute
 yajl-tools	   / yajl
+iproute2	   / iproute
 ```
 
 See [README-radius](doc/README-radius.md) for more information on Radius
@@ -99,7 +113,10 @@ $ certtool --generate-self-signed --load-privkey test-key.pem --outfile test-cer
 ```
 (make sure you enable encryption or signing)
 
-To run the server on the foreground edit the [sample.config](doc/sample.config) and then run:
+
+Create a dedicated user and group for the server unprivileged processes
+(e.g., 'ocserv'), and then edit the [sample.config](doc/sample.config)
+and set these users on run-as-user and run-as-group options. The run:
 ```
 # cd doc && ../src/ocserv -f -c sample.config
 ```

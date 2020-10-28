@@ -484,12 +484,12 @@ static const ProtobufCFieldDescriptor status_rep__field_descriptors[27] =
     0,NULL,NULL    /* reserved1,reserved2, etc */
   },
   {
-    "sec_mod_pid",
+    "sec_mod_pids",
     3,
-    PROTOBUF_C_LABEL_REQUIRED,
+    PROTOBUF_C_LABEL_REPEATED,
     PROTOBUF_C_TYPE_UINT32,
-    0,   /* quantifier_offset */
-    offsetof(StatusRep, sec_mod_pid),
+    offsetof(StatusRep, n_sec_mod_pids),
+    offsetof(StatusRep, sec_mod_pids),
     NULL,
     NULL,
     0,             /* flags */
@@ -801,7 +801,7 @@ static const unsigned status_rep__field_indices_by_name[] = {
   20,   /* field[20] = max_session_mins */
   14,   /* field[14] = min_mtu */
   1,   /* field[1] = pid */
-  2,   /* field[2] = sec_mod_pid */
+  2,   /* field[2] = sec_mod_pids */
   7,   /* field[7] = secmod_client_entries */
   10,   /* field[10] = session_errors */
   9,   /* field[9] = session_idle_timeouts */
