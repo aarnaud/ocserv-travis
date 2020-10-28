@@ -9,13 +9,13 @@ EXTRA_DIST = certs/ca-key.pem certs/ca.pem ns.sh common.sh certs/server-cert.pem
 	data/test-stress.config certs/user-cert-wrong.pem connect-script data/test-group.passwd \
 	data/test-group-pass.config certs/user-group-cert.pem certs/user-group-key.pem \
 	data/test-user-group-cert.config data/pam/ocserv.in data/pam/passdb.templ data/pam-single/passdb.templ \
-	data/test-user-group-cert-no-pass.config docker-common.sh data/test-cookie-timeout.config \
+	data/test-user-group-cert-no-pass.config data/test-cookie-timeout.config \
 	data/test-cookie-timeout-2.config user-config-explicit/test data/test-explicit-ip.config \
 	test-explicit-ip user-config-explicit/test2 user-config-explicit/test3 \
 	user-config-explicit/test4 data/test-pass-opt-cert.config data/test-gssapi.config \
 	data/test-ban.config data/test-sighup.config data/test-gssapi-local-map.config \
 	data/test-cookie-invalidation.config data/test-enc-key2.config data/test-enc-key.config \
-	certs/server-key-ossl.pem certs/server-key-p8.pem proxyproto-unix-test certs/user-cn.pem \
+	certs/server-key-ossl.pem certs/server-key-p8.pem certs/user-cn.pem \
 	certs/user-cert-testuser.pem test-stress data/test-user-config.config user-config/testuser \
 	data/test-sighup-key-change.config data/test-sighup-key-change.config user-config/testipnet \
 	certs/user-cert-testipnet.pem certs/user-cert-invalid.pem certs/server-cert-ca.pem \
@@ -40,9 +40,10 @@ EXTRA_DIST = certs/ca-key.pem certs/ca.pem ns.sh common.sh certs/server-cert.pem
 	connect-ios-script data/apple-ios.config certs/kerberos-cert.pem \
 	data/kdc.conf data/krb5.conf data/k5.KERBEROS.TEST data/kadm5.acl \
 	data/ipv6-iface.config data/no-route-default.config data/no-route-group.config \
-	data/group-config/group1
-
-SUBDIRS = docker-ocserv
+	data/group-config/group1 data/test-namespace-listen.config data/disconnect-user.config \
+	data/disconnect-user2.config data/ping-leases.config data/haproxy-proxyproto.config \
+	data/haproxy-proxyproto.cfg scripts/proxy-connectscript data/haproxy-proxyproto-v1.config \
+	data/haproxy-proxyproto-v1.cfg scripts/proxy-connectscript-v1 data/test-multiple-client-ip.config
 
 xfail_scripts =
 dist_check_SCRIPTS =  ocpasswd-test
@@ -53,19 +54,13 @@ endif
 
 
 if ENABLE_ROOT_TESTS
-if ENABLE_DOCKER_TESTS
-#docker tests
-dist_check_SCRIPTS += unix-test \
-	proxyproto-test proxyproto-v1-test proxyproto-unix-test \
-	reload-info-test
-endif
-
 #other root requiring tests
 dist_check_SCRIPTS += haproxy-connect test-iroute test-multi-cookie test-pass-script \
 	test-cookie-timeout test-cookie-timeout-2 test-explicit-ip \
 	test-cookie-invalidation test-user-config test-append-routes test-ban \
 	multiple-routes json test-udp-listen-host test-max-same-1 test-script-multi-user \
-	apple-ios ipv6-iface
+	apple-ios ipv6-iface test-namespace-listen disconnect-user disconnect-user2 \
+	ping-leases
 
 if RADIUS_ENABLED
 dist_check_SCRIPTS += radius-group radius-otp
@@ -76,7 +71,7 @@ if ENABLE_NUTTCP_TESTS
 dist_check_SCRIPTS += traffic lz4-compression lzs-compression \
 	aes256-cipher aes128-cipher oc-aes256-gcm-cipher oc-aes128-gcm-cipher \
 	test-config-per-group ac-aes128-gcm-cipher ac-aes256-gcm-cipher \
-	no-dtls-cipher psk-negotiate psk-negotiate-match
+	no-dtls-cipher psk-negotiate psk-negotiate-match test-multiple-client-ip
 endif
 
 if RADIUS_ENABLED
@@ -94,8 +89,9 @@ dist_check_SCRIPTS += test-pass test-pass-cert test-cert test-group-pass \
 	test-pass-group-cert test-pass-group-cert-no-pass test-sighup \
 	test-enc-key test-sighup-key-change test-get-cert test-san-cert \
 	test-gssapi test-pass-opt-cert test-cert-opt-pass test-gssapi-opt-pass \
-	test-gssapi-opt-cert haproxy-auth test-maintenance \
-	test-group-name no-route-default no-route-group
+	test-gssapi-opt-cert haproxy-auth test-maintenance resumption \
+	test-group-name flowcontrol banner invalid-configs haproxy-proxyproto \
+	haproxy-proxyproto-v1 test-drain-server
 
 if HAVE_CWRAP_PAM
 dist_check_SCRIPTS += test-pam test-pam-noauth
@@ -108,7 +104,10 @@ endif
 if HAVE_LIBOATH
 dist_check_SCRIPTS += test-otp-cert test-otp
 endif
+endif
 
+if ENABLE_TUN_TESTS
+dist_check_SCRIPTS += no-route-default no-route-group
 endif
 
 
@@ -188,3 +187,8 @@ XFAIL_TESTS = $(xfail_scripts)
 TESTS_ENVIRONMENT = srcdir="$(srcdir)" \
 	top_builddir="$(top_builddir)"
 
+if DISABLE_ASAN_BROKEN_TESTS
+TESTS_ENVIRONMENT += DISABLE_ASAN_BROKEN_TESTS=1
+else
+TESTS_ENVIRONMENT += DISABLE_ASAN_BROKEN_TESTS=0
+endif

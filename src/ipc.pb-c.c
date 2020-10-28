@@ -1267,7 +1267,7 @@ void   snapshot_state_msg__free_unpacked
   assert(message->base.descriptor == &snapshot_state_msg__descriptor);
   protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
 }
-static const ProtobufCFieldDescriptor auth_cookie_request_msg__field_descriptors[1] =
+static const ProtobufCFieldDescriptor auth_cookie_request_msg__field_descriptors[2] =
 {
   {
     "cookie",
@@ -1281,14 +1281,27 @@ static const ProtobufCFieldDescriptor auth_cookie_request_msg__field_descriptors
     0,             /* flags */
     0,NULL,NULL    /* reserved1,reserved2, etc */
   },
+  {
+    "hostname",
+    2,
+    PROTOBUF_C_LABEL_OPTIONAL,
+    PROTOBUF_C_TYPE_STRING,
+    0,   /* quantifier_offset */
+    offsetof(AuthCookieRequestMsg, hostname),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
 };
 static const unsigned auth_cookie_request_msg__field_indices_by_name[] = {
   0,   /* field[0] = cookie */
+  1,   /* field[1] = hostname */
 };
 static const ProtobufCIntRange auth_cookie_request_msg__number_ranges[1 + 1] =
 {
   { 1, 0 },
-  { 0, 1 }
+  { 0, 2 }
 };
 const ProtobufCMessageDescriptor auth_cookie_request_msg__descriptor =
 {
@@ -1298,7 +1311,7 @@ const ProtobufCMessageDescriptor auth_cookie_request_msg__descriptor =
   "AuthCookieRequestMsg",
   "",
   sizeof(AuthCookieRequestMsg),
-  1,
+  2,
   auth_cookie_request_msg__field_descriptors,
   auth_cookie_request_msg__field_indices_by_name,
   1,  auth_cookie_request_msg__number_ranges,
@@ -2722,7 +2735,7 @@ const ProtobufCMessageDescriptor worker_startup_msg__descriptor =
   (ProtobufCMessageInit) worker_startup_msg__init,
   NULL,NULL,NULL    /* reserved[123] */
 };
-static const ProtobufCFieldDescriptor session_info_msg__field_descriptors[9] =
+static const ProtobufCFieldDescriptor session_info_msg__field_descriptors[6] =
 {
   {
     "tls_ciphersuite",
@@ -2749,20 +2762,8 @@ static const ProtobufCFieldDescriptor session_info_msg__field_descriptors[9] =
     0,NULL,NULL    /* reserved1,reserved2, etc */
   },
   {
-    "user_agent",
-    3,
-    PROTOBUF_C_LABEL_REQUIRED,
-    PROTOBUF_C_TYPE_STRING,
-    0,   /* quantifier_offset */
-    offsetof(SessionInfoMsg, user_agent),
-    NULL,
-    NULL,
-    0,             /* flags */
-    0,NULL,NULL    /* reserved1,reserved2, etc */
-  },
-  {
     "cstp_compr",
-    4,
+    3,
     PROTOBUF_C_LABEL_OPTIONAL,
     PROTOBUF_C_TYPE_STRING,
     0,   /* quantifier_offset */
@@ -2774,7 +2775,7 @@ static const ProtobufCFieldDescriptor session_info_msg__field_descriptors[9] =
   },
   {
     "dtls_compr",
-    5,
+    4,
     PROTOBUF_C_LABEL_OPTIONAL,
     PROTOBUF_C_TYPE_STRING,
     0,   /* quantifier_offset */
@@ -2786,7 +2787,7 @@ static const ProtobufCFieldDescriptor session_info_msg__field_descriptors[9] =
   },
   {
     "our_addr",
-    6,
+    5,
     PROTOBUF_C_LABEL_OPTIONAL,
     PROTOBUF_C_TYPE_BYTES,
     offsetof(SessionInfoMsg, has_our_addr),
@@ -2798,7 +2799,7 @@ static const ProtobufCFieldDescriptor session_info_msg__field_descriptors[9] =
   },
   {
     "remote_addr",
-    7,
+    6,
     PROTOBUF_C_LABEL_OPTIONAL,
     PROTOBUF_C_TYPE_BYTES,
     offsetof(SessionInfoMsg, has_remote_addr),
@@ -2808,46 +2809,19 @@ static const ProtobufCFieldDescriptor session_info_msg__field_descriptors[9] =
     0,             /* flags */
     0,NULL,NULL    /* reserved1,reserved2, etc */
   },
-  {
-    "hostname",
-    8,
-    PROTOBUF_C_LABEL_OPTIONAL,
-    PROTOBUF_C_TYPE_STRING,
-    0,   /* quantifier_offset */
-    offsetof(SessionInfoMsg, hostname),
-    NULL,
-    NULL,
-    0,             /* flags */
-    0,NULL,NULL    /* reserved1,reserved2, etc */
-  },
-  {
-    "device_type",
-    9,
-    PROTOBUF_C_LABEL_OPTIONAL,
-    PROTOBUF_C_TYPE_STRING,
-    0,   /* quantifier_offset */
-    offsetof(SessionInfoMsg, device_type),
-    NULL,
-    NULL,
-    0,             /* flags */
-    0,NULL,NULL    /* reserved1,reserved2, etc */
-  },
 };
 static const unsigned session_info_msg__field_indices_by_name[] = {
-  3,   /* field[3] = cstp_compr */
-  8,   /* field[8] = device_type */
+  2,   /* field[2] = cstp_compr */
   1,   /* field[1] = dtls_ciphersuite */
-  4,   /* field[4] = dtls_compr */
-  7,   /* field[7] = hostname */
-  5,   /* field[5] = our_addr */
-  6,   /* field[6] = remote_addr */
+  3,   /* field[3] = dtls_compr */
+  4,   /* field[4] = our_addr */
+  5,   /* field[5] = remote_addr */
   0,   /* field[0] = tls_ciphersuite */
-  2,   /* field[2] = user_agent */
 };
 static const ProtobufCIntRange session_info_msg__number_ranges[1 + 1] =
 {
   { 1, 0 },
-  { 0, 9 }
+  { 0, 6 }
 };
 const ProtobufCMessageDescriptor session_info_msg__descriptor =
 {
@@ -2857,7 +2831,7 @@ const ProtobufCMessageDescriptor session_info_msg__descriptor =
   "SessionInfoMsg",
   "",
   sizeof(SessionInfoMsg),
-  9,
+  6,
   session_info_msg__field_descriptors,
   session_info_msg__field_indices_by_name,
   1,  session_info_msg__number_ranges,
@@ -3641,7 +3615,8 @@ const ProtobufCMessageDescriptor secm_session_open_msg__descriptor =
   (ProtobufCMessageInit) secm_session_open_msg__init,
   NULL,NULL,NULL    /* reserved[123] */
 };
-static const ProtobufCFieldDescriptor secm_session_close_msg__field_descriptors[6] =
+static const protobuf_c_boolean secm_session_close_msg__server_disconnected__default_value = 0;
+static const ProtobufCFieldDescriptor secm_session_close_msg__field_descriptors[7] =
 {
   {
     "sid",
@@ -3715,12 +3690,25 @@ static const ProtobufCFieldDescriptor secm_session_close_msg__field_descriptors[
     0,             /* flags */
     0,NULL,NULL    /* reserved1,reserved2, etc */
   },
+  {
+    "server_disconnected",
+    8,
+    PROTOBUF_C_LABEL_REQUIRED,
+    PROTOBUF_C_TYPE_BOOL,
+    0,   /* quantifier_offset */
+    offsetof(SecmSessionCloseMsg, server_disconnected),
+    NULL,
+    &secm_session_close_msg__server_disconnected__default_value,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
 };
 static const unsigned secm_session_close_msg__field_indices_by_name[] = {
   2,   /* field[2] = bytes_in */
   3,   /* field[3] = bytes_out */
   4,   /* field[4] = ipv4 */
   5,   /* field[5] = ipv6 */
+  6,   /* field[6] = server_disconnected */
   0,   /* field[0] = sid */
   1,   /* field[1] = uptime */
 };
@@ -3728,7 +3716,7 @@ static const ProtobufCIntRange secm_session_close_msg__number_ranges[2 + 1] =
 {
   { 1, 0 },
   { 3, 1 },
-  { 0, 6 }
+  { 0, 7 }
 };
 const ProtobufCMessageDescriptor secm_session_close_msg__descriptor =
 {
@@ -3738,7 +3726,7 @@ const ProtobufCMessageDescriptor secm_session_close_msg__descriptor =
   "SecmSessionCloseMsg",
   "",
   sizeof(SecmSessionCloseMsg),
-  6,
+  7,
   secm_session_close_msg__field_descriptors,
   secm_session_close_msg__field_indices_by_name,
   2,  secm_session_close_msg__number_ranges,

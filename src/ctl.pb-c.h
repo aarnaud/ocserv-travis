@@ -41,7 +41,8 @@ struct  _StatusRep
   ProtobufCMessage base;
   protobuf_c_boolean status;
   uint32_t pid;
-  uint32_t sec_mod_pid;
+  size_t n_sec_mod_pids;
+  uint32_t *sec_mod_pids;
   uint32_t active_clients;
   uint32_t start_time;
   uint32_t stored_tls_sessions;
@@ -72,7 +73,7 @@ struct  _StatusRep
 };
 #define STATUS_REP__INIT \
  { PROTOBUF_C_MESSAGE_INIT (&status_rep__descriptor) \
-    , 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }
+    , 0, 0, 0,NULL, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }
 
 
 struct  _BoolMsg

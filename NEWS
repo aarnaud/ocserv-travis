@@ -1,3 +1,23 @@
+* Version 1.1.1 (released 2020-09-21)
+- Fixed compatibility with OpenBSD that lacks procfs (#312)
+- Improved rate-limit-ms and made it dependent on secmod backlog. This
+  makes the server more resilient (and prevents connection failures) on
+  multiple concurrent connections (#310)
+- Added namespace support for listen address by introducing the
+  listen-netns  option (#316)
+- Disable TLS1.3 when cisco client compatibility is enabled. New
+  anyconnect clients seem to supporting TLS1.3 but are unable to handle
+  a client with an RSA key (#318)
+- Enable a race free user disconnection via occtl (#59)
+- Added the config option of a pre-login-banner (#313)
+- Ocserv siwtched to using multiple ocserv-sm processes to improve scale,
+  with the number of ocserv-sm process dependent on maximum clients and
+  number of CPUs. Configuration option sec-mod-scale can be used to override
+  the heuristics.
+- Fixed issue with group selection on radius servers sending multiple
+  group class attribute (#322).
+
+
 * Version 1.1.0 (released 2020-06-16)
 - Switch from fork to fork/exec model to achieve better scaling and ASLR
   protection. This introduces an ocserv-worker application which should be

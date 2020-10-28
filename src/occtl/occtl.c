@@ -286,7 +286,7 @@ unsigned check_cmd(const char *cmd, const char *input,
 {
 	char *t, *p;
 	unsigned len, tlen;
-	unsigned i, j, ret = 0;
+	unsigned i, ret = 0;
 	char prev;
 
 	while (whitespace(*input))
@@ -300,7 +300,7 @@ unsigned check_cmd(const char *cmd, const char *input,
 
 	prev = 0;
 	p = t;
-	for (i = j = 0; i < len; i++) {
+	for (i = 0; i < len; i++) {
 		if (!whitespace(prev) || !whitespace(input[i])) {
 			*p = input[i];
 			prev = input[i];
@@ -558,6 +558,7 @@ int main(int argc, char **argv)
 	const char *file = NULL;
 	void *gl_pool;
 	cmd_params_st params;
+	int ret;
 
 	memset(&params, 0, sizeof(params));
 
@@ -615,7 +616,9 @@ int main(int argc, char **argv)
   		}
 
   		/* handle all arguments as a command */
-		exit(single_cmd(argc, argv, gl_pool, file, &params));
+		ret = single_cmd(argc, argv, gl_pool, file, &params);
+		talloc_free(gl_pool);
+		exit(ret);
 	}
 
  interactive:
@@ -634,5 +637,6 @@ int main(int argc, char **argv)
 
 	conn_close(conn);
 
+	talloc_free(gl_pool);
 	return 0;
 }

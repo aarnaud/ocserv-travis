@@ -1,5 +1,5 @@
 AC_PREREQ(2.61)
-AC_INIT([ocserv], [1.1.0], [openconnect-devel@lists.infradead.org])
+AC_INIT([ocserv], [1.1.1], [openconnect-devel@lists.infradead.org])
 PKG_PROG_PKG_CONFIG
 AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_MACRO_DIR([m4])
@@ -14,9 +14,10 @@ gl_EARLY
 AM_PROG_AR
 AM_PROG_CC_C_O
 AC_PROG_SED
-if [ test "$GCC" = "yes" ];then
+if test "$GCC" = "yes" && ! expr "$CC" : clang >/dev/null 2>&1;then
 	CFLAGS="$CFLAGS -Wall -Wno-strict-aliasing -Wextra -Wno-unused-parameter -Wno-sign-compare -Wno-missing-field-initializers -Wno-implicit-fallthrough -Wno-stringop-truncation"
 fi
+
 AC_PATH_PROG(CTAGS, ctags, [:])
 AC_PATH_PROG(CSCOPE, cscope, [:])
 AC_CHECK_PROG([RONN], [ronn], [ronn], [:])
@@ -121,12 +122,15 @@ AC_ARG_WITH(root-tests,
 
 AM_CONDITIONAL(ENABLE_ROOT_TESTS, test "x$root_tests" = xyes)
 
-AC_ARG_WITH(docker-tests,
-  AS_HELP_STRING([--without-docker-tests], [disable any tests requiring docker]),
-  docker_tests=$withval,
-  docker_tests=yes)
+AC_ARG_WITH(asan-broken-tests,
+  AS_HELP_STRING([--without-asan-broken-tests], [disable any tests that cannot be run under asan]),
+  enable_asan_broken_tests=$withval,
+  enable_asan_broken_tests=yes)
 
-AM_CONDITIONAL(ENABLE_DOCKER_TESTS, test "x$docker_tests" = xyes)
+AC_MSG_CHECKING([whether to enable broken in asan tests])
+AC_MSG_RESULT([${enable_asan_broken_tests}])
+
+AM_CONDITIONAL(DISABLE_ASAN_BROKEN_TESTS, test "x$enable_asan_broken_tests" = xno)
 
 AC_ARG_WITH(kerberos-tests,
   AS_HELP_STRING([--with-kerberos-tests], [enable any tests requiring kerberos setup]),
@@ -134,6 +138,13 @@ AC_ARG_WITH(kerberos-tests,
   kerberos_tests=no)
 
 AM_CONDITIONAL(ENABLE_KERBEROS_TESTS, test "x$kerberos_tests" = xyes)
+
+AC_ARG_WITH(tun-tests,
+  AS_HELP_STRING([--without-tun-tests], [disable any tests requiring /dev/net/tun]),
+  tun_tests=$withval,
+  tun_tests=yes)
+
+AM_CONDITIONAL(ENABLE_TUN_TESTS, test "x$tun_tests" = xyes)
 
 AC_ARG_WITH(nuttcp-tests,
   AS_HELP_STRING([--without-nuttcp-tests], [disable any tests requiring nuttcp]),
@@ -419,6 +430,14 @@ AC_LIB_HAVE_LINKFLAGS(systemd,, [#include <systemd/sd-daemon.h>], [sd_listen_fds
  fi
 fi
 
+AC_ARG_ENABLE(namespaces,
+  AS_HELP_STRING([--disable-namespaces], [disable namespaces support]),
+    namespaces_enabled=$enableval, namespaces_enabled=yes)
+
+if [ test "$namespaces_enabled" = "yes" ];then
+	AC_DEFINE([LINUX_NAMESPACES], [], [Enable Linux namespaces])
+fi
+
 AC_ARG_ENABLE(anyconnect-compat,
   AS_HELP_STRING([--disable-anyconnect-compat], [disable Anyconnect client compatibility (experimental)]),
     anyconnect_enabled=$enableval, anyconnect_enabled=yes)
@@ -562,6 +581,13 @@ fi
 
 AM_CONDITIONAL(ENABLE_LATENCY_SUPPORT,  test "x$have_latency_stats" = xyes)
 
+AC_CHECK_HEADERS([linux/netlink.h linux/rtnetlink.h linux/sock_diag.h linux/unix_diag.h], [sockdiag_header=yes], [sockdiag_header=no])
+
+if test "x$sockdiag_header" = xyes; then
+  AC_DEFINE([ENABLE_ADAPTIVE_RATE_LIMIT_SUPPORT], [1], [Enable adaptive rate limiting])
+fi
+
+
 AC_ARG_WITH(pcl-lib,
   AS_HELP_STRING([--without-pcl-lib], [use the included PCL library]),
   test_for_pcl_lib=$withval,
@@ -642,6 +668,8 @@ fi
 AM_CONDITIONAL(ENABLE_OIDC_AUTH,  test "x$enable_oidc_auth" = xyes)
 AM_CONDITIONAL(ENABLE_OIDC_AUTH_TESTS, test "x$enable_oidc_auth" = xyes)
 
+AC_CHECK_FILE(/proc/self/exe, AC_DEFINE([PROC_FS_SUPPORTED],[1], [procfs supported]), [])
+
 uid=$(id -u)
 gid=$(id -g)
 AC_SUBST([ROOTUID], [$uid])
@@ -653,7 +681,6 @@ AC_CONFIG_FILES([
 	src/Makefile
 	doc/Makefile
 	gl/Makefile
-	tests/docker-ocserv/Makefile
 	tests/data/pam/ocserv
 	tests/data/pam/nss-passwd
 	tests/data/pam/nss-group
@@ -678,6 +705,7 @@ Summary of build options:
   OIDC Auth backend:    ${enable_oidc_auth}
   Anyconnect compat:    ${anyconnect_enabled}
   TCP wrappers:         ${libwrap_enabled}
+  namespaces:           ${namespaces_enabled}
   systemd:              ${systemd_enabled}
   (socket activation)
   worker isolation:     ${isolation}
