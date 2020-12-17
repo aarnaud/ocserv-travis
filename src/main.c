@@ -113,7 +113,7 @@ ev_signal reload_sig_watcher;
 ev_timer latency_watcher;
 #endif
 
-static int set_env_from_ws(main_server_st * ws);
+static bool set_env_from_ws(main_server_st * ws);
 
 static void add_listener(void *pool, struct listen_list_st *list,
 	int fd, int family, int socktype, int protocol,
@@ -255,63 +255,6 @@ int _listen_ports(void *pool, struct perm_cfg_st* config, struct addrinfo *res,
 	return 0;
 }
 
-static 
-int _listen_unix_ports(void *pool, struct perm_cfg_st* config, 
-		       struct listen_list_st *list)
-{
-	int s, e, ret;
-	struct sockaddr_un sa;
-
-	/* open the UNIX domain socket to accept connections */
-	if (config->unix_conn_file) {
-		memset(&sa, 0, sizeof(sa));
-		sa.sun_family = AF_UNIX;
-		strlcpy(sa.sun_path, config->unix_conn_file, sizeof(sa.sun_path));
-		remove(sa.sun_path);
-
-		if (config->foreground != 0)
-			fprintf(stderr, "listening (UNIX) on %s...\n",
-				sa.sun_path);
-
-		s = socket(AF_UNIX, SOCK_STREAM, 0);
-		if (s == -1) {
-			e = errno;
-			fprintf(stderr, "could not create socket '%s': %s", sa.sun_path,
-			       strerror(e));
-			return -1;
-		}
-
-		umask(006);
-		ret = bind(s, (struct sockaddr *)&sa, SUN_LEN(&sa));
-		if (ret == -1) {
-			e = errno;
-			fprintf(stderr, "could not bind socket '%s': %s", sa.sun_path,
-			       strerror(e));
-			close(s);
-			return -1;
-		}
-
-		ret = chown(sa.sun_path, config->uid, config->gid);
-		if (ret == -1) {
-			e = errno;
-			fprintf(stderr, "could not chown socket '%s': %s", sa.sun_path,
-			       strerror(e));
-		}
-
-		ret = listen(s, 1024);
-		if (ret == -1) {
-			e = errno;
-			fprintf(stderr, "could not listen to socket '%s': %s",
-			       sa.sun_path, strerror(e));
-			exit(1);
-		}
-		add_listener(pool, list, s, AF_UNIX, SOCK_TYPE_UNIX, 0, (struct sockaddr *)&sa, sizeof(sa));
-	}
-	fflush(stderr);
-
-	return 0;
-}
-
 /* Returns 0 on success or negative value on error.
  */
 static int
@@ -399,7 +342,7 @@ listen_ports(void *pool, struct perm_cfg_st* config,
 	}
 #endif
 
-	if (config->port == 0 && config->unix_conn_file == NULL) {
+	if (config->port == 0) {
 		fprintf(stderr, "tcp-port option is mandatory!\n");
 		return -1;
 	}
@@ -429,11 +372,6 @@ listen_ports(void *pool, struct perm_cfg_st* config,
 			return -1;
 		}
 
-	}
-
-	ret = _listen_unix_ports(pool, config, list);
-	if (ret < 0) {
-		return -1;
 	}
 
 	if (list->total == 0) {
@@ -542,6 +480,7 @@ void clear_lists(main_server_st *s)
 	proc_table_deinit(s);
 	ctl_handler_deinit(s);
 	main_ban_db_deinit(s);
+	if_address_cleanup(s);
 
 	/* clear libev state */
 	if (loop) {
@@ -730,6 +669,10 @@ int sfd = -1;
 	}
 	buffer_size = ret;
 
+	// Sanitize values returned from oc_recvfrom_at to make coverity happy.
+	cli_addr_size = MIN(sizeof(cli_addr), cli_addr_size);
+	our_addr_size = MIN(sizeof(our_addr), our_addr_size);
+
 	if (buffer_size < RECORD_PAYLOAD_POS) {
 		mslog(s, NULL, LOG_INFO, "%s: too short UDP packet",
 		      human_addr((struct sockaddr*)&cli_addr, cli_addr_size, tbuf, sizeof(tbuf)));
@@ -762,10 +705,6 @@ int sfd = -1;
 		 * the IP address and forward the socket.
 		 */
 		match_ip_only = 1;
-
-		/* don't bother IP matching when the listen-clear-file is in use */
-		if (GETPCONFIG(s)->unix_conn_file)
-			goto fail;
 	} else {
 		if (has_broken_random(s, s->msg_buffer, buffer_size)) {
 			mslog(s, NULL, LOG_INFO, "%s: detected broken DTLS client hello (no randomness); ignoring",
@@ -894,7 +833,6 @@ static void sec_mod_child_watcher_cb(struct ev_loop *loop, ev_child *w, int reve
 	ev_child_stop(loop, w);
 	mslog(s, NULL, LOG_ERR, "ocserv-secmod died unexpectedly");
 	ev_feed_signal_event (loop, SIGTERM);
-
 }
 
 void script_child_watcher_cb(struct ev_loop *loop, ev_child *w, int revents)
@@ -1007,18 +945,20 @@ static void term_sig_watcher_cb(struct ev_loop *loop, ev_signal *w, int revents)
 	}
 	else 
 	{
-		mslog(s, NULL, LOG_INFO, "termination request received; stopping new connections");
-		graceful_shutdown_watcher.repeat = ((ev_tstamp)(server_drain_ms)) / 1000.;
-		mslog(s, NULL, LOG_INFO, "termination request received; waiting %d ms", server_drain_ms);
-		ev_timer_again(loop, &graceful_shutdown_watcher);
+		if (!ev_is_active(&graceful_shutdown_watcher)) {
+			mslog(s, NULL, LOG_INFO, "termination request received; stopping new connections");
+			graceful_shutdown_watcher.repeat = ((ev_tstamp)(server_drain_ms)) / 1000.;
+			mslog(s, NULL, LOG_INFO, "termination request received; waiting %d ms", server_drain_ms);
+			ev_timer_again(loop, &graceful_shutdown_watcher);
 
-		// Close the listening ports and stop the IO
-		list_for_each_safe(&s->listen_list.head, ltmp, lpos, list) {
-			ev_io_stop(loop, &ltmp->io);
-			close(ltmp->fd);
-			list_del(&ltmp->list);
-			talloc_free(ltmp);
-			s->listen_list.total--;
+			// Close the listening ports and stop the IO
+			list_for_each_safe(&s->listen_list.head, ltmp, lpos, list) {
+				ev_io_stop(loop, &ltmp->io);
+				close(ltmp->fd);
+				list_del(&ltmp->list);
+				talloc_free(ltmp);
+				s->listen_list.total--;
+			}
 		}
 	}
 }
@@ -1170,7 +1110,6 @@ static void listen_watcher_cb (EV_P_ ev_io *w, int revents)
 
 			ws->cmd_fd = cmd_fd[1];
 			ws->tun_fd = -1;
-			ws->dtls_tptr.fd = -1;
 			set_cloexec_flag(fd, false);
 			ws->conn_fd = fd;
 			ws->conn_type = stype;
@@ -1191,7 +1130,9 @@ static void listen_watcher_cb (EV_P_ ev_io *w, int revents)
 			// Clear the HMAC key
 			safe_memset((uint8_t*)s->hmac_key, 0, sizeof(s->hmac_key));
 
-			set_env_from_ws(s);
+			if (!set_env_from_ws(s))
+				exit(1);
+
 #if defined(PROC_FS_SUPPORTED)
 			{
 				char path[_POSIX_PATH_MAX];
@@ -1283,6 +1224,7 @@ static void sec_mod_watcher_cb (EV_P_ ev_io *w, int revents)
 	if (ret < 0) { /* bad commands from sec-mod are unacceptable */
 		mslog(s, NULL, LOG_ERR,
 		       "error in command from sec-mod");
+		ev_io_stop(loop, w);
 		ev_feed_signal_event (loop, SIGTERM);
 	}
 }
@@ -1328,7 +1270,7 @@ static void latency_watcher_cb(EV_P_ ev_timer *w, int revents)
 	mslog(
 		s, 
 		NULL, 
-		LOG_INFO, 
+		LOG_DEBUG, 
 		"Latency: Median Total %ld RMS Total %ld Sample Count %ld", 
 		s->stats.current_latency_stats.median_total, 
 		s->stats.current_latency_stats.rms_total, 
@@ -1439,6 +1381,11 @@ int main(int argc, char** argv)
 	ip_lease_init(&s->ip_leases);
 	proc_table_init(s);
 	main_ban_db_init(s);
+	if (if_address_init(s) == 0)
+	{
+		fprintf(stderr, "failed to initialize local addresses\n");
+		exit(1);
+	}
 
 	sigemptyset(&sig_default_set);
 
@@ -1686,7 +1633,7 @@ extern unsigned pam_auth_group_list_size;
 extern unsigned gssapi_auth_group_list_size;
 extern unsigned plain_auth_group_list_size;
 
-static int set_env_from_ws(main_server_st *s)
+static bool set_env_from_ws(main_server_st *s)
 {
 	worker_st *ws = s->ws;
 	WorkerStartupMsg msg = WORKER_STARTUP_MSG__INIT;
@@ -1723,12 +1670,16 @@ static int set_env_from_ws(main_server_st *s)
 		goto cleanup;
 
 	for (index = 0; index < entry_count; index++) {
-		int fd;
+		int fd, rr;
 		const char *file_name;
 		if (index == 0) {
-			snapshot_first(config_snapshot, &iter, &fd, &file_name);
+			rr = snapshot_first(config_snapshot, &iter, &fd, &file_name);
 		} else {
-			snapshot_next(config_snapshot, &iter, &fd, &file_name);
+			rr = snapshot_next(config_snapshot, &iter, &fd, &file_name);
+		}
+		if (rr < 0) {
+			mslog(s, NULL, LOG_ERR, "snapshot restoration failed (%d)\n", ret);
+			goto cleanup;
 		}
 
 		entries[index] = talloc_zero(s, SnapshotEntryMsg);
