@@ -1,3 +1,9 @@
+ocserv (1.1.2-1) unstable; urgency=medium
+
+  * New upstream version 1.1.2
+
+ -- Aron Xu <aron@debian.org>  Thu, 17 Dec 2020 18:38:57 +0800
+
 ocserv (1.1.1-1) unstable; urgency=medium
 
   * d/control: add ronn to B-D
