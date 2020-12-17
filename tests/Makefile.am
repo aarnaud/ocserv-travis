@@ -60,7 +60,7 @@ dist_check_SCRIPTS += haproxy-connect test-iroute test-multi-cookie test-pass-sc
 	test-cookie-invalidation test-user-config test-append-routes test-ban \
 	multiple-routes json test-udp-listen-host test-max-same-1 test-script-multi-user \
 	apple-ios ipv6-iface test-namespace-listen disconnect-user disconnect-user2 \
-	ping-leases
+	ping-leases test-ban-local
 
 if RADIUS_ENABLED
 dist_check_SCRIPTS += radius-group radius-otp
@@ -91,7 +91,7 @@ dist_check_SCRIPTS += test-pass test-pass-cert test-cert test-group-pass \
 	test-gssapi test-pass-opt-cert test-cert-opt-pass test-gssapi-opt-pass \
 	test-gssapi-opt-cert haproxy-auth test-maintenance resumption \
 	test-group-name flowcontrol banner invalid-configs haproxy-proxyproto \
-	haproxy-proxyproto-v1 test-drain-server
+	haproxy-proxyproto-v1 drain-server drain-server-fail
 
 if HAVE_CWRAP_PAM
 dist_check_SCRIPTS += test-pam test-pam-noauth
@@ -179,6 +179,9 @@ if ENABLE_OIDC_AUTH_TESTS
 check_PROGRAMS += gen_oidc_test_data
 dist_check_SCRIPTS += test-oidc
 endif
+
+
+dist_check_SCRIPTS += test-replay
 
 TESTS =  $(check_PROGRAMS) $(dist_check_SCRIPTS) $(xfail_scripts)
 

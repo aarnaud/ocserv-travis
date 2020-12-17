@@ -2838,7 +2838,7 @@ const ProtobufCMessageDescriptor session_info_msg__descriptor =
   (ProtobufCMessageInit) session_info_msg__init,
   NULL,NULL,NULL    /* reserved[123] */
 };
-static const ProtobufCFieldDescriptor ban_ip_msg__field_descriptors[3] =
+static const ProtobufCFieldDescriptor ban_ip_msg__field_descriptors[4] =
 {
   {
     "ip",
@@ -2876,8 +2876,21 @@ static const ProtobufCFieldDescriptor ban_ip_msg__field_descriptors[3] =
     0,             /* flags */
     0,NULL,NULL    /* reserved1,reserved2, etc */
   },
+  {
+    "discon_reason",
+    4,
+    PROTOBUF_C_LABEL_OPTIONAL,
+    PROTOBUF_C_TYPE_UINT32,
+    offsetof(BanIpMsg, has_discon_reason),
+    offsetof(BanIpMsg, discon_reason),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
 };
 static const unsigned ban_ip_msg__field_indices_by_name[] = {
+  3,   /* field[3] = discon_reason */
   0,   /* field[0] = ip */
   1,   /* field[1] = score */
   2,   /* field[2] = sid */
@@ -2885,7 +2898,7 @@ static const unsigned ban_ip_msg__field_indices_by_name[] = {
 static const ProtobufCIntRange ban_ip_msg__number_ranges[1 + 1] =
 {
   { 1, 0 },
-  { 0, 3 }
+  { 0, 4 }
 };
 const ProtobufCMessageDescriptor ban_ip_msg__descriptor =
 {
@@ -2895,7 +2908,7 @@ const ProtobufCMessageDescriptor ban_ip_msg__descriptor =
   "BanIpMsg",
   "",
   sizeof(BanIpMsg),
-  3,
+  4,
   ban_ip_msg__field_descriptors,
   ban_ip_msg__field_indices_by_name,
   1,  ban_ip_msg__number_ranges,

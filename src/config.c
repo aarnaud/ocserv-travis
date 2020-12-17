@@ -482,7 +482,7 @@ static void append_iroutes_from_file(struct cfg_st *config, const char *file)
 	ctx.config = config;
 
 	ret = ini_parse(file, iroutes_handler, &ctx);
-	if (ret < 0)
+	if (ret != 0)
 		return;
 
 	for (j=0;j<config->known_iroutes_size;j++) {
@@ -709,13 +709,13 @@ static int cfg_ini_handler(void *_ctx, const char *section, const char *name, co
 		if (strncmp(section, "vhost:", 6) != 0) {
 			if (reload == 0)
 				fprintf(stderr, WARNSTR"skipping unknown section '%s'\n", section);
-			return 0;
+			return 1;
 		}
 
 		vname = sanitize_name(ctx->pool, section+6);
 		if (vname == NULL || vname[0] == 0) {
 			fprintf(stderr, ERRSTR"virtual host name is illegal '%s'\n", section+6);
-			exit(1);
+			return 0;
 		}
 
 		/* virtual host */
@@ -743,7 +743,7 @@ static int cfg_ini_handler(void *_ctx, const char *section, const char *name, co
 
 	value = sanitize_config_value(vhost->pool, _value);
 	if (value == NULL)
-		return 0;
+		return 1;
 
 	/* read persistent configuration */
 	if (vhost->auth_init == 0) {
@@ -760,8 +760,8 @@ static int cfg_ini_handler(void *_ctx, const char *section, const char *name, co
 		} else if (strcmp(name, "udp-listen-host") == 0) {
 			PREAD_STRING(pool, vhost->perm_config.udp_listen_host);
 		} else if (strcmp(name, "listen-clear-file") == 0) {
-			if (!PWARN_ON_VHOST_STRDUP(vhost->name, "listen-clear-file", unix_conn_file))
-				PREAD_STRING(pool, vhost->perm_config.unix_conn_file);
+			fprintf(stderr, ERRSTR"the 'listen-clear-file' option was removed in ocserv 1.1.2\n");
+			return 0;
 		} else if (strcmp(name, "listen-netns") == 0) {
 			vhost->perm_config.listen_netns_name = talloc_strdup(pool, value);
 		} else if (strcmp(name, "tcp-port") == 0) {
@@ -775,7 +775,7 @@ static int cfg_ini_handler(void *_ctx, const char *section, const char *name, co
 				const struct passwd* pwd = getpwnam(value);
 				if (pwd == NULL) {
 					fprintf(stderr, ERRSTR"unknown user: %s\n", value);
-					exit(1);
+					return 0;
 				}
 				vhost->perm_config.uid = pwd->pw_uid;
 			}
@@ -784,7 +784,7 @@ static int cfg_ini_handler(void *_ctx, const char *section, const char *name, co
 				const struct group* grp = getgrnam(value);
 				if (grp == NULL) {
 					fprintf(stderr, ERRSTR"unknown group: %s\n", value);
-					exit(1);
+					return 0;
 				}
 				vhost->perm_config.gid = grp->gr_gid;
 			}
@@ -963,7 +963,7 @@ static int cfg_ini_handler(void *_ctx, const char *section, const char *name, co
 		ret = cfg_parse_ports(pool, &config->fw_ports, &config->n_fw_ports, value);
 		if (ret < 0) {
 			fprintf(stderr, ERRSTR"cannot parse restrict-user-to-ports\n");
-			exit(1);
+			return 0;
 		}
 	} else if (strcmp(name, "tls-priorities") == 0) {
 		READ_STRING(config->priorities);
@@ -992,7 +992,7 @@ static int cfg_ini_handler(void *_ctx, const char *section, const char *name, co
 			config->rekey_method = REKEY_METHOD_NEW_TUNNEL;
 		else {
 			fprintf(stderr, ERRSTR"unknown rekey method '%s'\n", value);
-			exit(1);
+			return 0;
 		}
 	} else if (strcmp(name, "cookie-timeout") == 0) {
 		READ_NUMERIC(config->cookie_timeout);
@@ -1055,7 +1055,7 @@ static int cfg_ini_handler(void *_ctx, const char *section, const char *name, co
 
 		if (valid_ipv6_prefix(config->network.ipv6_prefix) == 0) {
 			fprintf(stderr, ERRSTR"invalid IPv6 prefix: %u\n", prefix);
-			exit(1);
+			return 0;
 		}
 	} else if (strcmp(name, "ipv6-subnet-prefix") == 0) {
 		/* read subnet prefix */
@@ -1065,7 +1065,7 @@ static int cfg_ini_handler(void *_ctx, const char *section, const char *name, co
 
 			if (valid_ipv6_prefix(prefix) == 0) {
 				fprintf(stderr, ERRSTR"invalid IPv6 subnet prefix: %u\n", prefix);
-				exit(1);
+				return 0;
 			}
 		}
 	} else if (strcmp(name, "custom-header") == 0) {
@@ -1119,7 +1119,7 @@ static int cfg_ini_handler(void *_ctx, const char *section, const char *name, co
 
  exit:
 	talloc_free(value);
-	return 0;
+	return 1;
 }
 
 enum {
@@ -1147,6 +1147,12 @@ static void replace_file_with_snapshot(char ** file_name)
 	*file_name = snapshot_file_name;
 }
 
+#define CONFIG_ERROR(filename, err) { \
+	if (err > 0) \
+		fprintf(stderr, ERRSTR"config file error in line %d\n", err); \
+	else \
+		fprintf(stderr, ERRSTR"cannot load config file %s\n", filename); }
+
 static void parse_cfg_file(void *pool, const char *file, struct list_head *head,
 			   unsigned flags)
 {
@@ -1173,8 +1179,8 @@ static void parse_cfg_file(void *pool, const char *file, struct list_head *head,
 		}
 
 		ret = ini_parse(snapshot_file, cfg_ini_handler, &ctx);
-		if (ret < 0) {
-			fprintf(stderr, ERRSTR"cannot load config file %s\n", file);
+		if (ret != 0) {
+			CONFIG_ERROR(file, ret);
 			exit(1);
 		}
 		talloc_free(snapshot_file);
@@ -1204,8 +1210,8 @@ static void parse_cfg_file(void *pool, const char *file, struct list_head *head,
 			ret = ini_parse(cfg_file, cfg_ini_handler, &ctx);
 		}
 
-		if (ret < 0) {
-			fprintf(stderr, ERRSTR"cannot load config file %s\n", cfg_file);
+		if (ret != 0) {
+			CONFIG_ERROR(cfg_file, ret);
 			exit(1);
 		}
 		
@@ -1240,8 +1246,8 @@ static void parse_cfg_file(void *pool, const char *file, struct list_head *head,
 		ret = ini_parse(cfg_file, cfg_ini_handler, &ctx);
 	}
 
-	if (ret < 0) {
-		fprintf(stderr, ERRSTR"cannot load config file %s\n", cfg_file);
+	if (ret != 0) {
+		CONFIG_ERROR(cfg_file, ret);
 		exit(1);
 	}
 #endif
@@ -1341,12 +1347,10 @@ static void check_cfg(vhost_cfg_st *vhost, vhost_cfg_st *defvhost, unsigned sile
 		}
 	}
 
-	if (vhost->perm_config.port == 0 && vhost->perm_config.unix_conn_file == NULL) {
+	if (vhost->perm_config.port == 0) {
 		if (defvhost) {
 			if (vhost->perm_config.port)
 				vhost->perm_config.port = defvhost->perm_config.port;
-			else if (vhost->perm_config.unix_conn_file)
-				vhost->perm_config.unix_conn_file = talloc_strdup(vhost, defvhost->perm_config.unix_conn_file);
 		} else {
 			fprintf(stderr, ERRSTR"%sthe tcp-port option is mandatory!\n", PREFIX_VHOST(vhost));
 			exit(1);
@@ -1406,13 +1410,6 @@ static void check_cfg(vhost_cfg_st *vhost, vhost_cfg_st *defvhost, unsigned sile
 	if (config->cert_req != 0 && config->cert_user_oid != NULL) {
 		if (!c_isdigit(config->cert_user_oid[0]) && strcmp(config->cert_user_oid, "SAN(rfc822name)") != 0) {
 			fprintf(stderr, ERRSTR"%sthe option 'cert-user-oid' has a unsupported value\n", PREFIX_VHOST(vhost));
-			exit(1);
-		}
-	}
-
-	if (vhost->perm_config.unix_conn_file != NULL && (config->cert_req != 0)) {
-		if (config->listen_proxy_proto == 0) {
-			fprintf(stderr, ERRSTR"%sthe option 'listen-clear-file' cannot be combined with 'auth=certificate'\n", PREFIX_VHOST(vhost));
 			exit(1);
 		}
 	}
@@ -1481,13 +1478,6 @@ static void check_cfg(vhost_cfg_st *vhost, vhost_cfg_st *defvhost, unsigned sile
 			fprintf(stderr, NOTESTR"%sthe cisco-client-compat option implies dtls-legacy = true; enabling\n", PREFIX_VHOST(vhost));
 		}
 		config->dtls_legacy = 1;
-	}
-
-	if (vhost->perm_config.unix_conn_file) {
-		if (config->dtls_psk && !silent) {
-			fprintf(stderr, NOTESTR"%s'dtls-psk' cannot be combined with unix socket file\n", PREFIX_VHOST(vhost));
-		}
-		config->dtls_psk = 0;
 	}
 
 	if (config->match_dtls_and_tls) {

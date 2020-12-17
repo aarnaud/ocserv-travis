@@ -1,5 +1,5 @@
 AC_PREREQ(2.61)
-AC_INIT([ocserv], [1.1.1], [openconnect-devel@lists.infradead.org])
+AC_INIT([ocserv], [1.1.2], [openconnect-devel@lists.infradead.org])
 PKG_PROG_PKG_CONFIG
 AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_MACRO_DIR([m4])
@@ -626,6 +626,7 @@ dnl config options for inih
 AC_DEFINE([INI_STOP_ON_FIRST_ERROR], [1], [inih configuration])
 AC_DEFINE([INI_INLINE_COMMENT_PREFIXES], ["#"], [inih configuration])
 AC_DEFINE([INI_ALLOW_MULTILINE], [1], [inih configuration])
+AC_DEFINE([INI_MAX_LINE], [2048], [inih configuration])
 
 if test "$have_cwrap_pam" = yes; then
 	m4_ifdef([PKG_CHECK_VAR], [PKG_CHECK_VAR([CWRAP_PAM_MODULES], [pam_wrapper], [modules])])
