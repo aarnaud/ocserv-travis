@@ -1,0 +1,27 @@
+From e035221030f8fdfbb38483889631916fef9d9798 Mon Sep 17 00:00:00 2001
+From: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date: Wed, 9 Dec 2020 15:05:24 +0100
+Subject: [PATCH 09/36] update_auth_time_stats: cast operations to avoid
+ overflows
+
+Signed-off-by: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+---
+ src/sec-mod-auth.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/sec-mod-auth.c b/src/sec-mod-auth.c
+index c769643c..b4b2f3fd 100644
+--- a/src/sec-mod-auth.c
++++ b/src/sec-mod-auth.c
+@@ -131,7 +131,7 @@ static void update_auth_time_stats(sec_mod_st * sec, time_t secs)
+ 
+ 	if (secs > sec->max_auth_time)
+ 		sec->max_auth_time = secs;
+-	sec->avg_auth_time = (sec->avg_auth_time*(sec->total_authentications-1)+secs) / sec->total_authentications;
++	sec->avg_auth_time = ((uint64_t)sec->avg_auth_time*((uint64_t)(sec->total_authentications-1))+secs) / (uint64_t)sec->total_authentications;
+ }
+ 
+ static
+-- 
+2.20.1
+

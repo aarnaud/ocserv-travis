@@ -1,0 +1,33 @@
+From 4cea55c6d68c1c46755876af4e3ff142cd6c81a3 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Stefan=20B=C3=BChler?= <stefan.buehler@tik.uni-stuttgart.de>
+Date: Wed, 10 Feb 2021 13:23:42 +0100
+Subject: [PATCH 35/36] dtls connection setup: fix memory corruption, proper
+ watcher setup
+
+ev_init and ev_io_set must never be called on active watchers - we
+need to cleanup previous connection state before setting a new one.
+
+ev_init clears the "active" flag, but doesn't remove the watcher from
+libev internal linked lists (and doesn't clear the "next" pointer for
+it).  This can for example lead to (unexpected) cyclic lists in libev,
+and libev can loop forever trying to deal with them.
+---
+ src/worker-vpn.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/worker-vpn.c b/src/worker-vpn.c
+index b77597c5..146c6acf 100644
+--- a/src/worker-vpn.c
++++ b/src/worker-vpn.c
+@@ -431,7 +431,7 @@ static int setup_dtls_connection(struct worker_st *ws, struct dtls_st * dtls)
+ 	}
+ 
+ 	dtls->dtls_session = session;
+-	ev_init(&dtls->io, dtls_watcher_cb);
++	ev_io_stop(worker_loop, &dtls->io);
+ 	ev_io_set(&dtls->io, dtls->dtls_tptr.fd, EV_READ);
+ 	ev_io_start(worker_loop, &dtls->io);
+ 	ev_invoke(worker_loop, &dtls->io, EV_READ);
+-- 
+2.20.1
+

@@ -1,0 +1,25 @@
+From c53cc97395efccaf9a567c51475bcfc3d1a8ee5e Mon Sep 17 00:00:00 2001
+From: Alan Jowett <alan.jowett@microsoft.com>
+Date: Thu, 4 Feb 2021 09:29:45 -0700
+Subject: [PATCH 33/36] Close fd and stop ev_io on failed handshake.
+ Signed-off-by: Alan Jowett <alanjo@microsoft.com>
+
+---
+ src/worker-vpn.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/src/worker-vpn.c b/src/worker-vpn.c
+index 185a5eae..b77597c5 100644
+--- a/src/worker-vpn.c
++++ b/src/worker-vpn.c
+@@ -1479,6 +1479,7 @@ static int dtls_mainloop(worker_st * ws, struct dtls_st * dtls, struct timespec
+ 				      "error in DTLS handshake: %s\n",
+ 				      gnutls_strerror(ret));
+ 			dtls->udp_state = UP_DISABLED;
++			ev_io_stop(worker_loop, &dtls->io);
+ 			break;
+ 		}
+ 
+-- 
+2.20.1
+
