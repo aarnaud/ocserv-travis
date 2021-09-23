@@ -1,0 +1,43 @@
+From add3272c1db665423037eb49a6cba584a642db75 Mon Sep 17 00:00:00 2001
+From: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date: Sat, 12 Jun 2021 22:23:08 +0200
+Subject: [PATCH 06/11] disable_system_calls: added newfstatat unconditionally
+
+It is required in newer glibc.
+
+Signed-off-by: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+---
+ src/worker-privs.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+diff --git a/src/worker-privs.c b/src/worker-privs.c
+index e128f180..3e516b5a 100644
+--- a/src/worker-privs.c
++++ b/src/worker-privs.c
+@@ -112,7 +112,6 @@ int disable_system_calls(struct worker_st *ws)
+ 	if (getenv("SOCKET_WRAPPER_DIR") != NULL) {
+ 		ADD_SYSCALL(stat64, 0);
+ 		ADD_SYSCALL(readlink, 0);
+-		ADD_SYSCALL(newfstatat, 0);
+ 	}
+ 
+ 	/* we use quite some system calls here, and in the end
+@@ -176,6 +175,7 @@ int disable_system_calls(struct worker_st *ws)
+ 
+ 	ADD_SYSCALL(openat, 0);
+ 	ADD_SYSCALL(fstat, 0);
++	ADD_SYSCALL(newfstatat, 0);
+ 	ADD_SYSCALL(lseek, 0);
+ 
+ 	ADD_SYSCALL(getsockopt, 0);
+@@ -188,7 +188,6 @@ int disable_system_calls(struct worker_st *ws)
+ 		if (vhost->perm_config.config->xml_config_file) {
+ 			ADD_SYSCALL(stat, 0);
+ 			ADD_SYSCALL(stat64, 0);
+-			ADD_SYSCALL(newfstatat, 0);
+ 			ADD_SYSCALL(open, 0);
+ 			ADD_SYSCALL(openat, 0);
+ 			break;
+-- 
+2.30.2
+

@@ -1,0 +1,26 @@
+From ec14f60b7983625d073acd5ab73b760a6b455879 Mon Sep 17 00:00:00 2001
+From: Luo Bo <luobodi@hotmail.com>
+Date: Mon, 13 Sep 2021 23:00:46 +0800
+Subject: [PATCH 10/11] seccomp: Add epoll_pwait to allow list. AArch64
+ requires this.
+
+Signed-off-by: Luo Bo <luobodi@hotmail.com>
+---
+ src/worker-privs.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/src/worker-privs.c b/src/worker-privs.c
+index e3cc5082..ae0b375d 100644
+--- a/src/worker-privs.c
++++ b/src/worker-privs.c
+@@ -200,6 +200,7 @@ int disable_system_calls(struct worker_st *ws)
+ 
+ 	// Add calls to support libev
+ 	ADD_SYSCALL(epoll_wait, 0);
++	ADD_SYSCALL(epoll_pwait, 0);
+ 	ADD_SYSCALL(epoll_create1, 0);
+ 	ADD_SYSCALL(epoll_ctl, 0);
+ 	ADD_SYSCALL(rt_sigaction, 0);
+-- 
+2.30.2
+

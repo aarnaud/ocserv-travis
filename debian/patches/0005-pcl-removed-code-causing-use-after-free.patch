@@ -1,0 +1,29 @@
+From 4bfb42cb3453ea3b0e7a32e017c8ae68cbdafad9 Mon Sep 17 00:00:00 2001
+From: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date: Sat, 12 Jun 2021 21:46:26 +0200
+Subject: [PATCH 05/11] pcl: removed code causing use-after-free
+
+Found by static analyzer.
+
+Signed-off-by: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+---
+ src/pcl/pcl.c | 3 ---
+ 1 file changed, 3 deletions(-)
+
+diff --git a/src/pcl/pcl.c b/src/pcl/pcl.c
+index dc1ed621..8a72296f 100644
+--- a/src/pcl/pcl.c
++++ b/src/pcl/pcl.c
+@@ -455,9 +455,6 @@ static void co_del_helper(void *data)
+ 		co_delete(tctx->co_curr->caller);
+ 		co_call((coroutine_t) cdh);
+ 		if (tctx->co_dhelper == NULL) {
+-			fprintf(stderr,
+-				"[PCL] Resume to delete helper coroutine: curr=%p caller=%p\n",
+-				tctx->co_curr, tctx->co_curr->caller);
+ 			exit(1);
+ 		}
+ 	}
+-- 
+2.30.2
+

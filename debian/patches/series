@@ -1,5 +1,2 @@
 legacy_pidfile.patch
-0009-update_auth_time_stats-cast-operations-to-avoid-over.patch
-0020-ocserv-worker-renamed-loop-to-worker_loop.patch
-0033-Close-fd-and-stop-ev_io-on-failed-handshake.patch
-0035-dtls-connection-setup-fix-memory-corruption-proper-w.patch
+0005-pcl-removed-code-causing-use-after-free.patch 0006-disable_system_calls-added-newfstatat-unconditionall.patch 0010-seccomp-Add-epoll_pwait-to-allow-list.-AArch64-requi.patch
