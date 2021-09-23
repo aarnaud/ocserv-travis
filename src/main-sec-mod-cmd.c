@@ -376,7 +376,12 @@ void apply_default_config(sec_mod_instance_st * sec_mod_instance, proc_st *proc,
 	if (!gc->xml_config_file) {
 		gc->xml_config_file = vhost->perm_config.config->xml_config_file;
 	}
-#endif 
+#endif
+
+	if (!gc->has_client_bypass_protocol) {
+		gc->client_bypass_protocol = vhost->perm_config.config->client_bypass_protocol;
+		gc->has_client_bypass_protocol = 1;
+	}
 
 	if (!gc->has_rx_per_sec) {
 		gc->rx_per_sec = vhost->perm_config.config->rx_per_sec;

@@ -248,7 +248,7 @@ int get_auth_handler2(worker_st * ws, unsigned http_ver, const char *pmsg, unsig
 
 		ret =
 		    cstp_printf(ws,
-			       "Set-Cookie: webvpncontext=%s; Max-Age=%u; Secure\r\n",
+			       "Set-Cookie: webvpncontext=%s; Max-Age=%u; Secure; HttpOnly\r\n",
 			       context, (unsigned)WSCONFIG(ws)->cookie_timeout);
 		if (ret < 0)
 			return -1;
@@ -257,7 +257,7 @@ int get_auth_handler2(worker_st * ws, unsigned http_ver, const char *pmsg, unsig
 	} else {
 		ret =
 		    cstp_puts(ws,
-			     "Set-Cookie: webvpncontext=; expires=Thu, 01 Jan 1970 22:00:00 GMT; path=/; Secure\r\n");
+			     "Set-Cookie: webvpncontext=; expires=Thu, 01 Jan 1970 22:00:00 GMT; path=/; Secure; HttpOnly\r\n");
 		if (ret < 0)
 			return -1;
 	}
@@ -438,6 +438,12 @@ int get_auth_handler2(worker_st * ws, unsigned http_ver, const char *pmsg, unsig
 		goto cleanup;
 	}
 
+	ret = add_owasp_headers(ws);
+	if (ret < 0) {
+		ret = -1;
+		goto cleanup;
+	}
+
 	ret = cstp_puts(ws, "\r\n");
 	if (ret < 0) {
 		ret = -1;
@@ -591,7 +597,7 @@ int get_cert_names(worker_st * ws, const gnutls_datum_t * raw)
 				goto fail;
 			}
 			i++;
-		} while (ret >= 0);
+		} while (1);
 
 		ws->cert_groups_size = i;
 	}
@@ -1068,7 +1074,7 @@ int post_common_handler(worker_st * ws, unsigned http_ver, const char *imsg)
 
 		ret =
 		    cstp_printf(ws,
-			       "Set-Cookie: webvpncontext=%s; Secure\r\n",
+			       "Set-Cookie: webvpncontext=%s; Secure; HttpOnly\r\n",
 			       context);
 		if (ret < 0)
 			goto fail;
@@ -1078,29 +1084,35 @@ int post_common_handler(worker_st * ws, unsigned http_ver, const char *imsg)
 
 	ret =
 	    cstp_printf(ws,
-		       "Set-Cookie: webvpn=%s; Secure\r\n",
+		       "Set-Cookie: webvpn=%s; Secure; HttpOnly\r\n",
 		       str_cookie);
 	if (ret < 0)
 		goto fail;
 
 	ret =
 	    cstp_puts(ws,
-		     "Set-Cookie: webvpnc=; expires=Thu, 01 Jan 1970 22:00:00 GMT; path=/; Secure\r\n");
+		     "Set-Cookie: webvpnc=; expires=Thu, 01 Jan 1970 22:00:00 GMT; path=/; Secure; HttpOnly\r\n");
 	if (ret < 0)
 		goto fail;
+
+	ret = 
+		add_owasp_headers(ws);
+	if (ret < 0)
+		goto fail;
+
 
 #ifdef ANYCONNECT_CLIENT_COMPAT	
 	if (WSCONFIG(ws)->xml_config_file) {
 		ret =
 		    cstp_printf(ws,
-			       "Set-Cookie: webvpnc=bu:/&p:t&iu:1/&sh:%s&lu:/+CSCOT+/translation-table?textdomain%%3DAnyConnect%%26type%%3Dmanifest&fu:profiles%%2F%s&fh:%s; path=/; Secure\r\n",
+			       "Set-Cookie: webvpnc=bu:/&p:t&iu:1/&sh:%s&lu:/+CSCOT+/translation-table?textdomain%%3DAnyConnect%%26type%%3Dmanifest&fu:profiles%%2F%s&fh:%s; path=/; Secure; HttpOnly\r\n",
 			       WSPCONFIG(ws)->cert_hash,
 			       WSCONFIG(ws)->xml_config_file,
 			       WSCONFIG(ws)->xml_config_hash);
 	} else {
 		ret =
 		    cstp_printf(ws,
-			       "Set-Cookie: webvpnc=bu:/&p:t&iu:1/&sh:%s; path=/; Secure\r\n",
+			       "Set-Cookie: webvpnc=bu:/&p:t&iu:1/&sh:%s; path=/; Secure; HttpOnly\r\n",
 			       WSPCONFIG(ws)->cert_hash);
 	}
 #endif

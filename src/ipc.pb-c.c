@@ -1382,7 +1382,7 @@ const ProtobufCMessageDescriptor fw_port_st__descriptor =
   (ProtobufCMessageInit) fw_port_st__init,
   NULL,NULL,NULL    /* reserved[123] */
 };
-static const ProtobufCFieldDescriptor group_cfg_st__field_descriptors[33] =
+static const ProtobufCFieldDescriptor group_cfg_st__field_descriptors[34] =
 {
   {
     "interim_update_secs",
@@ -1780,9 +1780,22 @@ static const ProtobufCFieldDescriptor group_cfg_st__field_descriptors[33] =
     0,             /* flags */
     0,NULL,NULL    /* reserved1,reserved2, etc */
   },
+  {
+    "client_bypass_protocol",
+    42,
+    PROTOBUF_C_LABEL_OPTIONAL,
+    PROTOBUF_C_TYPE_UINT32,
+    offsetof(GroupCfgSt, has_client_bypass_protocol),
+    offsetof(GroupCfgSt, client_bypass_protocol),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
 };
 static const unsigned group_cfg_st__field_indices_by_name[] = {
   12,   /* field[12] = cgroup */
+  33,   /* field[33] = client_bypass_protocol */
   3,   /* field[3] = deny_roaming */
   6,   /* field[6] = dns */
   21,   /* field[21] = dpd */
@@ -1821,7 +1834,7 @@ static const ProtobufCIntRange group_cfg_st__number_ranges[3 + 1] =
   { 2, 0 },
   { 10, 2 },
   { 13, 4 },
-  { 0, 33 }
+  { 0, 34 }
 };
 const ProtobufCMessageDescriptor group_cfg_st__descriptor =
 {
@@ -1831,7 +1844,7 @@ const ProtobufCMessageDescriptor group_cfg_st__descriptor =
   "GroupCfgSt",
   "",
   sizeof(GroupCfgSt),
-  33,
+  34,
   group_cfg_st__field_descriptors,
   group_cfg_st__field_indices_by_name,
   3,  group_cfg_st__number_ranges,

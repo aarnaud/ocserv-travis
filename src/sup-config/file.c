@@ -188,7 +188,9 @@ static int group_cfg_ini_handler(void *_ctx, const char *section, const char *na
 #ifdef ANYCONNECT_CLIENT_COMPAT
 	} else if (strcmp(name, "user-profile") == 0) {
 		READ_RAW_STRING(msg->config->xml_config_file);
-#endif		
+#endif
+	} else if (strcmp(name, "client-bypass-protocol") == 0) {
+		READ_TF(msg->config->client_bypass_protocol, msg->config->has_client_bypass_protocol);
 	} else if (strcmp(name, "restrict-user-to-ports") == 0) {
 		ret = cfg_parse_ports(pool, &msg->config->fw_ports, &msg->config->n_fw_ports, value);
 		if (ret < 0) {

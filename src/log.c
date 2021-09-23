@@ -109,7 +109,10 @@ void __attribute__ ((format(printf, 4, 5)))
 	else
 		debug_prio = 1;
 
-	if (priority == LOG_DEBUG && debug_prio < 3)
+	if (priority == LOG_DEBUG && debug_prio < DEBUG_DEBUG)
+		return;
+
+	if (priority == LOG_INFO && debug_prio < DEBUG_INFO)
 		return;
 
 	if (priority == LOG_HTTP_DEBUG) {

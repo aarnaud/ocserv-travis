@@ -863,3 +863,28 @@ void http_req_deinit(worker_st * ws)
 	ws->req.body = NULL;
 }
 
+/* add_owasp_headers:
+ * @ws: an initialized worker structure
+ *
+ * This function adds the OWASP default headers
+ * There are security tools that flag the server as a security risk.
+ * These are added to help users comply with security best practices.
+ */
+int add_owasp_headers(worker_st * ws)
+{
+	if (cstp_puts(ws, "Strict-Transport-Security: max-age=31536000 ; includeSubDomains\r\n") < 0 ||
+		cstp_puts(ws, "X-Frame-Options: deny\r\n") < 0 ||
+		cstp_puts(ws, "X-Content-Type-Options: nosniff\r\n") < 0 ||
+		cstp_puts(ws, "Content-Security-Policy: default-src \'none\'\r\n") < 0 ||
+		cstp_puts(ws, "X-Permitted-Cross-Domain-Policies: none\r\n") < 0 ||
+		cstp_puts(ws, "Referrer-Policy: no-referrer\r\n") < 0 ||
+		cstp_puts(ws, "Clear-Site-Data: \"cache\",\"cookies\",\"storage\"\r\n") < 0 ||
+		cstp_puts(ws, "Cross-Origin-Embedder-Policy: require-corp\r\n") < 0 ||
+		cstp_puts(ws, "Cross-Origin-Opener-Policy: same-origin\r\n") < 0 ||
+		cstp_puts(ws, "Cross-Origin-Resource-Policy: same-origin\r\n") < 0 ||
+		cstp_puts(ws, "X-XSS-Protection: 0\r\n") < 0)
+	{
+		return -1;
+	}
+	return 0;
+}

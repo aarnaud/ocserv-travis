@@ -95,7 +95,7 @@ struct worker_st *global_ws = NULL;
 static int terminate = 0;
 static int terminate_reason = REASON_SERVER_DISCONNECT;
 
-static struct ev_loop *loop = NULL;
+static struct ev_loop *worker_loop = NULL;
 ev_io command_watcher;
 ev_io tls_watcher;
 ev_io tun_watcher;
@@ -431,10 +431,10 @@ static int setup_dtls_connection(struct worker_st *ws, struct dtls_st * dtls)
 	}
 
 	dtls->dtls_session = session;
-	ev_init(&dtls->io, dtls_watcher_cb);
+	ev_io_stop(worker_loop, &dtls->io);
 	ev_io_set(&dtls->io, dtls->dtls_tptr.fd, EV_READ);
-	ev_io_start(loop, &dtls->io);
-	ev_invoke(loop, &dtls->io, EV_READ);
+	ev_io_start(worker_loop, &dtls->io);
+	ev_invoke(worker_loop, &dtls->io, EV_READ);
 
 	return 0;
  fail:
@@ -789,7 +789,7 @@ void vpn_server(struct worker_st *ws)
 
 	/* do not allow this process to be traced. That
 	 * prevents worker processes tracing each other. */
-	if (GETPCONFIG(ws)->debug == 0)
+	if (GETPCONFIG(ws)->pr_dumpable != 1)
 		pr_set_undumpable("worker");
 	if (GETCONFIG(ws)->isolate != 0) {
 		ret = disable_system_calls(ws);
@@ -907,7 +907,7 @@ void vpn_server(struct worker_st *ws)
 			if (nrecvd == 0)
 				goto finish;
 			if (nrecvd != GNUTLS_E_PREMATURE_TERMINATION)
-				oclog(ws, LOG_ERR,
+				oclog(ws, LOG_WARNING,
 				      "error receiving client data");
 			exit_worker(ws);
 		}
@@ -1261,7 +1261,7 @@ int periodic_check(worker_st * ws, struct timespec *tnow, unsigned dpd)
 
 	if (ws->user_config->session_timeout_secs > 0) {
 		if (now - ws->session_start_time > ws->user_config->session_timeout_secs) {
-			oclog(ws, LOG_ERR,
+			oclog(ws, LOG_NOTICE,
 			      "session timeout reached for process (%d secs)",
 			      (int)(now - ws->session_start_time));
 			terminate = 1;
@@ -1286,7 +1286,7 @@ int periodic_check(worker_st * ws, struct timespec *tnow, unsigned dpd)
 	if (DTLS_ACTIVE(ws)->udp_state == UP_ACTIVE &&
 	    now - ws->last_msg_udp > DPD_TRIES * dpd && dpd > 0) {
 	    	unsigned data_mtu = DATA_MTU(ws, ws->link_mtu);
-		oclog(ws, LOG_ERR,
+		oclog(ws, LOG_NOTICE,
 		      "have not received any UDP message or DPD for long (%d secs, DPD is %d)",
 		      (int)(now - ws->last_msg_udp), dpd);
 
@@ -1303,7 +1303,7 @@ int periodic_check(worker_st * ws, struct timespec *tnow, unsigned dpd)
 		}
 	}
 	if (dpd > 0 && now - ws->last_msg_tcp > DPD_TRIES * dpd) {
-		oclog(ws, LOG_DEBUG,
+		oclog(ws, LOG_NOTICE,
 		      "have not received TCP DPD for long (%d secs)",
 		      (int)(now - ws->last_msg_tcp));
 		ws->buffer[0] = 'S';
@@ -1319,7 +1319,7 @@ int periodic_check(worker_st * ws, struct timespec *tnow, unsigned dpd)
 		CSTP_FATAL_ERR_CMD(ws, ret, exit_worker_reason(ws, REASON_ERROR));
 
 		if (now - ws->last_msg_tcp > DPD_MAX_TRIES * dpd) {
-			oclog(ws, LOG_ERR,
+			oclog(ws, LOG_NOTICE,
 			      "connection timeout (DPD); tearing down connection");
 			exit_worker_reason(ws, REASON_DPD_TIMEOUT);
 		}
@@ -1479,6 +1479,7 @@ static int dtls_mainloop(worker_st * ws, struct dtls_st * dtls, struct timespec 
 				      "error in DTLS handshake: %s\n",
 				      gnutls_strerror(ret));
 			dtls->udp_state = UP_DISABLED;
+			ev_io_stop(worker_loop, &dtls->io);
 			break;
 		}
 
@@ -1871,6 +1872,7 @@ static int connect_handler(worker_st * ws)
 	unsigned rnd;
 	unsigned i;
 	unsigned ip6;
+	time_t now = time(0);
 
 	ret = gnutls_rnd(GNUTLS_RND_NONCE, &rnd, sizeof(rnd));
 	if (ret < 0) {
@@ -1927,6 +1929,9 @@ static int connect_handler(worker_st * ws)
 
 	cstp_cork(ws);
 	ret = cstp_puts(ws, "HTTP/1.1 200 CONNECTED\r\n");
+	SEND_ERR(ret);
+
+	ret = add_owasp_headers(ws);
 	SEND_ERR(ret);
 
 	ret = cstp_puts(ws, "X-CSTP-Version: 1\r\n");
@@ -2148,6 +2153,13 @@ static int connect_handler(worker_st * ws)
 	}
 	SEND_ERR(ret);
 
+	if (WSCONFIG(ws)->client_bypass_protocol) {
+		ret = cstp_puts(ws, "X-CSTP-Client-Bypass-Protocol: true\r\n");
+	} else {
+		ret = cstp_puts(ws, "X-CSTP-Client-Bypass-Protocol: false\r\n");
+	}
+	SEND_ERR(ret);
+
 	ret = send_routes(ws, req, ws->user_config->no_routes, ws->user_config->n_no_routes, 0);
 	SEND_ERR(ret);
 
@@ -2213,8 +2225,19 @@ static int connect_handler(worker_st * ws)
 		}
 	}
 
-	ret = cstp_puts(ws, "X-CSTP-Session-Timeout: none\r\n"
-		       "X-CSTP-Disconnected-Timeout: none\r\n"
+	if (!ws->user_config->has_session_timeout_secs) {
+		ret = cstp_puts(ws, "X-CSTP-Session-Timeout: none\r\n");
+		SEND_ERR(ret);
+	} else {
+		time_t expiration = ws->session_start_time + ws->user_config->session_timeout_secs;
+		ret = cstp_printf(ws, "X-CSTP-Session-Timeout: %u\r\n"
+				  "X-CSTP-Session-Timeout-Remaining: %ld\r\n",
+				  ws->user_config->session_timeout_secs,
+				  MAX(expiration - now, 0));
+		SEND_ERR(ret);
+	}
+
+	ret = cstp_puts(ws, "X-CSTP-Disconnected-Timeout: none\r\n"
 		       "X-CSTP-Keep: true\r\n"
 		       "X-CSTP-TCP-Keepalive: true\r\n"
 		       "X-CSTP-License: accept\r\n");
@@ -2482,7 +2505,7 @@ static int parse_data(struct worker_st *ws, uint8_t *buf, size_t buf_size,
 			exit_worker_reason(ws, REASON_USER_DISCONNECT);
 		} else {
 			if (plain_size > 0) {
-				oclog(ws, LOG_DEBUG, "bye packet with payload: %u/%.2x", (unsigned)plain_size, plain[0]);
+				oclog_hex(ws, LOG_DEBUG, "bye packet with unknown payload", plain, plain_size, 0);
 				return -1;
 			}
 
@@ -2609,7 +2632,7 @@ static int test_for_tcp_health_probe(struct worker_st *ws)
 
 static void syserr_cb (const char *msg)
 {
-	struct worker_st * ws = ev_userdata(loop);
+	struct worker_st * ws = ev_userdata(worker_loop);
 	int err = errno;
 
 	oclog(ws, LOG_ERR, "libev fatal error: %s / %s", msg, strerror(err));
@@ -2637,7 +2660,7 @@ static void cstp_send_terminate(struct worker_st * ws)
 
 static void command_watcher_cb (EV_P_ ev_io *w, int revents)
 {
-	struct worker_st *ws = ev_userdata(loop);
+	struct worker_st *ws = ev_userdata(worker_loop);
 
 	int ret = handle_commands_from_main(ws);
 	if (ret == ERR_NO_CMD_FD) {
@@ -2667,7 +2690,7 @@ static void tls_watcher_cb (EV_P_ ev_io * w, int revents)
 
 	ret = tls_mainloop(ws, &tnow);
 	if (ret < 0) {
-		oclog(ws, LOG_ERR, "tls_mainloop failed %d", ret);
+		oclog(ws, LOG_DEBUG, "tls_mainloop failed %d", ret);
 		terminate_reason = REASON_ERROR;
 		cstp_send_terminate(ws);
 	}
@@ -2682,7 +2705,7 @@ static void tun_watcher_cb (EV_P_ ev_io * w, int revents)
 
 	ret = tun_mainloop(ws, &tnow);
 	if (ret < 0) {
-		oclog(ws, LOG_ERR, "tun_mainloop failed %d", ret);
+		oclog(ws, LOG_DEBUG, "tun_mainloop failed %d", ret);
 		terminate_reason = REASON_ERROR;
 		cstp_send_terminate(ws);
 	}
@@ -2698,7 +2721,7 @@ static void dtls_watcher_cb (EV_P_ ev_io * w, int revents)
 
 	ret = dtls_mainloop(ws, dtls, &tnow);
 	if (ret < 0) {
-		oclog(ws, LOG_ERR, "dtls_mainloop failed %d", ret);
+		oclog(ws, LOG_DEBUG, "dtls_mainloop failed %d", ret);
 		terminate_reason = REASON_ERROR;
 		cstp_send_terminate(ws);
 	}
@@ -2723,7 +2746,7 @@ static void invoke_dtls_if_needed(struct dtls_st * dtls)
 	if ((dtls->udp_state > UP_WAIT_FD) && 
 		(dtls->dtls_session != NULL) &&
 		(gnutls_record_check_pending(dtls->dtls_session))) {
-		ev_invoke(loop, &dtls->io, EV_READ);
+		ev_invoke(worker_loop, &dtls->io, EV_READ);
 	}
 }
 
@@ -2757,9 +2780,9 @@ static int worker_event_loop(struct worker_st * ws)
 	struct timespec tnow;
 
 #if defined(__linux__) && defined(HAVE_LIBSECCOMP)
-	loop = ev_default_loop(EVFLAG_NOENV|EVBACKEND_EPOLL);
+	worker_loop = ev_default_loop(EVFLAG_NOENV|EVBACKEND_EPOLL);
 #else
-	loop = EV_DEFAULT;
+	worker_loop = EV_DEFAULT;
 #endif
 
 	// Restore the signal handlers
@@ -2769,37 +2792,37 @@ static int worker_event_loop(struct worker_st * ws)
 	
 	ev_init(&alarm_sig_watcher, term_sig_watcher_cb);
 	ev_signal_set (&alarm_sig_watcher, SIGALRM);
-	ev_signal_start (loop, &alarm_sig_watcher);
+	ev_signal_start (worker_loop, &alarm_sig_watcher);
 
 	ev_init (&int_sig_watcher, term_sig_watcher_cb);
 	ev_signal_set (&int_sig_watcher, SIGINT);
-	ev_signal_start (loop, &int_sig_watcher);
+	ev_signal_start (worker_loop, &int_sig_watcher);
 
 	ev_init (&term_sig_watcher, term_sig_watcher_cb);
 	ev_signal_set (&term_sig_watcher, SIGTERM);
-	ev_signal_start (loop, &term_sig_watcher);
+	ev_signal_start (worker_loop, &term_sig_watcher);
 	
-	ev_set_userdata (loop, ws);
+	ev_set_userdata (worker_loop, ws);
 	ev_set_syserr_cb(syserr_cb);
 
 	ev_init(&command_watcher, command_watcher_cb);
 	ev_io_set(&command_watcher, ws->cmd_fd, EV_READ);
-	ev_io_start(loop, &command_watcher);
+	ev_io_start(worker_loop, &command_watcher);
 
 	ev_init(&tls_watcher, tls_watcher_cb);
 	ev_io_set(&tls_watcher, ws->conn_fd, EV_READ);
-	ev_io_start(loop, &tls_watcher);
+	ev_io_start(worker_loop, &tls_watcher);
 
 	ev_init(&DTLS_ACTIVE(ws)->io, dtls_watcher_cb);
 	ev_init(&DTLS_INACTIVE(ws)->io, dtls_watcher_cb);
 
 	ev_init(&tun_watcher, tun_watcher_cb);
 	ev_io_set(&tun_watcher, ws->tun_fd, EV_READ);
-	ev_io_start(loop, &tun_watcher);
+	ev_io_start(worker_loop, &tun_watcher);
 
 	ev_init (&period_check_watcher, periodic_check_watcher_cb);
 	ev_timer_set(&period_check_watcher, WORKER_MAINTENANCE_TIME, WORKER_MAINTENANCE_TIME);
-	ev_timer_start(loop, &period_check_watcher);
+	ev_timer_start(worker_loop, &period_check_watcher);
 
 
 	/* start dead peer detection */
@@ -2810,7 +2833,7 @@ static int worker_event_loop(struct worker_st * ws)
 	bandwidth_init(&ws->b_tx, ws->user_config->tx_per_sec);
 
 
-	ev_run(loop, 0);
+	ev_run(worker_loop, 0);
 	if (terminate != 0)
 	{
 		goto exit;

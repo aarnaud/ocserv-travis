@@ -112,7 +112,7 @@ void set_self_oom_score_adj(main_server_st * s)
 	}
 
  cleanup:
-	if (fd) {
+	if (fd >= 0) {
 		close(fd);
 	}
 #endif
@@ -182,3 +182,4 @@ void drop_privileges(main_server_st * s)
 		      strerror(e));
 	}
 }
+

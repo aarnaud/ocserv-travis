@@ -40,6 +40,10 @@
 #include "vhost.h"
 #include "ev.h"
 
+// Name of environment variable used to pass worker_startup_msg
+// between ocserv-main and ocserv-worker.
+#define OCSERV_ENV_WORKER_STARTUP_MSG "OCSERV_WORKER_STARTUP_MSG"
+
 typedef enum {
 	UP_DISABLED,
 	UP_WAIT_FD,
@@ -417,6 +421,8 @@ int send_msg_to_main(worker_st *ws, uint8_t cmd,
 int parse_proxy_proto_header(struct worker_st *ws, int fd);
 
 void cookie_authenticate_or_exit(worker_st *ws);
+
+int add_owasp_headers(worker_st * ws);
 
 /* after that time (secs) of inactivity in the UDP part, connection switches to 
  * TCP (if activity occurs there).

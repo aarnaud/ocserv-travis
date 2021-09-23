@@ -167,10 +167,12 @@ struct  _GroupCfgSt
   char *hostname;
   size_t n_split_dns;
   char **split_dns;
+  protobuf_c_boolean has_client_bypass_protocol;
+  uint32_t client_bypass_protocol;
 };
 #define GROUP_CFG_ST__INIT \
  { PROTOBUF_C_MESSAGE_INIT (&group_cfg_st__descriptor) \
-    , 0, 0, 0, 0, 0, 0, 0, 0, 0,NULL, 0,NULL, 0,NULL, 0,NULL, NULL, NULL, NULL, 0, 0, NULL, NULL, 0, 0, 0, 0, 0, 0, NULL, NULL, 0,NULL, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,NULL, NULL, 0,NULL }
+    , 0, 0, 0, 0, 0, 0, 0, 0, 0,NULL, 0,NULL, 0,NULL, 0,NULL, NULL, NULL, NULL, 0, 0, NULL, NULL, 0, 0, 0, 0, 0, 0, NULL, NULL, 0,NULL, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,NULL, NULL, 0,NULL, 0, 0 }
 
 
 /*
