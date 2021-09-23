@@ -1,0 +1,115 @@
+#!/bin/bash
+#
+# Copyright (C) 2021 Microsoft Corporation
+#
+# This file is part of ocserv.
+#
+# ocserv is free software; you can redistribute it and/or modify it
+# under the terms of the GNU General Public License as published by the
+# Free Software Foundation; either version 2 of the License, or (at
+# your option) any later version.
+#
+# ocserv is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with GnuTLS; if not, write to the Free Software Foundation,
+# Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+
+SERV="${SERV:-../src/ocserv}"
+srcdir=${srcdir:-.}
+NO_NEED_ROOT=1
+
+. `dirname $0`/common.sh
+
+eval "${GETPORT}"
+
+echo "Testing ocserv owasp headers... "
+
+update_config test-user-cert.config
+launch_simple_sr_server -d 1 -f -c ${CONFIG}
+PID=$!
+
+wait_server $PID
+
+function CheckHeaders
+{
+    [[ "$1" =~ .*"Strict-Transport-Security".* ]] || fail $PID "Missing HTTP header (Strict-Transport-Security)"
+    [[ "$1" =~ .*"X-Frame-Options".* ]] || fail $PID "Missing HTTP header (X-Frame-Options)"
+    [[ "$1" =~ .*"X-Content-Type-Options".* ]] || fail $PID "Missing HTTP header (X-Content-Type-Options)"
+    [[ "$1" =~ .*"Content-Security-Policy".* ]] || fail $PID "Missing HTTP header (Content-Security-Policy)"
+    [[ "$1" =~ .*"X-Permitted-Cross-Domain-Policies".* ]] || fail $PID "Missing HTTP header (X-Permitted-Cross-Domain-Policies)"
+    [[ "$1" =~ .*"Referrer-Policy".* ]] || fail $PID "Missing HTTP header (Referrer-Policy)"
+    [[ "$1" =~ .*"Clear-Site-Data".* ]] || fail $PID "Missing HTTP header (Clear-Site-Data)"
+    [[ "$1" =~ .*"Cross-Origin-Embedder-Policy".* ]] || fail $PID "Missing HTTP header (Cross-Origin-Embedder-Policy)"
+    [[ "$1" =~ .*"Cross-Origin-Opener-Policy".* ]] || fail $PID "Missing HTTP header (Cross-Origin-Opener-Policy)"
+    [[ "$1" =~ .*"Cross-Origin-Resource-Policy".* ]] || fail $PID "Missing HTTP header (Cross-Origin-Resource-Policy)"
+    [[ "$1" =~ .*"X-XSS-Protection".* ]] || fail $PID "Missing HTTP header (X-XSS-Protection)"
+
+	while IFS=':' read name value; do
+        case "$name" in
+        Strict-Transport-Security)
+            [[ "$value" =~ "max-age=31536000 ; includeSubDomains" ]] || fail $PID "Unexpected HTTP header value ($name: $value)";;
+        X-Frame-Options)
+            [[ "$value" =~ "deny" ]] || fail $PID "Unexpected HTTP header value ($name: $value)";;
+        X-Content-Type-Options)
+            [[ "$value" =~ "nosniff" ]] || fail $PID "Unexpected HTTP header value ($name: $value)";;
+        Content-Security-Policy)
+            [[ "$value" =~ "default-src 'none'" ]] || fail $PID "Unexpected HTTP header value ($name: $value)";;
+        X-Permitted-Cross-Domain-Policies)
+            [[ "$value" =~ "none" ]] || fail $PID "Unexpected HTTP header value ($name: $value)";;
+        Referrer-Policy)    
+            [[ "$value" =~ "no-referrer" ]] || fail $PID "Unexpected HTTP header value ($name: $value)";;
+        Clear-Site-Data)
+            [[ "$value" =~ "\"cache\",\"cookies\",\"storage\"" ]] || fail $PID "Unexpected HTTP header value ($name: $value)";;
+        Cross-Origin-Embedder-Policy)
+            [[ "$value" =~ "require-corp" ]] || fail $PID "Unexpected HTTP header value ($name: $value)";;
+        Cross-Origin-Opener-Policy)
+            [[ "$value" =~ "same-origin" ]] || fail $PID "Unexpected HTTP header value ($name: $value)";;
+        Cross-Origin-Resource-Policy)
+            [[ "$value" =~ "same-origin" ]] || fail $PID "Unexpected HTTP header value ($name: $value)";;
+        X-XSS-Protection)
+            [[ "$value" =~ "0" ]] || fail $PID "Unexpected HTTP header value ($name: $value)";;
+        esac
+	done < <(echo "$1")
+}
+
+echo -n "Testing / ... "
+results=$(LD_PRELOAD=libsocket_wrapper.so curl -I -X GET -s https://$ADDRESS:$PORT/ --insecure)
+CheckHeaders "$results"
+
+echo -n "Testing /auth ... "
+results=$(LD_PRELOAD=libsocket_wrapper.so curl -I -X GET -s https://$ADDRESS:$PORT/auth --insecure)
+CheckHeaders "$results"
+
+echo -n "Testing /VPN ... "
+results=$(LD_PRELOAD=libsocket_wrapper.so curl -I -X GET -s https://$ADDRESS:$PORT/VPN --insecure)
+CheckHeaders "$results"
+echo "ok"
+
+echo -n "Testing /cert.pem ... "
+results=$(LD_PRELOAD=libsocket_wrapper.so curl -I -X GET -s https://$ADDRESS:$PORT/cert.pem --insecure)
+CheckHeaders "$results"
+echo "ok"
+
+echo -n "Testing /cert.cer ... "
+results=$(LD_PRELOAD=libsocket_wrapper.so curl -I -X GET -s https://$ADDRESS:$PORT/cert.cer --insecure)
+CheckHeaders "$results"
+echo "ok"
+
+echo -n "Testing /ca.pem ... "
+results=$(LD_PRELOAD=libsocket_wrapper.so curl -I -X GET -s https://$ADDRESS:$PORT/ca.pem --insecure)
+CheckHeaders "$results"
+echo "ok"
+
+echo -n "Testing /ca.cer ... "
+results=$(LD_PRELOAD=libsocket_wrapper.so curl -I -X GET -s https://$ADDRESS:$PORT/ca.cer --insecure)
+CheckHeaders "$results"
+echo "ok"
+
+
+cleanup
+
+exit 0

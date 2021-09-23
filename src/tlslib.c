@@ -451,7 +451,7 @@ static void tls_audit_log_func(gnutls_session_t session, const char *str)
 	else {
 		ws = gnutls_session_get_ptr(session);
 
-		oclog(ws, LOG_ERR, "warning: %s", str);
+		oclog(ws, LOG_NOTICE, "warning: %s", str);
 	}
 }
 

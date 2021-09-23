@@ -64,6 +64,7 @@ message group_cfg_st
 	repeated fw_port_st fw_ports = 39;
 	optional string hostname = 40;
 	repeated string split_dns = 41;
+	optional uint32 client_bypass_protocol = 42;
 }
 
 /* AUTH_COOKIE_REP */

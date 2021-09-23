@@ -1,3 +1,727 @@
+commit 559a0f85c67bf3700e220695dc805613114e50d2
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Wed Jun 2 08:32:46 2021 +0200
+
+    released 1.1.3
+    
+    Signed-off-by: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+
+commit 750a4bfb3f46e81ccba5a147f6317351c29294c4
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Sun May 23 18:58:13 2021 +0200
+
+    NEWS: removed X-CSTP-Lease-Duration
+    
+    This amends fac0244f3eb0cd1fd9a510472dc741570c2a0f43
+    
+    Signed-off-by: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+
+commit 60af6e3f6a5483f24858d7a046562982c82495d7
+Merge: b37544b5 fac0244f
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Sat May 22 18:17:29 2021 +0000
+
+    Merge branch 'do_not_set_X-CSTP-Lease-Duration_header' into 'master'
+    
+    Do not set X-CSTP-Lease-Duration header
+    
+    See merge request openconnect/ocserv!265
+
+commit fac0244f3eb0cd1fd9a510472dc741570c2a0f43
+Author: Daniel Lenski <dlenski@gmail.com>
+Date:   Sat May 22 10:29:53 2021 -0700
+
+    Do not set X-CSTP-Lease-Duration header
+    
+    This header was added in https://gitlab.com/openconnect/ocserv/-/commit/dd34f8587585bc6f3e7c30ea09aa1dd26d1c6215.
+    The intention was to allow clients to accurately determine the remaining
+    lifetime of the authentication session by replicating the headers that Cisco
+    servers were observed to send. See https://gitlab.com/openconnect/openconnect/-/merge_requests/156
+    for the client-side implementation in OpenConnect.
+    
+    However, two users of ocserv have now reported that the *presence* of this
+    header *breaks* compatibility with newer Cisco AnyConnect clients
+    (https://gitlab.com/openconnect/ocserv/-/issues/414#note_581221384,
+    https://gitlab.com/openconnect/ocserv/-/issues/232#note_477714207).
+    
+    This patch removes the `X-CSTP-Lease-Duration` header, while leaving behind
+    the `X-CSTP-Session-Timeout` and `X-CSTP-Session-Timeout-Remaining` headers.
+    With
+    
+    (a) Cisco AnyConnect clients are able to correct (tested at
+        https://gitlab.com/openconnect/ocserv/-/issues/414#note_581563460)
+    (b) OpenConnect clients are still able to determine the authentication session
+        lifetime (https://gitlab.com/openconnect/ocserv/-/issues/414#note_582314323)
+    
+    Signed-off-by: Daniel Lenski <dlenski@gmail.com>
+
+commit b37544b513382e9a9f064883ae174a70a49ec213
+Merge: 797d6f75 658ffb47
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Tue May 18 18:38:50 2021 +0000
+
+    Merge branch 'refactorlogging' into 'master'
+    
+    Separated logging level from debug-ability
+    
+    See merge request openconnect/ocserv!262
+
+commit 658ffb47df3b248706b0e8fce32355ee7ba4aaf5
+Author: Russell Young <ruyoung@microsoft.com>
+Date:   Tue May 18 18:38:49 2021 +0000
+
+    Separated logging level from debug-ability
+    
+    Modified code to separate logging level from the debug-ability. Added new command line option -x or --traceable to control the pr_dumpable state (default is pr_dumpable false) Added config parameter for controlling the log-level the option is "log-level" it can also be specified on the commandline with -d or --debug.
+    
+    Signed-off-by: Russell Young <ruyoung@microsoft.com>
+
+commit 797d6f75d00728516fce0bdc69739e2517426c57
+Merge: 4eb211d8 b3fe0d85
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Tue May 18 07:15:43 2021 +0000
+
+    Merge branch 'bypass-protocol' into 'master'
+    
+    add client-bypass-protocol config option
+    
+    Closes #407
+    
+    See merge request openconnect/ocserv!261
+
+commit b3fe0d85c2c81b5b7e133cabd6f3de8b951978f0
+Author: fdomain <domain.florian@gmail.com>
+Date:   Tue May 18 07:15:43 2021 +0000
+
+    Added client-bypass-protocol config option
+    
+    By default, anyconnect clients will drop all traffic of a given IP
+    version if there is no IP address in that version assigned to the
+    client. The client-bypass-protocol option, if enabled, will send an
+    extra header to the clients telling anyconnect client to bypass VPN
+    tunnel if there is no IP assigned. No impact for openconnect clients,
+    this header will simply be ignored.
+    
+    Signed-off-by: Florian Domain <f.domain@criteo.com>
+
+commit 4eb211d8d088a4f2aa8cede63a86bf1bcf9eb590
+Merge: 1d32c505 3d5981c0
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Sun May 16 21:27:05 2021 +0000
+
+    Merge branch 'tmp-minimal-fix' into 'master'
+    
+    .gitlab-ci.yml: merged options from minimal and Ubuntu minimal
+    
+    See merge request openconnect/ocserv!264
+
+commit 3d5981c0f230d9afdfa471cb78569e06ad0a5c30
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Sun May 16 22:19:56 2021 +0200
+
+    .gitlab-ci.yml: enabled more tests on ubuntu20.04 minimal
+    
+    Signed-off-by: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+
+commit 59e4539736163a90e28e3394f162e42eca4e693a
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Sun May 16 21:38:00 2021 +0200
+
+    .gitlab-ci.yml: merged options from minimal and Ubuntu minimal
+    
+    Signed-off-by: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+
+commit 1d32c5052e22a492ce520ef7a6fcda3feab71b80
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Sun May 16 21:33:42 2021 +0200
+
+    updated NEWS for the owasp headers
+    
+    Signed-off-by: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+
+commit 2584222a3f15b43c7601daa50558037b7c21d873
+Merge: 415a6bce 1d5b699e
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Fri May 14 17:41:14 2021 +0000
+
+    Merge branch 'owasp-headers' into 'master'
+    
+    Owasp headers
+    
+    See merge request openconnect/ocserv!263
+
+commit 1d5b699e49125dc6263101e080fec06213848862
+Author: Russ Young <ruyoung@microsoft.com>
+Date:   Wed May 12 13:27:35 2021 -0600
+
+    Changed mode
+
+commit c4bc01766d2723a641f0bc9bd81815b6da472407
+Author: Russ Young <ruyoung@microsoft.com>
+Date:   Wed May 12 11:56:09 2021 -0600
+
+    Removed conditional code for OWASP headers
+
+commit 065f51e6af6b1716bedc5a04a06de6cc8f7a5abb
+Author: Russ Young <ruyoung@microsoft.com>
+Date:   Tue Apr 20 11:55:28 2021 -0600
+
+    Added build flags and Test for OWASP headers
+
+commit f3e23793a7dede68fa3af1f9c2c0bcd857da6e36
+Author: Russ Young <ruyoung@microsoft.com>
+Date:   Wed Apr 14 10:55:04 2021 -0600
+
+    Added the default OWASP http headers to http responses.
+
+commit 415a6bce7b4b59cf33332ea728e2410ef57e39f7
+Merge: b1c9573c 3f0ece49
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Fri Apr 2 18:56:09 2021 +0000
+
+    Merge branch 'tmp-coverity-fixes' into 'master'
+    
+    Include fixes identified by coverity
+    
+    See merge request openconnect/ocserv!260
+
+commit 3f0ece492fcb2d9c2f95d08088fbe8a8275ab8c2
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Thu Apr 1 17:16:12 2021 +0200
+
+    set_self_oom_score_adj: corrected error handling
+    
+    Signed-off-by: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+
+commit 2d1bd947e29221e1af5a37f703a948c9eeaed815
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Thu Apr 1 17:09:25 2021 +0200
+
+    ctl_handler_init: fixed resource leaks
+    
+    Signed-off-by: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+
+commit 6677ac04faa7d3a2cc9740fcc53e47f6ca40e92c
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Thu Apr 1 14:52:27 2021 +0200
+
+    occtl: fixed uninitialized value
+    
+    Signed-off-by: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+
+commit b1c9573ce0768258af9079e9b968f1760394346b
+Merge: 25e89901 cbd85808
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Fri Mar 12 19:30:39 2021 +0000
+
+    Merge branch 'lognoise' into 'master'
+    
+    Changes offensive messages. Reduced log noise
+    
+    See merge request openconnect/ocserv!259
+
+commit cbd858081ef5ec893e8fdb4f4dd3d6e54133c768
+Author: Russ Young <ruyoung@microsoft.com>
+Date:   Mon Mar 1 10:42:43 2021 -0700
+
+    Changed logging level to reduce noise.
+
+commit 7864798b59371c0ad0de290b38fdc380136349e4
+Author: Russ Young <ruyoung@microsoft.com>
+Date:   Mon Mar 1 10:41:30 2021 -0700
+
+    Changed logging levels to reduce noise.
+
+commit e9ddacde595fd49cfab362f3c4eed9743c845de0
+Author: Russ Young <ruyoung@microsoft.com>
+Date:   Wed Feb 17 12:09:40 2021 -0700
+
+    Changes offensive messages.
+    Changed noisy messages to be logged at LOG_DEBUG level.
+
+commit 25e899017a4ea0a1a84cc603d70914a215a87bc1
+Merge: 3e47d192 90e08cc1
+Author: Alan Jowett <alanjo@microsoft.com>
+Date:   Mon Feb 22 16:25:42 2021 +0000
+
+    Merge branch 'cookie-httponly' into 'master'
+    
+    Added HttpOnly flag to cookie
+    
+    See merge request openconnect/ocserv!258
+
+commit 90e08cc12de2a2f6b5ccb417b07ca499511ddf45
+Author: Russ Young <ruyoung@microsoft.com>
+Date:   Wed Feb 17 12:15:09 2021 -0700
+
+    Added HttpOnly flag to cookie
+
+commit 3e47d192edbc950af56e07e4959443404c64f8dc
+Merge: 7c81ba20 a2775715
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Thu Feb 11 10:24:31 2021 +0000
+
+    Merge branch 'openbsd-devname' into 'master'
+    
+    OpenBSD Devname changes
+    
+    Closes #399
+    
+    See merge request openconnect/ocserv!256
+
+commit a2775715ec124bb463c854fa8c650581ef8ff713
+Author: Jake S <jake.stennett@uniserveteam.com>
+Date:   Wed Feb 10 22:17:46 2021 +0000
+
+    OpenBSD Devname changes
+
+commit 7c81ba20f40145d048871c3032b729a47ae7c773
+Merge: 9f08770c 4cea55c6
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Wed Feb 10 20:48:42 2021 +0000
+
+    Merge branch 'dtls-fix-memory-corruption' into 'master'
+    
+    dtls connection setup: fix memory corruption, proper watcher setup
+    
+    See merge request openconnect/ocserv!255
+
+commit 4cea55c6d68c1c46755876af4e3ff142cd6c81a3
+Author: Stefan Bühler <stefan.buehler@tik.uni-stuttgart.de>
+Date:   Wed Feb 10 13:23:42 2021 +0100
+
+    dtls connection setup: fix memory corruption, proper watcher setup
+    
+    ev_init and ev_io_set must never be called on active watchers - we
+    need to cleanup previous connection state before setting a new one.
+    
+    ev_init clears the "active" flag, but doesn't remove the watcher from
+    libev internal linked lists (and doesn't clear the "next" pointer for
+    it).  This can for example lead to (unexpected) cyclic lists in libev,
+    and libev can loop forever trying to deal with them.
+
+commit 9f08770c08d79a6d0f91dd08179543c82bcba839
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Thu Feb 4 21:58:41 2021 +0100
+
+    doc update
+    
+    Signed-off-by: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+
+commit 289ce060dcbbf3811f8588792833ae5bf8bd9f6c
+Merge: d4800b54 c53cc973
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Thu Feb 4 20:56:06 2021 +0000
+
+    Merge branch 'issue400' into 'master'
+    
+    Close fd and stop ev_io on failed handshake.
+    
+    Closes #400
+    
+    See merge request openconnect/ocserv!253
+
+commit c53cc97395efccaf9a567c51475bcfc3d1a8ee5e
+Author: Alan Jowett <alanjo@microsoft.com>
+Date:   Thu Feb 4 09:29:45 2021 -0700
+
+    Close fd and stop ev_io on failed handshake.
+    Signed-off-by: Alan Jowett <alanjo@microsoft.com>
+
+commit d4800b54e33d25c43a994a55979e34921f723dcb
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Wed Feb 3 20:36:11 2021 +0100
+
+    Updated NEWS
+    
+    Signed-off-by: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+
+commit ae049ee9ab0066a5fcddb85d892ac132e08e96db
+Merge: acf31f5d 9d3ac170
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Sun Jan 31 19:43:15 2021 +0000
+
+    Merge branch 'tmp-394' into 'master'
+    
+    Change how stdin and stdout are closed
+    
+    Closes #394
+    
+    See merge request openconnect/ocserv!252
+
+commit 9d3ac1707316f7fd615a5b5d067c31dbb12b3d02
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Mon Jan 25 20:55:02 2021 +0100
+
+    Change how stdin and stdout are closed
+    
+    We only close the descriptors on the main process
+    as this could close other unrelated descriptors.
+    
+    Resolves: #394
+    
+    Signed-off-by: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+
+commit acf31f5dde7aa19fac9031ba5b5f6f88218999eb
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Sun Dec 27 21:57:49 2020 +0100
+
+    parse_data: print unknown bye packets
+    
+    Signed-off-by: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+
+commit b7134d59f8b8c6f19e8bada34644dd12ed77dd99
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Sun Dec 27 13:22:31 2020 +0100
+
+    corrected typo
+    
+    Signed-off-by: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+
+commit 7f088554d231dca32d4bd4f61ed389d020fc08b6
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Sun Dec 27 13:20:48 2020 +0100
+
+    README-radius.md: corrected note
+    
+    Signed-off-by: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+
+commit 1f6cfdc41e6f5e97b4144e35ad328275e5338986
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Sun Dec 27 13:12:34 2020 +0100
+
+    README-radius.md: better phrasing of NAS-Port issue with freeradius
+    
+    Signed-off-by: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+
+commit d0708ab3ff0d5b1711ea564b26d938ef0b3ee115
+Merge: 1657781c d8377398
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Sat Dec 19 14:00:59 2020 +0000
+
+    Merge branch 'tmp-coverage-check' into 'master'
+    
+    Include debugging output into our coverage tests
+    
+    See merge request openconnect/ocserv!251
+
+commit d8377398bc8ab56840b371dd8877029416873d6b
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Sat Dec 19 14:17:32 2020 +0100
+
+    .triage-policies.yml: improved message on reopening
+    
+    Signed-off-by: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+
+commit 13f59eebbd9aefd393af40fb8d2f274560a00bae
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Sat Dec 19 13:56:41 2020 +0100
+
+    tests: increase verbosity on coverage runs
+    
+    This includes the debugging output into our tests.
+    
+    Signed-off-by: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+
+commit 1657781cafcd1ab7140c9fdcccfe9434be02f136
+Merge: 8b9cc3a5 8d4a5924
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Mon Dec 14 23:10:08 2020 +0000
+
+    Merge branch 'tmp-share-vars' into 'master'
+    
+    worker.h: share OCSERV_ENV_WORKER_STARTUP_MSG between main and worker
+    
+    See merge request openconnect/ocserv!250
+
+commit 8b9cc3a5c52896b45a58907ed71360efde150aec
+Merge: e09a7d5a b2a5688b
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Mon Dec 14 22:40:12 2020 +0000
+
+    Merge branch 'tmp-cleanup' into 'master'
+    
+    Cleanups in Makefile
+    
+    See merge request openconnect/ocserv!249
+
+commit 8d4a5924e48d9679ca78518a3ed8514af9cf17a3
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Mon Dec 14 23:26:05 2020 +0100
+
+    worker.h: share OCSERV_ENV_WORKER_STARTUP_MSG between main and worker
+    
+    Signed-off-by: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+
+commit b2a5688bf7d10d8c9ba6299f7b9b2a77fb0ffe7a
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Mon Dec 14 21:20:20 2020 +0100
+
+    Makefile.am: cleanup
+    
+    This rearranges variables so they are set before they are used.
+    
+    Signed-off-by: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+
+commit e09a7d5a7034b1feb91dc995e07e8de5d66124f2
+Merge: 56f98cbb 5869006c
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Sat Dec 12 22:30:50 2020 +0000
+
+    Merge branch 'tmp-lgtm' into 'master'
+    
+    More fixes to reduce warnings from lgtm.com static analyzer
+    
+    See merge request openconnect/ocserv!248
+
+commit 56f98cbba259426c5f74ba62551937119d2a2398
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Sat Dec 12 23:12:10 2020 +0100
+
+    sample.config: document what 'unlimited' means
+    
+    Signed-off-by: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+
+commit 5869006ce15d80c3249b5a46256987feba363ff1
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Sat Dec 12 22:45:35 2020 +0100
+
+    Replaced redundant checked with asserts
+    
+    Although the checks where strictly redundant, an update
+    or restructuring of the loops/files could cause a signficant
+    issues. For that keep them but within an assert() statement
+    to be clear what it is about.
+    
+    Signed-off-by: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+
+commit 47c6638286a694b4d278e01b278f64f9368b3e1a
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Sat Dec 12 22:41:50 2020 +0100
+
+    ocserv-worker: renamed loop to worker_loop
+    
+    This avoids warnings and static analyzers complains about
+    the libev functions hiding the global 'loop' variable
+    
+    Signed-off-by: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+
+commit c7788819274c86d21270fc867313ca0fa71bdd1c
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Fri Dec 11 09:49:58 2020 +0100
+
+    Revert ".lgtm.yml: added"
+    
+    This reverts commit f1be23a7f7d1eb499826291567d84dd6f2d09f17.
+    The LGTM.com integration doesn't seem to work as lgtm cannot
+    checkout this project.
+    
+    Signed-off-by: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+
+commit f1be23a7f7d1eb499826291567d84dd6f2d09f17
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Thu Dec 10 17:16:29 2020 +0100
+
+    .lgtm.yml: added
+    
+    Signed-off-by: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+
+commit dd34f8587585bc6f3e7c30ea09aa1dd26d1c6215
+Author: Daniel Lenski <dlenski@amazon.com>
+Date:   Wed Dec 9 16:52:41 2020 -0800
+
+    OpenConnect will interpret these headers once https://gitlab.com/openconnect/openconnect/-/merge_requests/156 is merged
+    
+    Examples of newly-authenticated sessions from Cisco servers:
+    
+    - Default value of `Session-Timeout` is 1209600 seconds (14 days) per
+      https://www.cisco.com/assets/sol/sb/RV345P_Emulators/RV345P_Emulator_v1-0-01-17/help/help/t_SSL_VPN.html
+    - https://www.mail-archive.com/openconnect-devel@lists.infradead.org/msg00968.html:
+      `Lease-Duration` having the default value, while `Session-Timeout`
+      and `Session-Timeout-Remaining` are `none`
+    - https://gitlab.com/openconnect/openconnect/-/issues/43#note_177677716:
+      `Lease-Duration`, `Session-Timeout`, and `Session-Timeout-Remaining` all with
+      same value
+    
+    My own testing of *reconnected* sessions (on a newer Cisco server supporting
+    DTLS 1.2) shows that Session-Timeout-Remaining will have a value less than
+    Session-Timeout, such that the expiration timestamp remains constant from one
+    reconnection to the next.
+    
+    Signed-off-by: Daniel Lenski <dlenski@amazon.com>
+
+commit 32570703124b2adf392a019fe4f3518a36156d3c
+Merge: 44bff9ce 3d7c846e
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Wed Dec 9 15:40:24 2020 +0000
+
+    Merge branch 'tmp-lgtm' into 'master'
+    
+    Several updates to remove LGTM.com warnings
+    
+    See merge request openconnect/ocserv!246
+
+commit 3d7c846ecdff97953e7e1f6a3f1ce3c727b69b4e
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Wed Dec 9 15:56:27 2020 +0100
+
+    ocserv: renamed main_loop
+    
+    This avoids warnings and static analyzers complains about
+    libev functions hiding the global 'loop' variable.
+    
+    Signed-off-by: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+
+commit 689b6fa1a4696c3880939d8b3f257df693d12707
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Wed Dec 9 15:48:30 2020 +0100
+
+    process_worker_packet: remove FIXME comments; they serve little purpose
+    
+    Signed-off-by: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+
+commit 85817d38b77531b1ae81be3de9376f890da40684
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Wed Dec 9 15:47:52 2020 +0100
+
+    get_session_id: avoid parameter hiding
+    
+    Signed-off-by: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+
+commit a9cb1b7f1e971e106c10b733e4acad4b591ca3d9
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Wed Dec 9 15:44:58 2020 +0100
+
+    headers: added header guards
+    
+    Signed-off-by: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+
+commit f6cb0db8e0681eb0e61a154f280b1479c939bb8b
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Wed Dec 9 15:44:12 2020 +0100
+
+    get_cert_names: made infinite loop apparent
+    
+    Signed-off-by: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+
+commit 07606fc2d87f9079732f3036088e376b06e1b2fe
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Wed Dec 9 15:10:41 2020 +0100
+
+    load_keys: avoid hiding a global variable
+    
+    Signed-off-by: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+
+commit 9482756e6c12c0d7b96886eecdd39ad79c583bee
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Wed Dec 9 15:10:01 2020 +0100
+
+    parse_cfg_file: avoid hiding a global variable
+    
+    Signed-off-by: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+
+commit e035221030f8fdfbb38483889631916fef9d9798
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Wed Dec 9 15:05:24 2020 +0100
+
+    update_auth_time_stats: cast operations to avoid overflows
+    
+    Signed-off-by: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+
+commit d619c9051856e689fb27ad75170533bdba11990a
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Wed Dec 9 15:01:36 2020 +0100
+
+    Avoid localtime() in favor of localtime_r()
+    
+    This is to keep some static analyzers happy that check for the
+    thread safe functions, even if in practice we do not need to be
+    thread safe.
+    
+    Signed-off-by: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+
+commit 24814ac87427a0d3a17832c66564b8de8c6e2c01
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Wed Dec 9 14:55:46 2020 +0100
+
+    ocserv: avoid the use of ctime
+    
+    Signed-off-by: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+
+commit 44bff9ce5e09ab68be4f8593622b60c1ed46ea2d
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Wed Dec 9 13:27:27 2020 +0100
+
+    .gitlab-ci.yml: corrected syntax
+    
+    Signed-off-by: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+
+commit 39a86845cb573f39c3399071b6c7103868b58860
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Wed Dec 9 11:44:50 2020 +0100
+
+    .gitlab-ci.yml: RPM/epel8: undo downstream patch
+    
+    Signed-off-by: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+
+commit 9927fbe997504fe138318e9d2ff60232f409139b
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Wed Dec 9 11:33:43 2020 +0100
+
+    design.dia: updated to mention seccomp
+    
+    Signed-off-by: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+
+commit 8defa732938745a51d3fbe7487d3ecbacee5c4f7
+Merge: eaeac139 5c53d5f8
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Wed Dec 9 09:15:53 2020 +0000
+
+    Merge branch 'tmp-updated-http-parser' into 'master'
+    
+    Updated http-parser bundled library
+    
+    See merge request openconnect/ocserv!245
+
+commit 5c53d5f82da808f68917ff556b554578afb76e06
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Wed Dec 9 09:31:07 2020 +0100
+
+    Updated bundled http-parser
+    
+    Signed-off-by: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+
+commit 3702debb95ade58e3bc3e28b966e9ae35da0765d
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Wed Dec 9 09:28:28 2020 +0100
+
+    README.md: no longer recommend pcllib
+    
+    It is a very small library that doesn't change, not used by
+    any other projects and we bundle it. Let's use the bundled
+    version by default.
+    
+    Signed-off-by: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+
+commit eaeac13962165b8ba710698de223935fa3819d49
+Merge: bbaf5125 70150a85
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Sun Dec 6 21:57:56 2020 +0000
+
+    Merge branch 'tmp-tests-no-need-root' into 'master'
+    
+    tests: drain-server-fail: make sure it runs only when root
+    
+    See merge request openconnect/ocserv!244
+
+commit 70150a856bb9f41aad676445115e0b8c5530edd8
+Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Date:   Sun Dec 6 19:55:03 2020 +0100
+
+    tests: drain-server-fail: make sure it runs only when root
+    
+    Signed-off-by: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+
 commit bbaf5125e195994528f35cb8ffa5fbfba4f65144
 Author: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
 Date:   Sun Dec 6 14:00:50 2020 +0100
