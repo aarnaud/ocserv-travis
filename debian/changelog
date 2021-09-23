@@ -1,3 +1,10 @@
+ocserv (1.1.3-1) unstable; urgency=medium
+
+  * New upstream version 1.1.3
+  * d/patches: remove applied patches, add new post 1.1.3 ones
+
+ -- Aron Xu <aron@debian.org>  Thu, 23 Sep 2021 16:43:28 +0800
+
 ocserv (1.1.2-2) unstable; urgency=medium
 
   * d/patches: cherry-pick upstream post 1.1.2 bug fixes
